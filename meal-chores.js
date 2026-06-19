@@ -31,8 +31,8 @@ function generateMealWeek() {
   DAYS.forEach(day => {
     state.mealSchedule.weekSchedule[day] = {
       lunch: residents[index % residents.length].id,
-      supper1: residents[(index + 1) % residents.length].id,
-      supper2: residents[(index + 2) % residents.length].id
+      supper: residents[(index + 1) % residents.length].id,
+      supper: residents[(index + 2) % residents.length].id
     };
 
     index += 3;
@@ -73,14 +73,14 @@ function render() {
   const mealSchedule = getMealSchedule();
 
   body.innerHTML = DAYS.map(day => {
-    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper: "", supper: "" };
 
     return `
       <tr>
         <td><strong>${day}</strong></td>
         <td>${residentSelect(day, "lunch", row.lunch)}</td>
-        <td>${residentSelect(day, "supper1", row.supper1)}</td>
-        <td>${residentSelect(day, "supper2", row.supper2)}</td>
+        <td>${residentSelect(day, "supper", row.supper)}</td>
+        <td>${residentSelect(day, "supper", row.supper)}</td>
       </tr>
     `;
   }).join("");
