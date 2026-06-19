@@ -1,64 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meal Chores</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <link rel="stylesheet" href="style.css">
+
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
   <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
   <script src="data-store.js"></script>
-  <script>requireLogin();</script>
+
+  <script>
+    requireLogin();
+  </script>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>Meal Chores</h1>
-      <p>Weekly meal schedule. Lunch has one resident; supper has two residents.</p>
+
+<header>
+  <h1>Meal Chores</h1>
+
+  <nav>
+    <a href="index.html">House Chores</a>
+    <a href="meal-print.html">Printable Meal Schedule</a>
+    <button onclick="logout()">Logout</button>
+  </nav>
+</header>
+
+<main>
+
+  <section class="card">
+
+    <h2>Weekly Meal Schedule</h2>
+
+    <div class="button-row">
+
+      <button id="generateMealBtn">
+        Generate Rotation
+      </button>
+
+      <button id="randomMealBtn">
+        Random Schedule
+      </button>
+
+      <button id="saveMealBtn">
+        Save
+      </button>
+
+      <button id="clearMealBtn">
+        Clear
+      </button>
+
+      <button id="printMealBtn">
+        Print Simple Table
+      </button>
+
     </div>
-    <nav>
-      <a href="index.html">House Chores</a>
-      <a class="active" href="meal-chores.html">Meal Chores</a>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </nav>
-  </header>
 
-  <main>
-    <section class="card wide">
-      <h2>Weekly Meal Schedule</h2>
-      <p class="hint">Residents marked away or archived on the House Chores page are omitted from meal rotation.</p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Lunch</th>
-              <th>Supper</th>
-              <th>Supper</th>
-            </tr>
-          </thead>
-          <tbody id="mealBody"></tbody>
-        </table>
-      </div>
-      <div class="button-row">
-        <button id="saveMealBtn">Save Meal Chores</button>
-        
-      </div>
-    </section>
+    <table class="meal-table">
 
-    <section class="card wide">
-      <h2>Meal Rotation</h2>
-      <p class="hint">No breakfast. No dishes. Lunch has one resident and supper has two residents.</p>
-      <div class="button-row">
-        <button id="rotateMealBtn">Generate Meal Week</button>
-        <button id="clearMealBtn" class="secondary">Clear Meal Assignments</button>
-      </div>
-    </section>
-  </main>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Lunch</th>
+          <th>Supper 1</th>
+          <th>Supper 2</th>
+        </tr>
+      </thead>
 
-  <script src="meal-chores.js"></script>
+      <tbody id="mealBody">
+      </tbody>
+
+    </table>
+
+  </section>
+
+</main>
+
+<script src="meal-chores.js"></script>
+
 </body>
 </html>
