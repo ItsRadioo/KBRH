@@ -1,59 +1,5 @@
-const STORAGE_KEY = "residentChoreRotator.github.v1";
-
-let state = loadState();
-migrateState();
-autoReturnAwayResidents();
-saveState();
-
-function defaultState() {
-  return {
-    tableGenerated: false,
-    residents: [
-      { id: crypto.randomUUID(), name: "Resident 1", choreIndex: 0, exceptions: [], lockedChore: "", status: "active", awayUntil: "" },
-      { id: crypto.randomUUID(), name: "Resident 2", choreIndex: 1, exceptions: [], lockedChore: "", status: "active", awayUntil: "" },
-      { id: crypto.randomUUID(), name: "Resident 3", choreIndex: 2, exceptions: [], lockedChore: "", status: "active", awayUntil: "" }
-    ],
-    chores: ['Bathroom', 'Upper floors', 'Main Floor (morning)', 'Main Floor (Night)', 'Basement', 'Outside Yardwork', 'Morning dishes', 'Resident Fridge', 'General Disinfecting', 'Special Projects'],
-    history: []
-  };
-}
-
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  const olderV2 = localStorage.getItem("residentChoreRotator.v2");
-  const olderV1 = localStorage.getItem("residentChoreRotator.v1");
-  const source = saved || olderV2 || olderV1;
-
-  if (!source) return defaultState();
-
-  try {
-    const parsed = JSON.parse(source);
-    if (!Array.isArray(parsed.residents) || !Array.isArray(parsed.chores)) return defaultState();
-    return parsed;
-  } catch {
-    return defaultState();
-  }
-}
-
-function migrateState() {
-  state.tableGenerated = Boolean(state.tableGenerated);
-  state.chores = Array.isArray(state.chores) ? state.chores : [];
-  state.history = Array.isArray(state.history) ? state.history : [];
-
-  state.residents = (Array.isArray(state.residents) ? state.residents : []).map((resident, index) => ({
-    id: resident.id || crypto.randomUUID(),
-    name: resident.name || `Resident ${index + 1}`,
-    choreIndex: Number.isInteger(resident.choreIndex) ? resident.choreIndex : 0,
-    exceptions: Array.isArray(resident.exceptions) ? resident.exceptions : [],
-    lockedChore: resident.lockedChore || "",
-    status: resident.status || "active",
-    awayUntil: resident.awayUntil || ""
-  }));
-}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+let state = defaultAppState();
+let unsubscribeApp = null;
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -61,13 +7,17 @@ function todayDateString() {
 
 function autoReturnAwayResidents() {
   const today = todayDateString();
+  let changed = false;
 
   state.residents = state.residents.map(resident => {
     if (resident.status === "away" && resident.awayUntil && resident.awayUntil < today) {
+      changed = true;
       return { ...resident, status: "active", awayUntil: "" };
     }
     return resident;
   });
+
+  if (changed) saveAppState(state);
 }
 
 function activeResidents() {
@@ -118,6 +68,10 @@ function nextAllowedChoreIndex(resident, startIndex, occupiedChores = new Set())
   return resident.choreIndex;
 }
 
+async function saveAndRender() {
+  await saveAppState(state);
+}
+
 function addResident() {
   const input = document.getElementById("residentName");
   const name = input.value.trim();
@@ -134,8 +88,7 @@ function addResident() {
   });
 
   input.value = "";
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function editResident(id) {
@@ -149,8 +102,7 @@ function editResident(id) {
   if (!cleanName) return;
 
   resident.name = cleanName;
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function setResidentStatus(id, status) {
@@ -160,8 +112,7 @@ function setResidentStatus(id, status) {
   resident.status = status;
   if (status !== "away") resident.awayUntil = "";
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function setAwayUntil() {
@@ -177,8 +128,7 @@ function setAwayUntil() {
   resident.status = "away";
   resident.awayUntil = date;
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function deleteResident(id) {
@@ -189,8 +139,7 @@ function deleteResident(id) {
   if (!confirmed) return;
 
   state.residents = state.residents.filter(r => r.id !== id);
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function addChore() {
@@ -199,16 +148,15 @@ function addChore() {
   if (!name || state.chores.includes(name)) return;
 
   state.chores.push(name);
-  saveState();
-  render();
+  input.value = "";
+  saveAndRender();
 }
-
 
 function resetDefaultChores() {
   const confirmed = confirm("Reset the chore list to the standard 10 chores?");
   if (!confirmed) return;
 
-  state.chores = ['Bathroom', 'Upper floors', 'Main Floor (morning)', 'Main Floor (Night)', 'Basement', 'Outside Yardwork', 'Morning dishes', 'Resident Fridge', 'General Disinfecting', 'Special Projects'];
+  state.chores = STANDARD_CHORES;
   state.residents = state.residents.map(resident => ({
     ...resident,
     choreIndex: normalizeChoreIndex(resident.choreIndex),
@@ -216,8 +164,7 @@ function resetDefaultChores() {
     lockedChore: state.chores.includes(resident.lockedChore) ? resident.lockedChore : ""
   }));
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function removeChore(choreName) {
@@ -232,8 +179,7 @@ function removeChore(choreName) {
     lockedChore: resident.lockedChore === choreName ? "" : resident.lockedChore
   }));
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function setResidentChore(residentId, choreIndex) {
@@ -241,8 +187,7 @@ function setResidentChore(residentId, choreIndex) {
   if (!resident) return;
 
   resident.choreIndex = Number(choreIndex);
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function generateTable() {
@@ -252,8 +197,7 @@ function generateTable() {
     return { ...resident, choreIndex: nextAllowedChoreIndex(resident, resident.choreIndex) };
   });
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function rotateChores() {
@@ -309,8 +253,7 @@ function rotateChores() {
     return { ...resident, choreIndex: newIndex };
   });
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function addException() {
@@ -330,8 +273,7 @@ function addException() {
     resident.choreIndex = nextAllowedChoreIndex(resident, resident.choreIndex + 1);
   }
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function removeException(residentId, choreName) {
@@ -339,8 +281,7 @@ function removeException(residentId, choreName) {
   if (!resident) return;
 
   resident.exceptions = resident.exceptions.filter(exception => exception !== choreName);
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function lockResidentToChore() {
@@ -353,8 +294,7 @@ function lockResidentToChore() {
   resident.exceptions = resident.exceptions.filter(exception => exception !== choreName);
   resident.choreIndex = choreIndexByName(choreName);
 
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function clearResidentLock() {
@@ -363,8 +303,7 @@ function clearResidentLock() {
   if (!resident) return;
 
   resident.lockedChore = "";
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function clearHistory() {
@@ -372,14 +311,13 @@ function clearHistory() {
   if (!confirmed) return;
 
   state.history = [];
-  saveState();
-  render();
+  saveAndRender();
 }
 
 function exportBackup() {
   const backup = {
     app: "residentChoreRotator",
-    version: 2,
+    version: 5,
     exportedAt: new Date().toISOString(),
     state
   };
@@ -400,7 +338,7 @@ function importBackup(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const parsed = JSON.parse(reader.result);
       const importedState = parsed.state || parsed;
@@ -410,14 +348,11 @@ function importBackup(event) {
         return;
       }
 
-      const confirmed = confirm("Importing this backup will replace the current roster, chores, locks, leave status, and history. Continue?");
+      const confirmed = confirm("Importing this backup will replace the shared online data. Continue?");
       if (!confirmed) return;
 
-      state = importedState;
-      migrateState();
-      autoReturnAwayResidents();
-      saveState();
-      render();
+      state = normalizeAppState(importedState);
+      await saveAppState(state);
       alert("Backup imported successfully.");
     } catch {
       alert("Could not import backup. Check that the file is valid JSON.");
@@ -643,4 +578,11 @@ document.getElementById("choreName").addEventListener("keydown", e => {
   if (e.key === "Enter") addChore();
 });
 
-render();
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  unsubscribeApp = listenToAppState(nextState => {
+    state = nextState;
+    render();
+  });
+});

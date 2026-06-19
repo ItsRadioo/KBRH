@@ -5,14 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meal Chores</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
+  <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
 <body>
   <header>
     <div>
       <h1>Meal Chores</h1>
-      <p>Daily meal-duty rotation. Supper has two assigned residents.</p>
+      <p>Weekly meal schedule. Lunch has one resident; supper has two residents.</p>
     </div>
     <nav>
       <a href="index.html">House Chores</a>
@@ -23,15 +28,16 @@
 
   <main>
     <section class="card wide">
-      <h2>Meal Chore Assignments</h2>
+      <h2>Weekly Meal Schedule</h2>
       <p class="hint">Residents marked away or archived on the House Chores page are omitted from meal rotation.</p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Meal Duty</th>
-              <th>Assigned Resident(s)</th>
-              <th>Notes</th>
+              <th>Day</th>
+              <th>Lunch</th>
+              <th>Supper 1</th>
+              <th>Supper 2</th>
             </tr>
           </thead>
           <tbody id="mealBody"></tbody>
@@ -47,7 +53,7 @@
       <h2>Meal Rotation</h2>
       <p class="hint">No breakfast. No dishes. Lunch has one resident and supper has two residents.</p>
       <div class="button-row">
-        <button id="rotateMealBtn">Rotate Meal Duties</button>
+        <button id="rotateMealBtn">Generate Meal Week</button>
         <button id="clearMealBtn" class="secondary">Clear Meal Assignments</button>
       </div>
     </section>

@@ -10,9 +10,12 @@
   <main class="login-wrap">
     <section class="card login-card">
       <h1>Staff Login</h1>
-      <p class="hint">Enter the staff password to access the chore tracker.</p>
+      <p class="hint">Sign in with your staff account.</p>
 
-      <label for="password">Staff Password</label>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="staff@example.com" autocomplete="username" />
+
+      <label for="password">Password</label>
       <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
 
       <button id="loginBtn" type="button">Login</button>
@@ -20,25 +23,36 @@
     </section>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
   <script>
-    const AUTH_KEY = "residentChoreRotator.staffLoggedIn";
-    const STAFF_PASSWORD = "KBRH2026";
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = "index.html";
+      }
+    });
 
-    if (sessionStorage.getItem(AUTH_KEY) === "true") {
-      window.location.href = "index.html";
-    }
-
-    function handleLogin() {
-      const password = document.getElementById("password").value.trim();
+    async function handleLogin() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
       const error = document.getElementById("errorMessage");
 
       error.textContent = "";
 
-      if (password === STAFF_PASSWORD) {
-        sessionStorage.setItem(AUTH_KEY, "true");
+      if (!email || !password) {
+        error.textContent = "Enter your email and password.";
+        return;
+      }
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
         window.location.href = "index.html";
-      } else {
-        error.textContent = "Incorrect password.";
+      } catch (err) {
+        console.error(err);
+        error.textContent = "Login failed. Check the email and password.";
       }
     }
 

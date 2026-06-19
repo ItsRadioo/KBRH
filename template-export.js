@@ -25,7 +25,11 @@ const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
   "Special Projects": "SPECIAL PROJECTS"
 };
 
-function loadTemplateState() {
+async function loadTemplateState() {
+  if (typeof loadAppState === "function") {
+    return await loadAppState();
+  }
+
   const saved = localStorage.getItem(STORAGE_KEY_FOR_TEMPLATE);
   if (!saved) return { residents: [], chores: [] };
 
@@ -44,9 +48,7 @@ function normalizeIndex(index, length) {
 function getChoreNameFromState(state, choreIndex) {
   const chores = state.chores || [];
   if (!chores.length || choreIndex < 0) return "";
-
-  const normalized = ((choreIndex % chores.length) + chores.length) % chores.length;
-  return chores[normalized];
+  return chores[normalizeIndex(choreIndex, chores.length)];
 }
 
 function buildAssignmentMap(state) {
@@ -56,13 +58,7 @@ function buildAssignmentMap(state) {
     .filter(resident => resident.status === "active")
     .forEach(resident => {
       const chore = getChoreNameFromState(state, resident.choreIndex);
-
-      if (!chore) return;
-
-      if (!assignments.has(chore)) {
-        assignments.set(chore, []);
-      }
-
+      if (!assignments.has(chore)) assignments.set(chore, []);
       assignments.get(chore).push(resident.name);
     });
 
@@ -145,7 +141,7 @@ async function downloadFilledExcelTemplate() {
     return;
   }
 
-  const state = loadTemplateState();
+  const state = await loadTemplateState();
 
   const response = await fetch(TEMPLATE_FILE);
   if (!response.ok) {

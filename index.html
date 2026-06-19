@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Resident Chore Rotator</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
+  <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
 <body>
@@ -131,6 +136,7 @@
       <p class="hint">Export before major edits. Import restores residents, chores, exceptions, locks, leave status, and history.</p>
       <div class="button-row">
         <button id="exportBackupBtn">Export Backup JSON</button>
+        <button id="migrateLocalBtn" type="button" class="secondary" onclick="migrateLocalStorageToFirestore()">Migrate This Browser Data Online</button>
         <label class="button-link file-button">
           Import Backup JSON
           <input id="importBackupInput" type="file" accept="application/json,.json" />

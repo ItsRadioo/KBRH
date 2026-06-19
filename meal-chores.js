@@ -1,59 +1,22 @@
-const MAIN_STORAGE_KEY = "residentChoreRotator.github.v1";
-const MEAL_STORAGE_KEY = "residentMealChores.weekly.v1";
-
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-let mainState = loadMainState();
-let mealState = loadMealState();
-
-function loadMainState() {
-  const saved = localStorage.getItem(MAIN_STORAGE_KEY);
-  if (!saved) return { residents: [] };
-
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return { residents: [] };
-  }
-}
-
-function defaultMealState() {
-  return {
-    weekSchedule: DAYS.reduce((schedule, day) => {
-      schedule[day] = { lunch: "", supper1: "", supper2: "" };
-      return schedule;
-    }, {}),
-    history: []
-  };
-}
-
-function loadMealState() {
-  const saved = localStorage.getItem(MEAL_STORAGE_KEY);
-  if (!saved) return defaultMealState();
-
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return defaultMealState();
-  }
-}
-
-function saveMealState() {
-  localStorage.setItem(MEAL_STORAGE_KEY, JSON.stringify(mealState));
-}
+let state = defaultAppState();
 
 function activeResidents() {
-  return (mainState.residents || []).filter(resident => resident.status === "active");
+  return (state.residents || []).filter(resident => resident.status === "active");
+}
+
+function getMealSchedule() {
+  return normalizeMealSchedule(state.mealSchedule);
 }
 
 function setMealResident(day, slot, residentId) {
-  mealState.weekSchedule[day][slot] = residentId;
-  saveMealState();
-  render();
+  state.mealSchedule = getMealSchedule();
+  state.mealSchedule.weekSchedule[day][slot] = residentId;
+  saveAppState(state);
 }
 
 function generateMealWeek() {
-  mainState = loadMainState();
   const residents = activeResidents();
 
   if (residents.length === 0) {
@@ -61,10 +24,12 @@ function generateMealWeek() {
     return;
   }
 
+  state.mealSchedule = getMealSchedule();
+
   let index = 0;
 
   DAYS.forEach(day => {
-    mealState.weekSchedule[day] = {
+    state.mealSchedule.weekSchedule[day] = {
       lunch: residents[index % residents.length].id,
       supper1: residents[(index + 1) % residents.length].id,
       supper2: residents[(index + 2) % residents.length].id
@@ -73,14 +38,17 @@ function generateMealWeek() {
     index += 3;
   });
 
-  saveMealState();
-  render();
+  state.mealSchedule.history.unshift({
+    id: crypto.randomUUID(),
+    timestamp: new Date().toLocaleString()
+  });
+
+  saveAppState(state);
 }
 
 function clearMealAssignments() {
-  mealState = defaultMealState();
-  saveMealState();
-  render();
+  state.mealSchedule = defaultMealSchedule();
+  saveAppState(state);
 }
 
 function residentSelect(day, slot, selectedId) {
@@ -99,12 +67,13 @@ function residentSelect(day, slot, selectedId) {
 }
 
 function render() {
-  mainState = loadMainState();
-
   const body = document.getElementById("mealBody");
+  if (!body) return;
+
+  const mealSchedule = getMealSchedule();
 
   body.innerHTML = DAYS.map(day => {
-    const row = mealState.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
 
     return `
       <tr>
@@ -123,15 +92,22 @@ function escapeHtml(value) {
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
-    "'": "&#039;",
+    "'": "&#039;"
   }[char]));
 }
 
 document.getElementById("clearMealBtn").addEventListener("click", clearMealAssignments);
 document.getElementById("saveMealBtn").addEventListener("click", () => {
-  saveMealState();
+  saveAppState(state);
   alert("Meal schedule saved.");
 });
 document.getElementById("rotateMealBtn").addEventListener("click", generateMealWeek);
 
-render();
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  listenToAppState(nextState => {
+    state = nextState;
+    render();
+  });
+});

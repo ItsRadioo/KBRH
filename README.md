@@ -1,38 +1,70 @@
-# Resident Chore Rotator
+# KBRH Resident Chore Rotator — Firebase/Firestore Version
 
-House chores:
-1. Bathroom
-2. Upper floors
-3. Main Floor (morning)
-4. Main Floor (Night)
-5. Basement
-6. Outside Yardwork
-7. Morning dishes
-8. Resident Fridge
-9. General Disinfecting
-10. Special Projects
+This version stores residents, chores, locks, away status, meal schedules, and history in Firebase Firestore so all logged-in staff see the same data from any device.
 
-Rotation rule:
-- Each active resident moves forward exactly one chore per rotation.
-- Locked residents stay on their locked chore.
-- Blocked chores are skipped.
-- Outside Yardwork is the only chore allowed to have multiple residents.
-- Other chores are kept to one assigned resident where possible.
+## Upload These Files
 
-Meal rotation:
-- No breakfast.
-- No dishes.
-- Lunch has one resident.
-- Supper has two residents.
-- Away/archived residents are omitted.
+Upload all files to the root of your GitHub repository.
 
-Print page:
-- Generates by chore order into a cleaning schedule layout instead of a generic resident-first table.
+Important files:
+- index.html
+- login.html
+- meal-chores.html
+- print.html
+- style.css
+- script.js
+- meal-chores.js
+- print.js
+- template-export.js
+- auth.js
+- data-store.js
+- firebase-config.js
+- Resident_Chore_Schedule.xlsx
+- firestore.rules
 
+## Firebase Setup
 
-Actual Excel template export:
-- Upload `Resident_Chore_Schedule.xlsx` with the site files.
-- Open Print Sheet.
-- Click `Download Filled Excel Template`.
-- The workbook is filled in its actual template cells.
-- ExcelJS is loaded from jsDelivr, so the browser needs internet access for Excel export.
+1. Go to Firebase Console.
+2. Create a project.
+3. Create a Web App.
+4. Copy the Firebase config into `firebase-config.js`.
+5. Go to Authentication.
+6. Enable Email/Password sign-in.
+7. Add staff users under Authentication → Users.
+8. Go to Firestore Database.
+9. Create a database.
+10. Add these rules:
+
+```js
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /kbrh/choreTracker {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+## How Staff Use It
+
+Staff only use the website. They do not need to open Firebase.
+
+- Log in
+- Add/edit/archive residents
+- Mark away until date
+- Rotate chores
+- Generate meal week
+- Print/export template
+
+## Migrating Old Browser Data
+
+On the device that already has the correct resident list:
+
+1. Log in to the new Firebase version.
+2. Go to House Chores.
+3. Click **Migrate This Browser Data Online**.
+4. Confirm.
+
+After that, other devices should see the shared data after logging in.
