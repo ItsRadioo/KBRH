@@ -2,27 +2,15 @@ const TEMPLATE_FILE = "Resident_Chore_Schedule.xlsx";
 const STORAGE_KEY_FOR_TEMPLATE = "residentChoreRotator.github.v1";
 
 const CHORE_CELL_MAP = {
-  "Bathroom": "A3",
-  "Upper floors": "A4",
-  "Main Floor (morning)": "A5",
-  "Main Floor (Night)": "A6",
-  "Basement": "A7",
-  "Morning dishes": "A9",
-  "Resident Fridge": "A10",
-  "General Disinfecting": "A11",
-  "Special Projects": "A12"
-};
-
-const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
-  "Bathroom": "WASHROOMS\n(2ND / 3RD FLOOR + STAFF)\n(Complete by 9 AM)",
-  "Upper floors": "UPSTAIRS FLOORS",
-  "Main Floor (morning)": "MAIN FLOOR\n(MORNING)",
-  "Main Floor (Night)": "MAIN FLOOR\n(NIGHT)",
-  "Basement": "BASEMENT",
-  "Morning dishes": "MORNING DISHES",
-  "Resident Fridge": "RESIDENT FRIDGE\n(Complete Friday)",
-  "General Disinfecting": "GENERAL DISINFECTING",
-  "Special Projects": "SPECIAL PROJECTS"
+  "Bathroom": "B3",
+  "Upper floors": "B4",
+  "Main Floor (morning)": "B5",
+  "Main Floor (Night)": "B6",
+  "Basement": "B7",
+  "Morning dishes": "B9",
+  "Resident Fridge": "B10",
+  "General Disinfecting": "B11",
+  "Special Projects": "B12"
 };
 
 async function loadTemplateState() {
@@ -58,6 +46,8 @@ function buildAssignmentMap(state) {
     .filter(resident => resident.status === "active")
     .forEach(resident => {
       const chore = getChoreNameFromState(state, resident.choreIndex);
+      if (!chore) return;
+
       if (!assignments.has(chore)) assignments.set(chore, []);
       assignments.get(chore).push(resident.name);
     });
@@ -71,7 +61,8 @@ function setCellPreserveStyle(sheet, address, value) {
   cell.alignment = {
     ...cell.alignment,
     wrapText: true,
-    vertical: "middle"
+    vertical: "middle",
+    horizontal: "center"
   };
 }
 
@@ -109,24 +100,28 @@ function applyAssignmentsToTemplate(sheet, state) {
 
   for (const [chore, address] of Object.entries(CHORE_CELL_MAP)) {
     const names = assignments.get(chore) || [];
-    const nameText = names.join(" + ");
-    const label = STANDARD_CHORE_LABELS_IN_TEMPLATE[chore] || chore.toUpperCase();
+    const nameText = names.length ? names.join(" + ").toUpperCase() : "N/A";
 
-    setCellPreserveStyle(sheet, address, nameText ? `${label}\n\n${nameText.toUpperCase()}` : label);
+    setCellPreserveStyle(sheet, address, nameText);
   }
 
   const outsideNames = assignments.get("Outside Yardwork") || [];
   const outsideCell = sheet.getCell("B8");
 
-  if (outsideNames.length) {
-    outsideCell.value =
-      `( ${outsideNames.map(name => name.toUpperCase()).join("  +  ")} )\n\n` +
-      `Mow Lawn: Front, Back, Side of the home\n` +
-      `Sweep: Front Porch, Ramp, Back Steps, Fire Escape, Smoking Section\n` +
-      `Rake: Front Lawn, Back Yard\n\n` +
-      `Recycle: Put out Grey Recycle Bins & Yard Waste per Schedule on Dining Room Info Board\n` +
-      `Smoking Section: Empty Garbage Can & Cigarette Butt Can Regularly`;
-  }
+  outsideCell.value =
+    outsideNames.length
+      ? `( ${outsideNames.map(name => name.toUpperCase()).join("  +  ")} )\n\n` +
+        `Mow Lawn: Front, Back, Side of the home\n` +
+        `Sweep: Front Porch, Ramp, Back Steps, Fire Escape, Smoking Section\n` +
+        `Rake: Front Lawn, Back Yard\n\n` +
+        `Recycle: Put out Grey Recycle Bins & Yard Waste per Schedule on Dining Room Info Board\n` +
+        `Smoking Section: Empty Garbage Can & Cigarette Butt Can Regularly`
+      : `N/A\n\n` +
+        `Mow Lawn: Front, Back, Side of the home\n` +
+        `Sweep: Front Porch, Ramp, Back Steps, Fire Escape, Smoking Section\n` +
+        `Rake: Front Lawn, Back Yard\n\n` +
+        `Recycle: Put out Grey Recycle Bins & Yard Waste per Schedule on Dining Room Info Board\n` +
+        `Smoking Section: Empty Garbage Can & Cigarette Butt Can Regularly`;
 
   outsideCell.alignment = {
     ...outsideCell.alignment,
