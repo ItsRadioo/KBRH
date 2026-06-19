@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Chore Schedule</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="auth.js"></script>
+  <script>requireLogin();</script>
+</head>
+<body>
+  <header class="no-print">
+    <div>
+      <h1>Weekly Chore Schedule</h1>
+      <p>Template-style printable house chore sheet.</p>
+    </div>
+    <nav>
+      <a href="index.html">House Chores</a>
+      <a href="meal-chores.html">Meal Chores</a>
+      <a class="active" href="print.html">House Print</a>
+      <a href="meal-print.html">Meal Print</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main class="print-main">
+    <section class="weekly-template-sheet">
+      <div class="weekly-title">
+        <h1>Weekly Chore Schedule</h1>
+        <input id="weekRange" class="print-input no-print-input" type="text" placeholder="MON APR. 27 - SUN MAY 03" />
+        <h2 id="weekRangeDisplay">MON ____ - SUN ____</h2>
+        <p>Morning chores must be completed by 8:30 AM on Weekdays - <strong>11 AM on Weekends + Holidays</strong></p>
+        <p><strong>*9:00 AM for Washroom Chore*</strong></p>
+        <p>Replacements must be pre-approved by Staff</p>
+      </div>
+
+      <table class="weekly-template-table">
+        <tbody id="weeklyTemplateBody"></tbody>
+      </table>
+    </section>
+
+    <div class="button-row no-print">
+      <button onclick="savePrintSettings(); window.print();">Print House Chore Sheet</button>
+      <button class="secondary" onclick="savePrintSettings()">Save Week Label</button>
+      <a class="button-link" href="index.html">Back to Chores</a>
+    </div>
+  </main>
+
+  <script src="print.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resident Chore Rotator</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="auth.js"></script>
+  <script>requireLogin();</script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Resident Chore Rotator</h1>
+      <p>Manual assignments, rotation history, pass dates, backups, locked chores, and print sheets.</p>
+    </div>
+    <nav>
+      <a class="active" href="index.html">House Chores</a>
+      <a href="meal-chores.html">Meal Chores</a>
+      <a href="print.html">House Print</a>
+      <a href="meal-print.html">Meal Print</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Current Residents</h2>
+      <div class="form-row">
+        <input id="residentName" type="text" placeholder="Resident name" />
+        <button id="addResidentBtn">Add Resident</button>
+      </div>
+      <p class="hint">Use Away Until for passes/weekend leave. Residents automatically return after the selected date.</p>
+      <ul id="residentList" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Chores</h2>
+      <div class="form-row">
+        <input id="choreName" type="text" placeholder="Chore name" />
+        <button id="addChoreBtn">Add Chore</button>
+      </div>
+      <ul id="choreList" class="list"></ul>
+    </section>
+
+    <section class="card wide">
+      <h2>Manual First Assignment</h2>
+      <p class="hint">Assign active residents first. Away and archived residents are omitted from the active rotation table.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Resident</th>
+              <th>Starting / Current Chore</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="assignmentBody"></tbody>
+        </table>
+      </div>
+      <div class="button-row">
+        <button id="generateTableBtn">Generate Table</button>
+        <button id="rotateBtn">Rotate</button>
+        <a class="button-link" href="print.html">Open House Chore Template</a>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Generated Chore Table</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Resident</th>
+              <th>Assigned Chore</th>
+              <th>Blocked Chores</th>
+              <th>Locked To</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rotationBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Exceptions</h2>
+      <p class="hint">Blocked chores prevent a resident from being assigned to that chore. Locked chores keep a resident on that chore during rotation.</p>
+      <div class="form-row">
+        <select id="exceptionResident"></select>
+        <select id="exceptionChore"></select>
+        <button id="addExceptionBtn">Block Chore</button>
+        <button id="lockChoreBtn" class="warning">Lock Resident To Chore</button>
+        <button id="clearLockBtn" class="secondary">Clear Resident Lock</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Pass / Weekend Leave</h2>
+      <p class="hint">Mark a resident away until a date. They are omitted from house and meal chores until that date has passed.</p>
+      <div class="form-row">
+        <select id="leaveResident"></select>
+        <input id="awayUntilDate" type="date" />
+        <button id="setAwayUntilBtn">Mark Away Until</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Rotation History Log</h2>
+      <p class="hint">Every Rotate action is saved here for accountability.</p>
+      <div class="button-row">
+        <button id="clearHistoryBtn" class="danger">Clear History</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Resident</th>
+              <th>Old Chore</th>
+              <th>New Chore</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Backup / Restore</h2>
+      <p class="hint">Export before major edits. Import restores residents, chores, exceptions, locks, leave status, and history.</p>
+      <div class="button-row">
+        <button id="exportBackupBtn">Export Backup JSON</button>
+        <label class="button-link file-button">
+          Import Backup JSON
+          <input id="importBackupInput" type="file" accept="application/json,.json" />
+        </label>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Archived / Former Residents</h2>
+      <p class="hint">Archived residents are stored but omitted from all chore rotations.</p>
+      <ul id="archivedResidentList" class="list"></ul>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
