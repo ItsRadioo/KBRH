@@ -25,36 +25,30 @@
   </main>
 
   <script src="auth.js"></script>
-  <script>
-    if (isLoggedIn()) {
+<script>
+  const AUTH_KEY = "residentChoreRotator.staffLoggedIn";
+  const STAFF_PASSWORD = "KBRH2026";
+
+  if (sessionStorage.getItem(AUTH_KEY) === "true") {
+    window.location.href = "index.html";
+  }
+
+  function handleLogin() {
+    const password = document.getElementById("password").value.trim();
+    const error = document.getElementById("errorMessage");
+
+    if (password === STAFF_PASSWORD) {
+      sessionStorage.setItem(AUTH_KEY, "true");
       window.location.href = "index.html";
+    } else {
+      error.textContent = "Incorrect password.";
     }
+  }
 
-    async function handleLogin() {
-      const password = document.getElementById("password").value;
-      const error = document.getElementById("errorMessage");
-
-      error.textContent = "";
-
-      if (!password) {
-        error.textContent = "Enter the staff password.";
-        return;
-      }
-
-      const hash = await sha256(password);
-
-      if (hash === PASSWORD_HASH) {
-        sessionStorage.setItem(AUTH_KEY, "true");
-        window.location.href = "index.html";
-      } else {
-        error.textContent = "Incorrect password.";
-      }
-    }
-
-    document.getElementById("loginBtn").addEventListener("click", handleLogin);
-    document.getElementById("password").addEventListener("keydown", event => {
-      if (event.key === "Enter") handleLogin();
-    });
-  </script>
+  document.getElementById("loginBtn").addEventListener("click", handleLogin);
+  document.getElementById("password").addEventListener("keydown", event => {
+    if (event.key === "Enter") handleLogin();
+  });
+</script>
 </body>
 </html>
