@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Login | Resident Chore Rotator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-body">
+  <main class="login-wrap">
+    <section class="card login-card">
+      <h1>Staff Login</h1>
+      <p class="hint">Enter the staff password to access the chore tracker.</p>
+
+      <label for="password">Staff Password</label>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+
+      <button id="loginBtn">Login</button>
+      <p id="errorMessage" class="error"></p>
+
+      <p class="hint small">
+        Default password is <strong>changeme</strong>. Change this before entering real resident information.
+      </p>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script>
+    if (isLoggedIn()) {
+      window.location.href = "index.html";
+    }
+
+    async function handleLogin() {
+      const password = document.getElementById("password").value;
+      const error = document.getElementById("errorMessage");
+
+      error.textContent = "";
+
+      if (!password) {
+        error.textContent = "Enter the staff password.";
+        return;
+      }
+
+      const hash = await sha256(password);
+
+      if (hash === PASSWORD_HASH) {
+        sessionStorage.setItem(AUTH_KEY, "true");
+        window.location.href = "index.html";
+      } else {
+        error.textContent = "Incorrect password.";
+      }
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", handleLogin);
+    document.getElementById("password").addEventListener("keydown", event => {
+      if (event.key === "Enter") handleLogin();
+    });
+  </script>
+</body>
+</html>
