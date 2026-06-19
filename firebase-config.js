@@ -1,13 +1,10 @@
-// Firebase Console → Project settings → General → Your apps → Web app config
-// Replace these placeholders with your actual Firebase web app config.
-
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY_HERE",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyA_SxK18sGoJDDcPq1jWkJ1MWc15-ArBBc",
+  authDomain: "kbrh-chore-assignment.firebaseapp.com",
+  projectId: "kbrh-chore-assignment",
+  storageBucket: "kbrh-chore-assignment.firebasestorage.app",
+  messagingSenderId: "13613958689",
+  appId: "1:13613958689:web:9e6ae5537756e529490560"
 };
 
 firebase.initializeApp(firebaseConfig);
