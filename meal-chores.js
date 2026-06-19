@@ -20,10 +20,9 @@ function loadMealState() {
   if (!saved) {
     return {
       roles: [
-        { id: crypto.randomUUID(), name: "Breakfast prep", residentId: "" },
-        { id: crypto.randomUUID(), name: "Lunch prep", residentId: "" },
-        { id: crypto.randomUUID(), name: "Supper prep", residentId: "" },
-        { id: crypto.randomUUID(), name: "Dishes", residentId: "" }
+        { id: crypto.randomUUID(), name: "Lunch", residentId: "" },
+        { id: crypto.randomUUID(), name: "Supper", residentId: "" },
+        { id: crypto.randomUUID(), name: "Supper", residentId: "" }
       ]
     };
   }
