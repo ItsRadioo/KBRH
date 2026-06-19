@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waitlist</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="data-store.js"></script>
+  <script>requireLogin();</script>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Waitlist</h1>
+      <p>Manage applicants and call-in status.</p>
+    </div>
+
+    <nav>
+      <a href="index.html">House Chores</a>
+      <a href="meal-chores.html">Meal Chores</a>
+      <a href="print.html">Print Sheet</a>
+      <a class="active" href="waitlist.html">Waitlist</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card wide">
+      <h2>Add Waitlist Applicant</h2>
+
+      <div class="form-row">
+        <input id="lastName" placeholder="Last Name" />
+        <input id="firstName" placeholder="First Name" />
+        <input id="contact" placeholder="Contact" />
+        <input id="status" placeholder="Status" />
+        <input id="city" placeholder="City" />
+        <input id="dateApplied" type="date" />
+      </div>
+
+      <div class="form-row">
+        <input id="notes" placeholder="Notes" />
+        <button id="addWaitlistBtn" type="button">Add to Waitlist</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Current Waitlist</h2>
+      <p class="hint">Yes keeps the applicant in place. No/Late moves them to the bottom of the list.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Last Name</th>
+              <th>First Name</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>City</th>
+              <th>Date Applied</th>
+              <th>Call In</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="waitlistBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="waitlist.js"></script>
+</body>
+</html>
