@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Printable Meal Schedule</title>
+  <title>Dish Schedule</title>
   <link rel="stylesheet" href="style.css" />
+
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -13,11 +14,12 @@
   <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
+
 <body>
   <header class="no-print">
     <div>
-      <h1>Printable Meal Schedule</h1>
-      <p>Prints the saved weekly meal schedule using the posting-sheet template.</p>
+      <h1>Dish Schedule Print</h1>
+      <p>Prints the saved weekly meal schedule.</p>
     </div>
     <nav>
       <a href="index.html">House Chores</a>
@@ -28,62 +30,28 @@
     </nav>
   </header>
 
-  <main class="print-main">
-    <section class="cooking-template">
-      <div class="cooking-template-header">
-        <h1>RESIDENT COOKING SCHEDULE</h1>
+  <main class="dish-print-main">
+    <div class="no-print dish-print-controls">
+      <label>
+        Week of
+        <input id="mealWeekStart" type="date" />
+      </label>
 
-        <div class="cooking-date-row no-print">
-          <label>
-            Week Start
-            <input id="mealWeekStart" type="date" />
-          </label>
-          <label>
-            Week End
-            <input id="mealWeekEnd" type="date" />
-          </label>
-        </div>
-
-        <div class="cooking-week-print">
-          <span id="mealWeekStartPrint"></span>
-          <span id="mealWeekDash"> - </span>
-          <span id="mealWeekEndPrint"></span>
-        </div>
-      </div>
-
-      <p class="cooking-template-instruction">
-        COOKING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.
-      </p>
-
-      <p class="cooking-template-instruction">
-        ASSIGNED MEAL DUTIES ARE TO BE COMPLETED ON THE DAY ASSIGNED.
-      </p>
-
-      <table class="cooking-template-table">
-        <thead>
-          <tr>
-            <th>DAY</th>
-            <th>LUNCH</th>
-            <th>SUPPER</th>
-          </tr>
-        </thead>
-        <tbody id="mealPrintBody"></tbody>
-      </table>
-
-      <div class="cooking-template-note">
-        <strong>PLEASE NOTE:</strong>
-        <ul>
-          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete meal duties.</li>
-          <li>Assigned duties vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
-          <li>Supper requires two assigned Residents.</li>
-        </ul>
-      </div>
-    </section>
-
-    <div class="button-row no-print">
-      <button onclick="window.print()">Print Meal Template</button>
+      <button onclick="window.print()">Print Dish Schedule</button>
       <a class="button-link" href="meal-chores.html">Back to Meal Chores</a>
     </div>
+
+    <section class="dish-print-template">
+      <h1>Dish Schedule</h1>
+
+      <h2 id="mealWeekStartPrint">Week of</h2>
+
+      <p class="meal-note">
+        Tables To Be Set 30 Mins Prior To <u>Meal Times</u>
+      </p>
+
+      <div id="mealPrintBody"></div>
+    </section>
   </main>
 
   <script src="meal-print.js"></script>
