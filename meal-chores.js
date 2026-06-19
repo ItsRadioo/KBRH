@@ -10,6 +10,11 @@ function getMealSchedule() {
   return normalizeMealSchedule(state.mealSchedule);
 }
 
+function getResidentName(id) {
+  const resident = activeResidents().find(r => r.id === id);
+  return resident ? resident.name : "";
+}
+
 function setMealResident(day, slot, residentId) {
   state.mealSchedule = getMealSchedule();
   state.mealSchedule.weekSchedule[day][slot] = residentId;
@@ -31,8 +36,8 @@ function generateMealWeek() {
   DAYS.forEach(day => {
     state.mealSchedule.weekSchedule[day] = {
       lunch: residents[index % residents.length].id,
-      supper: residents[(index + 1) % residents.length].id,
-      supper: residents[(index + 2) % residents.length].id
+      supper1: residents[(index + 1) % residents.length].id,
+      supper2: residents[(index + 2) % residents.length].id
     };
 
     index += 3;
@@ -40,13 +45,135 @@ function generateMealWeek() {
 
   state.mealSchedule.history.unshift({
     id: crypto.randomUUID(),
-    timestamp: new Date().toLocaleString()
+    timestamp: new Date().toLocaleString(),
+    type: "Generated weekly meal schedule"
   });
 
   saveAppState(state);
 }
 
+function randomMealWeek() {
+  const residents = activeResidents();
+
+  if (residents.length === 0) {
+    alert("Add active residents first.");
+    return;
+  }
+
+  if (residents.length < 3) {
+    alert("Random meal generation works best with at least 3 active residents because supper needs two people.");
+  }
+
+  state.mealSchedule = getMealSchedule();
+
+  const assignmentCounts = new Map(residents.map(resident => [resident.id, 0]));
+  const lastWeekAssignments = getCurrentMealAssignments();
+
+  let previousLunchId = "";
+
+  DAYS.forEach(day => {
+    const dailyUsed = new Set();
+
+    const lunch = pickRandomResident(residents, assignmentCounts, dailyUsed, {
+      avoidIds: [previousLunchId],
+      avoidPreviousWeekIds: lastWeekAssignments[day] || []
+    });
+
+    if (lunch) {
+      dailyUsed.add(lunch.id);
+      incrementCount(assignmentCounts, lunch);
+    }
+
+    const supper1 = pickRandomResident(residents, assignmentCounts, dailyUsed, {
+      avoidIds: [],
+      avoidPreviousWeekIds: lastWeekAssignments[day] || []
+    });
+
+    if (supper1) {
+      dailyUsed.add(supper1.id);
+      incrementCount(assignmentCounts, supper1);
+    }
+
+    const supper2 = pickRandomResident(residents, assignmentCounts, dailyUsed, {
+      avoidIds: [],
+      avoidPreviousWeekIds: lastWeekAssignments[day] || []
+    });
+
+    if (supper2) {
+      dailyUsed.add(supper2.id);
+      incrementCount(assignmentCounts, supper2);
+    }
+
+    state.mealSchedule.weekSchedule[day] = {
+      lunch: lunch?.id || "",
+      supper1: supper1?.id || "",
+      supper2: supper2?.id || ""
+    };
+
+    previousLunchId = lunch?.id || "";
+  });
+
+  state.mealSchedule.history.unshift({
+    id: crypto.randomUUID(),
+    timestamp: new Date().toLocaleString(),
+    type: "Random weekly meal schedule"
+  });
+
+  saveAppState(state);
+}
+
+function getCurrentMealAssignments() {
+  const mealSchedule = getMealSchedule();
+  const assignments = {};
+
+  DAYS.forEach(day => {
+    const row = mealSchedule.weekSchedule[day] || {};
+    assignments[day] = [row.lunch, row.supper1, row.supper2].filter(Boolean);
+  });
+
+  return assignments;
+}
+
+function pickRandomResident(residents, assignmentCounts, dailyUsed, options = {}) {
+  const avoidIds = new Set((options.avoidIds || []).filter(Boolean));
+  const avoidPreviousWeekIds = new Set((options.avoidPreviousWeekIds || []).filter(Boolean));
+
+  let pool = residents.filter(resident =>
+    !dailyUsed.has(resident.id) &&
+    !avoidIds.has(resident.id) &&
+    !avoidPreviousWeekIds.has(resident.id)
+  );
+
+  if (pool.length === 0) {
+    pool = residents.filter(resident =>
+      !dailyUsed.has(resident.id) &&
+      !avoidIds.has(resident.id)
+    );
+  }
+
+  if (pool.length === 0) {
+    pool = residents.filter(resident => !dailyUsed.has(resident.id));
+  }
+
+  if (pool.length === 0) {
+    pool = residents;
+  }
+
+  const lowestCount = Math.min(...pool.map(resident => assignmentCounts.get(resident.id) || 0));
+  const fairestPool = pool.filter(resident => (assignmentCounts.get(resident.id) || 0) === lowestCount);
+
+  return fairestPool[Math.floor(Math.random() * fairestPool.length)];
+}
+
+function incrementCount(assignmentCounts, resident) {
+  if (!resident) return;
+  assignmentCounts.set(resident.id, (assignmentCounts.get(resident.id) || 0) + 1);
+}
+
 function clearMealAssignments() {
+  const confirmed = confirm("Clear the weekly meal schedule?");
+  if (!confirmed) return;
+
   state.mealSchedule = defaultMealSchedule();
   saveAppState(state);
 }
@@ -73,21 +200,77 @@ function render() {
   const mealSchedule = getMealSchedule();
 
   body.innerHTML = DAYS.map(day => {
-    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper: "", supper: "" };
+    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
 
     return `
       <tr>
-        <td><strong>${day}</strong></td>
+        <td><strong>${escapeHtml(day)}</strong></td>
         <td>${residentSelect(day, "lunch", row.lunch)}</td>
-        <td>${residentSelect(day, "supper", row.supper)}</td>
-        <td>${residentSelect(day, "supper", row.supper)}</td>
+        <td>${residentSelect(day, "supper1", row.supper1)}</td>
+        <td>${residentSelect(day, "supper2", row.supper2)}</td>
       </tr>
     `;
   }).join("");
 }
 
+function printMealSchedule() {
+  const mealSchedule = getMealSchedule();
+
+  const rows = DAYS.map(day => {
+    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+
+    return `
+      <tr>
+        <td>${escapeHtml(day)}</td>
+        <td>${escapeHtml(getResidentName(row.lunch) || "")}</td>
+        <td>${escapeHtml(getResidentName(row.supper1) || "")}</td>
+        <td>${escapeHtml(getResidentName(row.supper2) || "")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Weekly Meal Schedule</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 32px; }
+        h1 { text-align: center; margin-bottom: 4px; }
+        .subtitle { text-align: center; margin-bottom: 24px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; font-size: 16px; }
+        th, td { border: 2px solid black; padding: 12px; text-align: left; }
+        th { background: #e5e7eb; text-align: center; }
+        td:first-child { font-weight: bold; width: 22%; }
+        .note { margin-top: 24px; font-size: 14px; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <h1>RESIDENT COOKING SCHEDULE</h1>
+      <div class="subtitle">Lunch requires 1 resident. Supper requires 2 residents.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Lunch</th>
+            <th>Supper 1</th>
+            <th>Supper 2</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="note">Residents are responsible for checking the posted cooking schedule.</p>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
+  return String(value || "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -97,11 +280,17 @@ function escapeHtml(value) {
 }
 
 document.getElementById("clearMealBtn").addEventListener("click", clearMealAssignments);
+
 document.getElementById("saveMealBtn").addEventListener("click", () => {
   saveAppState(state);
   alert("Meal schedule saved.");
 });
-document.getElementById("rotateMealBtn").addEventListener("click", generateMealWeek);
+
+document.getElementById("generateMealBtn").addEventListener("click", generateMealWeek);
+
+document.getElementById("randomMealBtn").addEventListener("click", randomMealWeek);
+
+document.getElementById("printMealBtn").addEventListener("click", printMealSchedule);
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
