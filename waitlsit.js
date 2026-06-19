@@ -156,6 +156,16 @@ auth.onAuthStateChanged(user => {
   if (!user) return;
 
   listenToAppState(nextState => {
+  console.log("WAITLIST STATE", nextState);
+  alert("Waitlist records: " + (nextState.waitlist?.length || 0));
+
+  waitlistState = nextState;
+  waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp")
+    : [];
+
+  renderWaitlist();
+});
     waitlistState = nextState;
     waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
       ? waitlistState.waitlist.filter(item => item && item !== "temp")
