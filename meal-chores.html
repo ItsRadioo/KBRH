@@ -1,87 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meal Chores</title>
-
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
   <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
   <script src="data-store.js"></script>
-
-  <script>
-    requireLogin();
-  </script>
+  <script>requireLogin();</script>
 </head>
+
 <body>
-
-<header>
-  <h1>Meal Chores</h1>
-
-  <nav>
-    <a href="index.html">House Chores</a>
-    <a href="meal-print.html">Printable Meal Schedule</a>
-    <button onclick="logout()">Logout</button>
-  </nav>
-</header>
-
-<main>
-
-  <section class="card">
-
-    <h2>Weekly Meal Schedule</h2>
-
-    <div class="button-row">
-
-      <button id="generateMealBtn">
-        Generate Rotation
-      </button>
-
-      <button id="randomMealBtn">
-        Random Schedule
-      </button>
-
-      <button id="saveMealBtn">
-        Save
-      </button>
-
-      <button id="clearMealBtn">
-        Clear
-      </button>
-
-      <button id="printMealBtn">
-        Print Simple Table
-      </button>
-
+  <header>
+    <div>
+      <h1>Meal Chores</h1>
+      <p>Weekly meal schedule. Lunch has one resident; supper has two residents.</p>
     </div>
 
-    <table class="meal-table">
+    <nav>
+      <a href="index.html">House Chores</a>
+      <a class="active" href="meal-chores.html">Meal Chores</a>
+      <a href="meal-print.html">Meal Print</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
 
-      <thead>
-        <tr>
-          <th>Day</th>
-          <th>Lunch</th>
-          <th>Supper 1</th>
-          <th>Supper 2</th>
-        </tr>
-      </thead>
+  <main>
+    <section class="card wide">
+      <h2>Weekly Meal Schedule</h2>
+      <p class="hint">Away and archived residents are omitted.</p>
 
-      <tbody id="mealBody">
-      </tbody>
+      <div class="button-row">
+        <button id="generateMealBtn" type="button">Generate Meal Week</button>
+        <button id="randomMealBtn" type="button" class="warning">Random Meal Week</button>
+        <button id="saveMealBtn" type="button">Save Meal Schedule</button>
+        <button id="clearMealBtn" type="button" class="secondary">Clear Meal Schedule</button>
+        <button id="printMealBtn" type="button" class="secondary">Print Simple Table</button>
+      </div>
 
-    </table>
+      <div class="table-wrap">
+        <table class="meal-week-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Lunch</th>
+              <th>Supper 1</th>
+              <th>Supper 2</th>
+            </tr>
+          </thead>
+          <tbody id="mealBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 
-  </section>
-
-</main>
-
-<script src="meal-chores.js"></script>
-
+  <script src="meal-chores.js"></script>
 </body>
 </html>
