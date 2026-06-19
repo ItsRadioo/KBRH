@@ -1,4 +1,12 @@
-const MEAL_PRINT_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const MEAL_PRINT_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
 
 let mealPrintState = defaultAppState();
 
@@ -16,46 +24,62 @@ function getMealPrintResidentName(id) {
 }
 
 function formatMealPrintDate(value) {
-  if (!value) return "";
+  if (!value) return "Week of";
+
   const date = new Date(value + "T00:00:00");
-  return date.toLocaleDateString("en-CA", {
-    weekday: "long",
+
+  return `Week of ${date.toLocaleDateString("en-CA", {
     month: "long",
     day: "numeric",
     year: "numeric"
-  });
+  })}`;
 }
 
-function updateMealPrintDates() {
-  const start = document.getElementById("mealWeekStart").value;
-  const end = document.getElementById("mealWeekEnd").value;
+function updateMealPrintDate() {
+  const startInput = document.getElementById("mealWeekStart");
+  const printTarget = document.getElementById("mealWeekStartPrint");
 
-  document.getElementById("mealWeekStartPrint").textContent = formatMealPrintDate(start);
-  document.getElementById("mealWeekEndPrint").textContent = formatMealPrintDate(end);
-  document.getElementById("mealWeekDash").style.display = start || end ? "inline" : "none";
+  if (!startInput || !printTarget) return;
+
+  printTarget.textContent = formatMealPrintDate(startInput.value);
 }
 
 function renderMealPrintTemplate() {
   const schedule = getMealPrintSchedule();
   const body = document.getElementById("mealPrintBody");
 
+  if (!body) return;
+
   body.innerHTML = MEAL_PRINT_DAYS.map(day => {
-    const row = schedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
-    const lunch = getMealPrintResidentName(row.lunch);
-    const supper = [getMealPrintResidentName(row.supper1), getMealPrintResidentName(row.supper2)]
-      .filter(Boolean)
-      .join(" / ");
+    const row = schedule.weekSchedule[day] || {
+      lunch: "",
+      supper1: "",
+      supper2: ""
+    };
 
     return `
-      <tr>
-        <td>${escapeMealPrintHtml(day)}</td>
-        <td>${escapeMealPrintHtml(lunch)}</td>
-        <td>${escapeMealPrintHtml(supper)}</td>
-      </tr>
+      <div class="dish-day-block">
+        <h3>${escapeMealPrintHtml(day)}</h3>
+
+        <table class="dish-day-table">
+          <tr>
+            <th>Lunch</th>
+            <td>${escapeMealPrintHtml(getMealPrintResidentName(row.lunch))}</td>
+          </tr>
+          <tr>
+            <th>Dinner</th>
+            <td>${escapeMealPrintHtml(getMealPrintResidentName(row.supper1))}</td>
+          </tr>
+          <tr>
+            <th>Dinner</th>
+            <td>${escapeMealPrintHtml(getMealPrintResidentName(row.supper2))}</td>
+          </tr>
+        </table>
+      </div>
     `;
   }).join("");
 
-  updateMealPrintDates();
+  updateMealPrintDate();
 }
 
 function escapeMealPrintHtml(value) {
@@ -68,8 +92,13 @@ function escapeMealPrintHtml(value) {
   }[char]));
 }
 
-document.getElementById("mealWeekStart").addEventListener("change", updateMealPrintDates);
-document.getElementById("mealWeekEnd").addEventListener("change", updateMealPrintDates);
+document.addEventListener("DOMContentLoaded", () => {
+  const dateInput = document.getElementById("mealWeekStart");
+
+  if (dateInput) {
+    dateInput.addEventListener("change", updateMealPrintDate);
+  }
+});
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
