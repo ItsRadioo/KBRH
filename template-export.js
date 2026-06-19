@@ -10,7 +10,19 @@ const CHORE_CELL_MAP = {
   "Morning dishes": "A9",
   "Resident Fridge": "A10",
   "General Disinfecting": "A11",
-  "Special Projects": "B12"
+  "Special Projects": "A12"
+};
+
+const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
+  "Bathroom": "WASHROOMS\n(2ND / 3RD FLOOR + STAFF)\n(Complete by 9 AM)",
+  "Upper floors": "UPSTAIRS FLOORS",
+  "Main Floor (morning)": "MAIN FLOOR\n(MORNING)",
+  "Main Floor (Night)": "MAIN FLOOR\n(NIGHT)",
+  "Basement": "BASEMENT",
+  "Morning dishes": "MORNING DISHES",
+  "Resident Fridge": "RESIDENT FRIDGE\n(Complete Friday)",
+  "General Disinfecting": "GENERAL DISINFECTING",
+  "Special Projects": "SPECIAL PROJECTS"
 };
 
 async function loadTemplateState() {
@@ -104,6 +116,7 @@ function applyAssignmentsToTemplate(sheet, state) {
     const label = STANDARD_CHORE_LABELS_IN_TEMPLATE[chore] || chore.toUpperCase();
 
     if (chore === "Special Projects") {
+      setCellPreserveStyle(sheet, "A12", label);
       setCellPreserveStyle(sheet, "B12", nameText);
     } else {
       setCellPreserveStyle(sheet, address, `${label}\n\n${nameText}`);
@@ -131,7 +144,8 @@ function applyAssignmentsToTemplate(sheet, state) {
   outsideCell.alignment = {
     ...outsideCell.alignment,
     wrapText: true,
-    vertical: "middle"
+    vertical: "middle",
+    horizontal: "center"
   };
 }
 
@@ -154,7 +168,10 @@ async function downloadFilledExcelTemplate() {
   await workbook.xlsx.load(arrayBuffer);
 
   const sheetName = document.getElementById("seasonSelect")?.value || "Spring+Summer";
-  const sheet = workbook.getWorksheet(sheetName) || workbook.getWorksheet("Spring+Summer") || workbook.worksheets[0];
+  const sheet =
+    workbook.getWorksheet(sheetName) ||
+    workbook.getWorksheet("Spring+Summer") ||
+    workbook.worksheets[0];
 
   updateTemplateHeader(sheet);
   applyAssignmentsToTemplate(sheet, state);
