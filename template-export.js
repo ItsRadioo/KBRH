@@ -27,15 +27,24 @@ const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
 
 async function loadTemplateState() {
   if (typeof loadAppState === "function") {
-    return await loadAppState();
+    const onlineState = await loadAppState();
+    console.log("Loaded Firestore export state:", onlineState);
+    return onlineState;
   }
 
   const saved = localStorage.getItem(STORAGE_KEY_FOR_TEMPLATE);
-  if (!saved) return { residents: [], chores: [] };
+
+  if (!saved) {
+    console.warn("No local chore data found.");
+    return { residents: [], chores: [] };
+  }
 
   try {
-    return JSON.parse(saved);
+    const localState = JSON.parse(saved);
+    console.log("Loaded local export state:", localState);
+    return localState;
   } catch {
+    console.warn("Could not parse local chore data.");
     return { residents: [], chores: [] };
   }
 }
@@ -54,15 +63,23 @@ function getChoreNameFromState(state, choreIndex) {
 function buildAssignmentMap(state) {
   const assignments = new Map();
 
+  console.log("Residents available for export:", state.residents);
+  console.log("Chores available for export:", state.chores);
+
   (state.residents || [])
     .filter(resident => resident.status === "active")
     .forEach(resident => {
       const chore = getChoreNameFromState(state, resident.choreIndex);
+
+      console.log("Exporting resident:", resident.name, "Index:", resident.choreIndex, "Chore:", chore);
+
       if (!chore) return;
 
       if (!assignments.has(chore)) assignments.set(chore, []);
       assignments.get(chore).push(resident.name);
     });
+
+  console.log("Final Excel assignment map:", Object.fromEntries(assignments));
 
   return assignments;
 }
