@@ -44,7 +44,9 @@ function normalizeIndex(index, length) {
 function getChoreNameFromState(state, choreIndex) {
   const chores = state.chores || [];
   if (!chores.length || choreIndex < 0) return "";
-  return chores[normalizeIndex(choreIndex, chores.length)];
+
+  const normalized = ((choreIndex % chores.length) + chores.length) % chores.length;
+  return chores[normalized];
 }
 
 function buildAssignmentMap(state) {
@@ -54,7 +56,13 @@ function buildAssignmentMap(state) {
     .filter(resident => resident.status === "active")
     .forEach(resident => {
       const chore = getChoreNameFromState(state, resident.choreIndex);
-      if (!assignments.has(chore)) assignments.set(chore, []);
+
+      if (!chore) return;
+
+      if (!assignments.has(chore)) {
+        assignments.set(chore, []);
+      }
+
       assignments.get(chore).push(resident.name);
     });
 
