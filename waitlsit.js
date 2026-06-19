@@ -22,7 +22,11 @@ function addWaitlistApplicant() {
     return;
   }
 
-  waitlistState.waitlist.push(applicant);
+  waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
+  ? waitlistState.waitlist.filter(item => item && item !== "temp")
+  : [];
+
+waitlistState.waitlist.push(applicant);
   clearWaitlistForm();
   saveWaitlist();
 }
