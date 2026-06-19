@@ -82,7 +82,8 @@ input, select {
   font-size: 15px;
 }
 
-button {
+button,
+.button-link {
   border: 0;
   border-radius: 8px;
   padding: 11px 15px;
@@ -90,17 +91,22 @@ button {
   background: #2563eb;
   color: white;
   font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   background: #1d4ed8;
 }
 
-button.danger {
+button.danger,
+.logout-btn {
   background: #dc2626;
 }
 
-button.danger:hover {
+button.danger:hover,
+.logout-btn:hover {
   background: #b91c1c;
 }
 
@@ -208,25 +214,13 @@ th {
   font-style: italic;
 }
 
-@media (max-width: 760px) {
-  header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  main {
-    grid-template-columns: 1fr;
-  }
-
-  .form-row {
-    flex-direction: column;
-  }
+.file-button input {
+  display: none;
 }
 
-
-.logout-btn {
-  background: #dc2626;
-}
+/* =========================
+   LOGIN PAGE
+   ========================= */
 
 .login-body {
   min-height: 100vh;
@@ -265,92 +259,13 @@ th {
   font-size: 13px;
 }
 
-
-.button-link {
-  display: inline-block;
-  text-decoration: none;
-  border: 0;
-  border-radius: 8px;
-  padding: 11px 15px;
-  cursor: pointer;
-  background: #2563eb;
-  color: white;
-  font-weight: 700;
-}
-
-.file-button input {
-  display: none;
-}
+/* =========================
+   CLEANING PRINT TEMPLATE
+   ========================= */
 
 .print-main {
   display: block;
   max-width: 900px;
-}
-
-.print-sheet {
-  background: white;
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
-}
-
-.print-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.print-table {
-  font-size: 18px;
-}
-
-.print-table th,
-.print-table td {
-  border: 2px solid #111827;
-  padding: 16px;
-}
-
-.print-notes {
-  margin-top: 32px;
-}
-
-.note-lines {
-  height: 160px;
-  background:
-    repeating-linear-gradient(
-      white 0,
-      white 31px,
-      #d1d5db 32px
-    );
-  border: 1px solid #d1d5db;
-}
-
-@media print {
-  body {
-    background: white;
-  }
-
-  .no-print,
-  header.no-print,
-  .button-row.no-print {
-    display: none !important;
-  }
-
-  .print-main {
-    max-width: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .print-sheet {
-    box-shadow: none;
-    border-radius: 0;
-    padding: 0;
-  }
-
-  .print-table th,
-  .print-table td {
-    border: 2px solid black;
-  }
 }
 
 .cleaning-template {
@@ -437,18 +352,157 @@ th {
   line-height: 1.35;
 }
 
-.stacked-selects {
-  display: grid;
-  gap: 8px;
+/* =========================
+   MEAL CHORE EDIT TABLE
+   ========================= */
+
+.meal-week-table th,
+.meal-week-table td {
+  vertical-align: middle;
 }
 
+.meal-week-table td:first-child {
+  width: 18%;
+  background: #f9fafb;
+}
+
+/* =========================
+   DISH SCHEDULE PRINT PAGE
+   ========================= */
+
+.dish-print-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.dish-print-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.dish-print-template {
+  background: #2d2d2d;
+  color: white;
+  width: 360px;
+  padding: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dish-print-template h1 {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.dish-print-template h2 {
+  text-align: center;
+  font-size: 11px;
+  margin: 0 0 18px;
+  font-weight: 800;
+}
+
+.meal-note {
+  text-align: left;
+  font-size: 11px;
+  margin-bottom: 14px;
+}
+
+.dish-day-block {
+  margin-bottom: 10px;
+}
+
+.dish-day-block h3 {
+  text-decoration: underline;
+  font-size: 16px;
+  margin: 0 0 5px;
+}
+
+.dish-day-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-top: 0;
+}
+
+.dish-day-table th,
+.dish-day-table td {
+  border: 1px solid white;
+  padding: 2px 8px;
+  color: white;
+}
+
+.dish-day-table th {
+  width: 90px;
+  text-align: left;
+  font-weight: 800;
+}
+
+.dish-day-table td {
+  text-transform: uppercase;
+}
+
+.dish-day-table tr {
+  height: 18px;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 760px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  main {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+/* =========================
+   PRINT RULES
+   ========================= */
+
 @media print {
-  .no-print-input {
-    display: none;
+  body {
+    background: white;
+    margin: 0;
+  }
+
+  .no-print,
+  header,
+  nav,
+  .logout-btn,
+  .dish-print-controls,
+  .button-row.no-print {
+    display: none !important;
+  }
+
+  .print-main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
   }
 
   .print-only {
     display: inline;
+  }
+
+  .no-print-input {
+    display: none;
   }
 
   .cleaning-template {
@@ -462,118 +516,33 @@ th {
   .date-row div {
     border-color: black;
   }
-}
 
+  .dish-print-main {
+    padding: 0;
+    display: block;
+  }
 
-.meal-week-table th,
-.meal-week-table td {
-  vertical-align: middle;
-}
-
-.meal-week-table td:first-child {
-  width: 18%;
-  background: #f9fafb;
-}
-
-
-.cooking-template {
-  background: white;
-  padding: 34px;
-  border: 3px solid #111827;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.cooking-template-header {
-  text-align: center;
-  border-bottom: 3px solid #111827;
-  padding-bottom: 18px;
-  margin-bottom: 18px;
-}
-
-.cooking-template-header h1 {
-  font-size: 32px;
-  letter-spacing: 1px;
-  margin-bottom: 14px;
-}
-
-.cooking-date-row {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.cooking-date-row label {
-  font-weight: 700;
-  display: grid;
-  gap: 6px;
-}
-
-.cooking-week-print {
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 8px;
-}
-
-.cooking-template-instruction {
-  text-align: center;
-  font-weight: 800;
-  margin: 10px 0;
-}
-
-.cooking-template-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 22px;
-  font-size: 18px;
-}
-
-.cooking-template-table th,
-.cooking-template-table td {
-  border: 2px solid #111827;
-  padding: 14px;
-}
-
-.cooking-template-table th {
-  background: #e5e7eb;
-  text-align: center;
-}
-
-.cooking-template-table td:first-child {
-  font-weight: 800;
-  width: 22%;
-}
-
-.cooking-template-table td:nth-child(2) {
-  width: 34%;
-}
-
-.cooking-template-table td:nth-child(3) {
-  width: 44%;
-}
-
-.cooking-template-note {
-  margin-top: 24px;
-  font-size: 15px;
-  line-height: 1.35;
-}
-
-@media print {
-  .cooking-template {
+  .dish-print-template {
+    width: 360px;
+    margin: 0 auto;
+    padding: 12px;
     box-shadow: none;
-    border: 3px solid black;
-    padding: 20px;
-    max-width: none;
+    background: #2d2d2d !important;
+    color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  .cooking-template-table th,
-  .cooking-template-table td {
-    border-color: black;
+  .dish-print-template h1,
+  .dish-print-template h2,
+  .dish-day-block h3,
+  .meal-note {
+    color: white !important;
   }
 
-  .cooking-template-header {
-    border-color: black;
+  .dish-day-table th,
+  .dish-day-table td {
+    border: 1px solid white !important;
+    color: white !important;
   }
 }
