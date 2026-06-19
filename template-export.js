@@ -118,7 +118,7 @@ function formatExcelDateLabel(value) {
 function updateTemplateHeader(sheet) {
   const startInput = document.getElementById("startDate");
   const start = startInput ? startInput.value : "";
-  const end = addDaysToDateString(start, 7);
+  const end = addDaysToDateString(start, 6);
 
   if (!start) return;
 
