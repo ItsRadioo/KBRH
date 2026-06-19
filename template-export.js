@@ -171,8 +171,8 @@ function applyAssignmentsToTemplate(sheet, state) {
     horizontal: "left"
   };
 }
-
 async function downloadFilledExcelTemplate() {
+  alert("Excel exporter is running");
   if (!window.ExcelJS) {
     alert("Excel export library did not load. Check your internet connection and try again.");
     return;
