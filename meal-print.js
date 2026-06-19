@@ -1,57 +1,81 @@
-const MAIN_STORAGE_KEY = "residentChoreRotator.github.v1";
-const MEAL_STORAGE_KEY = "residentMealChores.github.v1";
-const MEAL_PRINT_SETTINGS_KEY = "residentMealPrintSettings.v1";
+const MEAL_PRINT_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-function loadMainState() {
-  const saved = localStorage.getItem(MAIN_STORAGE_KEY);
-  if (!saved) return { residents: [] };
-  try { return JSON.parse(saved); } catch { return { residents: [] }; }
+let mealPrintState = defaultAppState();
+
+function activeMealPrintResidents() {
+  return (mealPrintState.residents || []).filter(resident => resident.status === "active");
 }
 
-function loadMealState() {
-  const saved = localStorage.getItem(MEAL_STORAGE_KEY);
-  if (!saved) return { roles: [] };
-  try { return JSON.parse(saved); } catch { return { roles: [] }; }
+function getMealPrintSchedule() {
+  return normalizeMealSchedule(mealPrintState.mealSchedule);
 }
 
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(MEAL_PRINT_SETTINGS_KEY)) || {}; } catch { return {}; }
+function getMealPrintResidentName(id) {
+  const resident = activeMealPrintResidents().find(r => r.id === id);
+  return resident ? resident.name : "";
 }
 
-function saveMealPrintSettings() {
-  const satLabel = document.getElementById("satLabel").value.trim();
-  const sunLabel = document.getElementById("sunLabel").value.trim();
-  localStorage.setItem(MEAL_PRINT_SETTINGS_KEY, JSON.stringify({ satLabel, sunLabel }));
-  renderLabels();
+function formatMealPrintDate(value) {
+  if (!value) return "";
+  const date = new Date(value + "T00:00:00");
+  return date.toLocaleDateString("en-CA", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
 }
 
-function renderLabels() {
-  const settings = loadSettings();
-  const satInput = document.getElementById("satLabel");
-  const sunInput = document.getElementById("sunLabel");
-  if (!satInput.value) satInput.value = settings.satLabel || "";
-  if (!sunInput.value) sunInput.value = settings.sunLabel || "";
-  document.getElementById("satDisplay").innerHTML = (satInput.value || "SATURDAY\nMAY ____").replace(/\n/g, "<br>");
-  document.getElementById("sunDisplay").innerHTML = (sunInput.value || "SUNDAY\nMAY ____").replace(/\n/g, "<br>");
+function updateMealPrintDates() {
+  const start = document.getElementById("mealWeekStart").value;
+  const end = document.getElementById("mealWeekEnd").value;
+
+  document.getElementById("mealWeekStartPrint").textContent = formatMealPrintDate(start);
+  document.getElementById("mealWeekEndPrint").textContent = formatMealPrintDate(end);
+  document.getElementById("mealWeekDash").style.display = start || end ? "inline" : "none";
 }
 
-function residentNameById(mainState, id) {
-  const resident = (mainState.residents || []).find(r => r.id === id && r.status === "active");
-  return resident ? resident.name : "________________";
-}
-
-function renderMealPrint() {
-  const mainState = loadMainState();
-  const mealState = loadMealState();
-  renderLabels();
+function renderMealPrintTemplate() {
+  const schedule = getMealPrintSchedule();
   const body = document.getElementById("mealPrintBody");
-  body.innerHTML = mealState.roles && mealState.roles.length
-    ? mealState.roles.map(role => `<tr><td>${escapeHtml(role.name)}</td><td>${escapeHtml(residentNameById(mainState, role.residentId))}</td></tr>`).join("")
-    : `<tr><td>Meal Chore</td><td>________________</td></tr>`;
+
+  body.innerHTML = MEAL_PRINT_DAYS.map(day => {
+    const row = schedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+    const lunch = getMealPrintResidentName(row.lunch);
+    const supper = [getMealPrintResidentName(row.supper1), getMealPrintResidentName(row.supper2)]
+      .filter(Boolean)
+      .join(" / ");
+
+    return `
+      <tr>
+        <td>${escapeMealPrintHtml(day)}</td>
+        <td>${escapeMealPrintHtml(lunch)}</td>
+        <td>${escapeMealPrintHtml(supper)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  updateMealPrintDates();
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+function escapeMealPrintHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
 }
 
-renderMealPrint();
+document.getElementById("mealWeekStart").addEventListener("change", updateMealPrintDates);
+document.getElementById("mealWeekEnd").addEventListener("change", updateMealPrintDates);
+
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  listenToAppState(nextState => {
+    mealPrintState = nextState;
+    renderMealPrintTemplate();
+  });
+});

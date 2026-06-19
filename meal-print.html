@@ -3,65 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resident Cooking Schedule</title>
+  <title>Printable Meal Schedule</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
+  <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
 <body>
   <header class="no-print">
     <div>
-      <h1>Resident Cooking Schedule</h1>
-      <p>Template-style printable meal chore sheet.</p>
+      <h1>Printable Meal Schedule</h1>
+      <p>Prints the saved weekly meal schedule using the posting-sheet template.</p>
     </div>
     <nav>
       <a href="index.html">House Chores</a>
       <a href="meal-chores.html">Meal Chores</a>
-      <a href="print.html">House Print</a>
       <a class="active" href="meal-print.html">Meal Print</a>
+      <a href="print.html">Cleaning Print</a>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </nav>
   </header>
 
-  <main class="meal-print-main">
-    <section class="meal-template-sheet">
-      <h1 class="meal-template-title">RESIDENT COOKING SCHEDULE</h1>
+  <main class="print-main">
+    <section class="cooking-template">
+      <div class="cooking-template-header">
+        <h1>RESIDENT COOKING SCHEDULE</h1>
 
-      <div class="meal-date-grid">
-        <div>
-          <input id="satLabel" class="print-input no-print-input" type="text" placeholder="SATURDAY\nMAY 16th" />
-          <h2 id="satDisplay">SATURDAY<br>MAY ____</h2>
+        <div class="cooking-date-row no-print">
+          <label>
+            Week Start
+            <input id="mealWeekStart" type="date" />
+          </label>
+          <label>
+            Week End
+            <input id="mealWeekEnd" type="date" />
+          </label>
         </div>
-        <div>
-          <input id="sunLabel" class="print-input no-print-input" type="text" placeholder="SUNDAY\nMAY 17th" />
-          <h2 id="sunDisplay">SUNDAY<br>MAY ____</h2>
+
+        <div class="cooking-week-print">
+          <span id="mealWeekStartPrint"></span>
+          <span id="mealWeekDash"> - </span>
+          <span id="mealWeekEndPrint"></span>
         </div>
       </div>
 
-      <div class="meal-info-box">
-        <strong>COOKING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.</strong><br>
-        <strong>ASSIGNED CHORES TO BE COMPLETED BY 4:00 PM ON THE DAY ASSIGNED.</strong>
-      </div>
+      <p class="cooking-template-instruction">
+        COOKING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.
+      </p>
 
-      <table class="meal-assignment-table">
+      <p class="cooking-template-instruction">
+        ASSIGNED MEAL DUTIES ARE TO BE COMPLETED ON THE DAY ASSIGNED.
+      </p>
+
+      <table class="cooking-template-table">
         <thead>
-          <tr><th>Meal Chore</th><th>Assigned Resident</th></tr>
+          <tr>
+            <th>DAY</th>
+            <th>LUNCH</th>
+            <th>SUPPER</th>
+          </tr>
         </thead>
         <tbody id="mealPrintBody"></tbody>
       </table>
 
-      <div class="meal-note-box">
-        <h2>PLEASE NOTE:</h2>
+      <div class="cooking-template-note">
+        <strong>PLEASE NOTE:</strong>
         <ul>
-          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete chores and not interfere with Lunch / Dinner Preparation or Setup</li>
-          <li>Assigned Chores vary every week and the Resident is responsible for checking which duties need to be completed on those specific days</li>
+          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete meal duties.</li>
+          <li>Assigned duties vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
+          <li>Supper requires two assigned Residents.</li>
         </ul>
       </div>
     </section>
 
     <div class="button-row no-print">
-      <button onclick="saveMealPrintSettings(); window.print();">Print Meal Chore Sheet</button>
-      <button class="secondary" onclick="saveMealPrintSettings()">Save Date Labels</button>
+      <button onclick="window.print()">Print Meal Template</button>
       <a class="button-link" href="meal-chores.html">Back to Meal Chores</a>
     </div>
   </main>
