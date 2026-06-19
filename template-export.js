@@ -2,14 +2,14 @@ const TEMPLATE_FILE = "Resident_Chore_Schedule.xlsx";
 const STORAGE_KEY_FOR_TEMPLATE = "residentChoreRotator.github.v1";
 
 const CHORE_CELL_MAP = {
-  "Bathroom": "B3",
-  "Upper floors": "B4",
-  "Main Floor (morning)": "B5",
-  "Main Floor (Night)": "B6",
-  "Basement": "B7",
-  "Morning dishes": "B9",
-  "Resident Fridge": "B10",
-  "General Disinfecting": "B11",
+  "Bathroom": "A3",
+  "Upper floors": "A4",
+  "Main Floor (morning)": "A5",
+  "Main Floor (Night)": "A6",
+  "Basement": "A7",
+  "Morning dishes": "A9",
+  "Resident Fridge": "A10",
+  "General Disinfecting": "A11",
   "Special Projects": "B12"
 };
 
@@ -101,8 +101,13 @@ function applyAssignmentsToTemplate(sheet, state) {
   for (const [chore, address] of Object.entries(CHORE_CELL_MAP)) {
     const names = assignments.get(chore) || [];
     const nameText = names.length ? names.join(" + ").toUpperCase() : "N/A";
+    const label = STANDARD_CHORE_LABELS_IN_TEMPLATE[chore] || chore.toUpperCase();
 
-    setCellPreserveStyle(sheet, address, nameText);
+    if (chore === "Special Projects") {
+      setCellPreserveStyle(sheet, "B12", nameText);
+    } else {
+      setCellPreserveStyle(sheet, address, `${label}\n\n${nameText}`);
+    }
   }
 
   const outsideNames = assignments.get("Outside Yardwork") || [];
