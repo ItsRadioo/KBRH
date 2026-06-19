@@ -43,12 +43,6 @@ function generateMealWeek() {
     index += 3;
   });
 
-  state.mealSchedule.history.unshift({
-    id: crypto.randomUUID(),
-    timestamp: new Date().toLocaleString(),
-    type: "Generated weekly meal schedule"
-  });
-
   saveAppState(state);
 }
 
@@ -60,62 +54,65 @@ function randomMealWeek() {
     return;
   }
 
-  if (residents.length < 3) {
-    alert("Random meal generation works best with at least 3 active residents because supper requires two people.");
-  }
-
   state.mealSchedule = getMealSchedule();
 
-  const assignmentCounts = new Map(residents.map(resident => [resident.id, 0]));
+  const counts = new Map(residents.map(r => [r.id, 0]));
   let previousLunchId = "";
 
   DAYS.forEach(day => {
-    const lunch = pickRandomResident(residents, assignmentCounts, [previousLunchId]);
-    const supper1 = pickRandomResident(residents, assignmentCounts, [lunch?.id]);
-    const supper2 = pickRandomResident(residents, assignmentCounts, [lunch?.id, supper1?.id]);
+    const usedToday = new Set();
+
+    const lunch = pickResident(residents, counts, usedToday, [previousLunchId]);
+    if (lunch) {
+      usedToday.add(lunch.id);
+      counts.set(lunch.id, counts.get(lunch.id) + 1);
+    }
+
+    const supper1 = pickResident(residents, counts, usedToday, []);
+    if (supper1) {
+      usedToday.add(supper1.id);
+      counts.set(supper1.id, counts.get(supper1.id) + 1);
+    }
+
+    const supper2 = pickResident(residents, counts, usedToday, []);
+    if (supper2) {
+      usedToday.add(supper2.id);
+      counts.set(supper2.id, counts.get(supper2.id) + 1);
+    }
 
     state.mealSchedule.weekSchedule[day] = {
-      lunch: lunch?.id || "",
-      supper1: supper1?.id || "",
-      supper2: supper2?.id || ""
+      lunch: lunch ? lunch.id : "",
+      supper1: supper1 ? supper1.id : "",
+      supper2: supper2 ? supper2.id : ""
     };
 
-    [lunch, supper1, supper2].forEach(resident => {
-      if (resident) {
-        assignmentCounts.set(resident.id, (assignmentCounts.get(resident.id) || 0) + 1);
-      }
-    });
-
-    previousLunchId = lunch?.id || "";
-  });
-
-  state.mealSchedule.history.unshift({
-    id: crypto.randomUUID(),
-    timestamp: new Date().toLocaleString(),
-    type: "Random weekly meal schedule"
+    previousLunchId = lunch ? lunch.id : "";
   });
 
   saveAppState(state);
 }
 
-function pickRandomResident(residents, assignmentCounts, excludedIds = []) {
-  const exclusions = new Set(excludedIds.filter(Boolean));
+function pickResident(residents, counts, usedToday, avoidIds) {
+  const avoid = new Set((avoidIds || []).filter(Boolean));
 
-  let pool = residents.filter(resident => !exclusions.has(resident.id));
+  let pool = residents.filter(r => !usedToday.has(r.id) && !avoid.has(r.id));
+
+  if (pool.length === 0) {
+    pool = residents.filter(r => !usedToday.has(r.id));
+  }
 
   if (pool.length === 0) {
     pool = residents;
   }
 
-  const lowestCount = Math.min(...pool.map(resident => assignmentCounts.get(resident.id) || 0));
-  const fairestPool = pool.filter(resident => (assignmentCounts.get(resident.id) || 0) === lowestCount);
+  const lowest = Math.min(...pool.map(r => counts.get(r.id) || 0));
+  const fairest = pool.filter(r => (counts.get(r.id) || 0) === lowest);
 
-  return fairestPool[Math.floor(Math.random() * fairestPool.length)];
+  return fairest[Math.floor(Math.random() * fairest.length)];
 }
 
 function clearMealAssignments() {
-  const confirmed = confirm("Clear the weekly meal schedule?");
-  if (!confirmed) return;
+  if (!confirm("Clear the weekly meal schedule?")) return;
 
   state.mealSchedule = defaultMealSchedule();
   saveAppState(state);
@@ -143,7 +140,11 @@ function render() {
   const mealSchedule = getMealSchedule();
 
   body.innerHTML = DAYS.map(day => {
-    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+    const row = mealSchedule.weekSchedule[day] || {
+      lunch: "",
+      supper1: "",
+      supper2: ""
+    };
 
     return `
       <tr>
@@ -160,19 +161,24 @@ function printMealSchedule() {
   const mealSchedule = getMealSchedule();
 
   const rows = DAYS.map(day => {
-    const row = mealSchedule.weekSchedule[day] || { lunch: "", supper1: "", supper2: "" };
+    const row = mealSchedule.weekSchedule[day] || {
+      lunch: "",
+      supper1: "",
+      supper2: ""
+    };
 
     return `
       <tr>
         <td>${escapeHtml(day)}</td>
-        <td>${escapeHtml(getResidentName(row.lunch) || "")}</td>
-        <td>${escapeHtml(getResidentName(row.supper1) || "")}</td>
-        <td>${escapeHtml(getResidentName(row.supper2) || "")}</td>
+        <td>${escapeHtml(getResidentName(row.lunch))}</td>
+        <td>${escapeHtml(getResidentName(row.supper1))}</td>
+        <td>${escapeHtml(getResidentName(row.supper2))}</td>
       </tr>
     `;
   }).join("");
 
   const printWindow = window.open("", "_blank");
+
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
@@ -207,6 +213,7 @@ function printMealSchedule() {
     </body>
     </html>
   `);
+
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -222,14 +229,14 @@ function escapeHtml(value) {
   }[char]));
 }
 
-document.getElementById("clearMealBtn").addEventListener("click", clearMealAssignments);
-document.getElementById("saveMealBtn").addEventListener("click", () => {
+document.getElementById("clearMealBtn")?.addEventListener("click", clearMealAssignments);
+document.getElementById("saveMealBtn")?.addEventListener("click", () => {
   saveAppState(state);
   alert("Meal schedule saved.");
 });
-document.getElementById("generateMealBtn").addEventListener("click", generateMealWeek);
-document.getElementById("randomMealBtn").addEventListener("click", randomMealWeek);
-document.getElementById("printMealBtn").addEventListener("click", printMealSchedule);
+document.getElementById("generateMealBtn")?.addEventListener("click", generateMealWeek);
+document.getElementById("randomMealBtn")?.addEventListener("click", randomMealWeek);
+document.getElementById("printMealBtn")?.addEventListener("click", printMealSchedule);
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
