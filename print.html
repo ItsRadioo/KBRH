@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resident Cleaning Schedule</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="auth.js"></script>
+  <script>requireLogin();</script>
+</head>
+<body>
+  <header class="no-print">
+    <div>
+      <h1>Resident Cleaning Schedule</h1>
+      <p>Generates into the standard cleaning schedule order.</p>
+    </div>
+    <nav>
+      <a href="index.html">House Chores</a>
+      <a href="meal-chores.html">Meal Chores</a>
+      <a class="active" href="print.html">Print Sheet</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main class="print-main">
+    <section class="cleaning-template">
+      <div class="template-top">
+        <h1>RESIDENT CLEANING SCHEDULE</h1>
+        <div class="date-row">
+          <div class="no-print">
+            <label>TEMPLATE SEASON</label>
+            <select id="seasonSelect"><option value="Spring+Summer">Spring + Summer</option><option value="Fall+Winter">Fall + Winter</option></select>
+          </div>
+          <div>
+            <label>START DATE</label>
+            <input id="startDate" type="date" class="no-print-input" />
+            <span id="startDatePrint" class="print-only"></span>
+          </div>
+          <div>
+            <label>END DATE</label>
+            <input id="endDate" type="date" class="no-print-input" />
+            <span id="endDatePrint" class="print-only"></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="template-instruction">CLEANING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.</p>
+      <p class="template-instruction">ASSIGNED CHORES TO BE COMPLETED BY 4:00 PM ON THE DAY ASSIGNED.</p>
+
+      <table class="template-chore-table">
+        <thead>
+          <tr>
+            <th>CHORE</th>
+            <th>ASSIGNED RESIDENT</th>
+          </tr>
+        </thead>
+        <tbody id="templateChoreBody"></tbody>
+      </table>
+
+      <div class="template-note">
+        <strong>PLEASE NOTE:</strong>
+        <ul>
+          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete chores and not interfere with Lunch / Dinner Preparation or Setup.</li>
+          <li>Assigned Chores vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="button-row no-print">
+      <button onclick="window.print()">Print Cleaning Schedule</button>
+      <button id="downloadFilledTemplateBtn" type="button">Download Filled Excel Template</button>
+      <a class="button-link" href="index.html">Back to Chores</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="template-export.js"></script>
+  <script src="print.js"></script>
+</body>
+</html>

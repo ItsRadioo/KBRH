@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Login | Resident Chore Rotator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-body">
+  <main class="login-wrap">
+    <section class="card login-card">
+      <h1>Staff Login</h1>
+      <p class="hint">Enter the staff password to access the chore tracker.</p>
+
+      <label for="password">Staff Password</label>
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+
+      <button id="loginBtn" type="button">Login</button>
+      <p id="errorMessage" class="error"></p>
+    </section>
+  </main>
+
+  <script>
+    const AUTH_KEY = "residentChoreRotator.staffLoggedIn";
+    const STAFF_PASSWORD = "KBRH2026";
+
+    if (sessionStorage.getItem(AUTH_KEY) === "true") {
+      window.location.href = "index.html";
+    }
+
+    function handleLogin() {
+      const password = document.getElementById("password").value.trim();
+      const error = document.getElementById("errorMessage");
+
+      error.textContent = "";
+
+      if (password === STAFF_PASSWORD) {
+        sessionStorage.setItem(AUTH_KEY, "true");
+        window.location.href = "index.html";
+      } else {
+        error.textContent = "Incorrect password.";
+      }
+    }
+
+    document.getElementById("loginBtn").onclick = handleLogin;
+    document.getElementById("password").addEventListener("keyup", event => {
+      if (event.key === "Enter") handleLogin();
+    });
+  </script>
+</body>
+</html>

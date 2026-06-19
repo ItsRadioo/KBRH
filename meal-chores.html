@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meal Chores</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="auth.js"></script>
+  <script>requireLogin();</script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Meal Chores</h1>
+      <p>Daily meal-duty rotation. Supper has two assigned residents.</p>
+    </div>
+    <nav>
+      <a href="index.html">House Chores</a>
+      <a class="active" href="meal-chores.html">Meal Chores</a>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card wide">
+      <h2>Meal Chore Assignments</h2>
+      <p class="hint">Residents marked away or archived on the House Chores page are omitted from meal rotation.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Meal Duty</th>
+              <th>Assigned Resident(s)</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="mealBody"></tbody>
+        </table>
+      </div>
+      <div class="button-row">
+        <button id="saveMealBtn">Save Meal Chores</button>
+        
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Meal Rotation</h2>
+      <p class="hint">No breakfast. No dishes. Lunch has one resident and supper has two residents.</p>
+      <div class="button-row">
+        <button id="rotateMealBtn">Rotate Meal Duties</button>
+        <button id="clearMealBtn" class="secondary">Clear Meal Assignments</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="meal-chores.js"></script>
+</body>
+</html>
