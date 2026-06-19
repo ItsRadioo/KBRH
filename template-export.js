@@ -185,6 +185,18 @@ async function downloadFilledExcelTemplate() {
   updateTemplateHeader(sheet);
   applyAssignmentsToTemplate(sheet, state);
 
+  // Force Column B to be left aligned
+for (let row = 1; row <= sheet.rowCount; row++) {
+  const cell = sheet.getCell(`B${row}`);
+
+  cell.alignment = {
+    ...cell.alignment,
+    wrapText: true,
+    vertical: "middle",
+    horizontal: "left"
+  };
+}
+  
   const buffer = await workbook.xlsx.writeBuffer();
 
   const blob = new Blob([buffer], {
