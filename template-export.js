@@ -69,18 +69,23 @@ function buildAssignmentMap(state) {
 
 function setCellPreserveStyle(sheet, address, value) {
   const cell = sheet.getCell(address);
+  const columnLetter = address.replace(/[0-9]/g, "");
+
   cell.value = value;
+
   cell.alignment = {
     ...cell.alignment,
     wrapText: true,
     vertical: "middle",
-    horizontal: "center"
+    horizontal: columnLetter === "B" ? "left" : "center"
   };
 }
 
 function formatExcelDateLabel(value) {
   if (!value) return "";
+
   const date = new Date(value + "T00:00:00");
+
   return date.toLocaleDateString("en-CA", {
     weekday: "short",
     month: "short",
@@ -98,6 +103,7 @@ function updateTemplateHeader(sheet) {
   if (!start && !end) return;
 
   const dateLine = `${formatExcelDateLabel(start)} - ${formatExcelDateLabel(end)}`;
+
   const header =
     `Weekly Chore Schedule\n${dateLine}\n` +
     `Morning chores must be completed by 8:30 AM on Weekdays -11 AM on Weekends + Holidays\n` +
@@ -145,7 +151,7 @@ function applyAssignmentsToTemplate(sheet, state) {
     ...outsideCell.alignment,
     wrapText: true,
     vertical: "middle",
-    horizontal: "center"
+    horizontal: "left"
   };
 }
 
@@ -158,16 +164,19 @@ async function downloadFilledExcelTemplate() {
   const state = await loadTemplateState();
 
   const response = await fetch(TEMPLATE_FILE);
+
   if (!response.ok) {
     alert("Could not find Resident_Chore_Schedule.xlsx. Make sure it is uploaded to the same folder as index.html.");
     return;
   }
 
   const arrayBuffer = await response.arrayBuffer();
+
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
 
   const sheetName = document.getElementById("seasonSelect")?.value || "Spring+Summer";
+
   const sheet =
     workbook.getWorksheet(sheetName) ||
     workbook.getWorksheet("Spring+Summer") ||
@@ -177,6 +186,7 @@ async function downloadFilledExcelTemplate() {
   applyAssignmentsToTemplate(sheet, state);
 
   const buffer = await workbook.xlsx.writeBuffer();
+
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   });
@@ -184,14 +194,17 @@ async function downloadFilledExcelTemplate() {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "Filled_Resident_Chore_Schedule.xlsx";
+
   document.body.appendChild(link);
   link.click();
   link.remove();
+
   URL.revokeObjectURL(link.href);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("downloadFilledTemplateBtn");
+
   if (btn) {
     btn.addEventListener("click", downloadFilledExcelTemplate);
   }
