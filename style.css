@@ -221,8 +221,6 @@ th {
   display: none;
 }
 
-/* LOGIN PAGE */
-
 .login-body {
   min-height: 100vh;
   display: grid;
@@ -259,8 +257,6 @@ th {
 .small {
   font-size: 13px;
 }
-
-/* CLEANING PRINT TEMPLATE */
 
 .print-main {
   display: block;
@@ -351,8 +347,6 @@ th {
   line-height: 1.35;
 }
 
-/* MEAL CHORE EDIT TABLE */
-
 .meal-week-table th,
 .meal-week-table td {
   vertical-align: middle;
@@ -362,8 +356,6 @@ th {
   width: 18%;
   background: #f9fafb;
 }
-
-/* DISH SCHEDULE PRINT PAGE */
 
 .dish-print-main {
   display: flex;
@@ -455,8 +447,6 @@ th {
   height: 28px;
 }
 
-/* RESPONSIVE */
-
 @media (max-width: 760px) {
   header {
     flex-direction: column;
@@ -471,8 +461,6 @@ th {
     flex-direction: column;
   }
 }
-
-/* PRINT RULES */
 
 @media print {
   body {

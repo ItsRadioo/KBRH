@@ -63,10 +63,7 @@ function buildAssignmentMap(state) {
       const chore = getChoreNameFromState(state, resident.choreIndex);
       if (!chore) return;
 
-      if (!assignments.has(chore)) {
-        assignments.set(chore, []);
-      }
-
+      if (!assignments.has(chore)) assignments.set(chore, []);
       assignments.get(chore).push(resident.name);
     });
 
@@ -87,6 +84,25 @@ function setCellPreserveStyle(sheet, address, value) {
   };
 }
 
+function forceColumnBLeft(sheet) {
+  for (let row = 1; row <= Math.max(sheet.rowCount, 20); row++) {
+    const cell = sheet.getCell(`B${row}`);
+    cell.alignment = {
+      ...cell.alignment,
+      wrapText: true,
+      vertical: "middle",
+      horizontal: "left"
+    };
+  }
+}
+
+function addDaysToDateString(value, days) {
+  if (!value) return "";
+  const date = new Date(value + "T00:00:00");
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function formatExcelDateLabel(value) {
   if (!value) return "";
 
@@ -101,12 +117,10 @@ function formatExcelDateLabel(value) {
 
 function updateTemplateHeader(sheet) {
   const startInput = document.getElementById("startDate");
-  const endInput = document.getElementById("endDate");
-
   const start = startInput ? startInput.value : "";
-  const end = endInput ? endInput.value : "";
+  const end = addDaysToDateString(start, 7);
 
-  if (!start && !end) return;
+  if (!start) return;
 
   const dateLine = `${formatExcelDateLabel(start)} - ${formatExcelDateLabel(end)}`;
 
@@ -140,7 +154,7 @@ function applyAssignmentsToTemplate(sheet, state) {
 
   outsideCell.value =
     outsideNames.length
-      ? `( ${outsideNames.map(name => name.toUpperCase()).join("  +  ")} )\n\n` +
+      ? `( ${outsideNames.map(name => name.toUpperCase()).join("\n")} )\n\n` +
         `Mow Lawn: Front, Back, Side of the home\n` +
         `Sweep: Front Porch, Ramp, Back Steps, Fire Escape, Smoking Section\n` +
         `Rake: Front Lawn, Back Yard\n\n` +
@@ -159,6 +173,8 @@ function applyAssignmentsToTemplate(sheet, state) {
     vertical: "middle",
     horizontal: "left"
   };
+
+  forceColumnBLeft(sheet);
 }
 
 async function downloadFilledExcelTemplate() {
@@ -181,27 +197,10 @@ async function downloadFilledExcelTemplate() {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
 
-  const sheetName =
-    document.getElementById("seasonSelect")?.value || "Spring+Summer";
-
-  const sheet =
-    workbook.getWorksheet(sheetName) ||
-    workbook.getWorksheet("Spring+Summer") ||
-    workbook.worksheets[0];
-
-  updateTemplateHeader(sheet);
-  applyAssignmentsToTemplate(sheet, state);
-
-  for (let row = 1; row <= sheet.rowCount; row++) {
-    const cell = sheet.getCell(`B${row}`);
-
-    cell.alignment = {
-      ...cell.alignment,
-      wrapText: true,
-      vertical: "middle",
-      horizontal: "left"
-    };
-  }
+  workbook.worksheets.forEach(sheet => {
+    updateTemplateHeader(sheet);
+    applyAssignmentsToTemplate(sheet, state);
+  });
 
   const buffer = await workbook.xlsx.writeBuffer();
 

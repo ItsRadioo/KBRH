@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meal Chores</title>
   <link rel="stylesheet" href="style.css" />
-
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -14,18 +13,16 @@
   <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
-
 <body>
   <header>
     <div>
       <h1>Meal Chores</h1>
-      <p>Weekly meal schedule. Lunch has one resident; supper has two residents.</p>
+      <p>Generate a weekly meal schedule. Lunch has one resident; supper has two residents.</p>
     </div>
-
     <nav>
       <a href="index.html">House Chores</a>
       <a class="active" href="meal-chores.html">Meal Chores</a>
-      <a href="meal-print.html">Meal Print</a>
+      <a href="print.html">Print Sheet</a>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </nav>
   </header>
@@ -33,7 +30,7 @@
   <main>
     <section class="card wide">
       <h2>Weekly Meal Schedule</h2>
-      <p class="hint">Away and archived residents are omitted.</p>
+      <p class="hint">Click Generate Meal Week to fill Monday–Sunday using the active resident list. Away and archived residents are omitted.</p>
 
       <div class="button-row">
         <button id="generateMealBtn" type="button">Generate Meal Week</button>
@@ -41,6 +38,7 @@
         <button id="saveMealBtn" type="button">Save Meal Schedule</button>
         <button id="clearMealBtn" type="button" class="secondary">Clear Meal Schedule</button>
         <button id="printMealBtn" type="button" class="secondary">Print Simple Table</button>
+        <a class="button-link" href="meal-print.html">Open Printable Meal Template</a>
       </div>
 
       <div class="table-wrap">

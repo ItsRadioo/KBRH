@@ -1,48 +1,81 @@
-const STORAGE_KEY = "residentChoreRotator.github.v1";
-const STANDARD_CHORES = ['Bathroom', 'Upper floors', 'Main Floor (morning)', 'Main Floor (Night)', 'Basement', 'Outside Yardwork', 'Morning dishes', 'Resident Fridge', 'General Disinfecting', 'Special Projects'];
+const PRINT_STANDARD_CHORES = [
+  "Bathroom",
+  "Upper floors",
+  "Main Floor (morning)",
+  "Main Floor (Night)",
+  "Basement",
+  "Outside Yardwork",
+  "Morning dishes",
+  "Resident Fridge",
+  "General Disinfecting",
+  "Special Projects"
+];
 
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return { residents: [], chores: STANDARD_CHORES };
+let printState = defaultAppState();
 
-  try {
-    return JSON.parse(saved);
-  } catch {
-    return { residents: [], chores: STANDARD_CHORES };
-  }
+function addDaysToDateString(value, days) {
+  if (!value) return "";
+  const date = new Date(value + "T00:00:00");
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
-function getChoreName(state, index) {
-  const chores = state.chores && state.chores.length ? state.chores : STANDARD_CHORES;
-  if (index < 0) return "No chore";
-  const normalized = ((index % chores.length) + chores.length) % chores.length;
+function getPrintChoreName(state, index) {
+  const chores = state.chores && state.chores.length ? state.chores : PRINT_STANDARD_CHORES;
+  const numericIndex = Number(index);
+  if (!chores.length || Number.isNaN(numericIndex) || numericIndex < 0) return "";
+  const normalized = ((numericIndex % chores.length) + chores.length) % chores.length;
   return chores[normalized];
 }
 
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(value + "T00:00:00");
-  return date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-CA", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function updatePrintedDates() {
+  const startInput = document.getElementById("startDate");
+  const endInput = document.getElementById("endDate");
+
+  if (!startInput || !endInput) return;
+
+  if (startInput.value) {
+    endInput.value = addDaysToDateString(startInput.value, 7);
+  } else {
+    endInput.value = "";
+  }
+
+  document.getElementById("startDatePrint").textContent = formatDate(startInput.value);
+  document.getElementById("endDatePrint").textContent = formatDate(endInput.value);
 }
 
 function renderPrintSheet() {
-  const state = loadState();
-  const residents = (state.residents || []).filter(resident => resident.status === "active");
-
+  const residents = (printState.residents || []).filter(resident => resident.status === "active");
   const assignments = new Map();
 
   residents.forEach(resident => {
-    const choreName = getChoreName(state, resident.choreIndex);
+    const choreName = getPrintChoreName(printState, resident.choreIndex);
+    if (!choreName) return;
+
     if (!assignments.has(choreName)) assignments.set(choreName, []);
     assignments.get(choreName).push(resident.name);
   });
 
-  document.getElementById("templateChoreBody").innerHTML = STANDARD_CHORES.map(chore => {
+  const body = document.getElementById("templateChoreBody");
+  if (!body) return;
+
+  body.innerHTML = PRINT_STANDARD_CHORES.map(chore => {
     const names = assignments.get(chore) || [];
     return `
       <tr>
         <td>${escapeHtml(chore)}</td>
-        <td>${names.length ? escapeHtml(names.join(", ")) : "&nbsp;"}</td>
+        <td>${names.length ? escapeHtml(names.join(", ")) : "N/A"}</td>
       </tr>
     `;
   }).join("");
@@ -50,16 +83,8 @@ function renderPrintSheet() {
   updatePrintedDates();
 }
 
-function updatePrintedDates() {
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
-
-  document.getElementById("startDatePrint").textContent = formatDate(start);
-  document.getElementById("endDatePrint").textContent = formatDate(end);
-}
-
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
+  return String(value || "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -68,7 +93,15 @@ function escapeHtml(value) {
   }[char]));
 }
 
-document.getElementById("startDate").addEventListener("change", updatePrintedDates);
-document.getElementById("endDate").addEventListener("change", updatePrintedDates);
+document.getElementById("startDate")?.addEventListener("change", () => {
+  updatePrintedDates();
+});
 
-renderPrintSheet();
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  listenToAppState(nextState => {
+    printState = nextState;
+    renderPrintSheet();
+  });
+});
