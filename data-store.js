@@ -20,6 +20,7 @@ function defaultAppState() {
     chores: STANDARD_CHORES,
     history: [],
     mealSchedule: defaultMealSchedule(),
+    waitlist: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -58,6 +59,19 @@ function normalizeAppState(state) {
   merged.history = Array.isArray(merged.history) ? merged.history : [];
   merged.mealSchedule = normalizeMealSchedule(merged.mealSchedule);
 
+  merged.waitlist = Array.isArray(merged.waitlist)
+  ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
+      id: item.id || crypto.randomUUID(),
+      lastName: item.lastName || "",
+      firstName: item.firstName || "",
+      contact: item.contact || "",
+      status: item.status || "",
+      city: item.city || "",
+      dateApplied: item.dateApplied || "",
+      notes: item.notes || "",
+      callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
+    }))
+  : [];
   return merged;
 }
 
