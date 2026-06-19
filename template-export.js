@@ -27,24 +27,15 @@ const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
 
 async function loadTemplateState() {
   if (typeof loadAppState === "function") {
-    const onlineState = await loadAppState();
-    console.log("Loaded Firestore export state:", onlineState);
-    return onlineState;
+    return await loadAppState();
   }
 
   const saved = localStorage.getItem(STORAGE_KEY_FOR_TEMPLATE);
-
-  if (!saved) {
-    console.warn("No local chore data found.");
-    return { residents: [], chores: [] };
-  }
+  if (!saved) return { residents: [], chores: [] };
 
   try {
-    const localState = JSON.parse(saved);
-    console.log("Loaded local export state:", localState);
-    return localState;
+    return JSON.parse(saved);
   } catch {
-    console.warn("Could not parse local chore data.");
     return { residents: [], chores: [] };
   }
 }
@@ -56,30 +47,28 @@ function normalizeIndex(index, length) {
 
 function getChoreNameFromState(state, choreIndex) {
   const chores = state.chores || [];
-  if (!chores.length || choreIndex < 0) return "";
-  return chores[normalizeIndex(choreIndex, chores.length)];
+  const index = Number(choreIndex);
+
+  if (!chores.length || Number.isNaN(index) || index < 0) return "";
+
+  return chores[normalizeIndex(index, chores.length)];
 }
 
 function buildAssignmentMap(state) {
   const assignments = new Map();
 
-  console.log("Residents available for export:", state.residents);
-  console.log("Chores available for export:", state.chores);
-
   (state.residents || [])
     .filter(resident => resident.status === "active")
     .forEach(resident => {
       const chore = getChoreNameFromState(state, resident.choreIndex);
-
-      console.log("Exporting resident:", resident.name, "Index:", resident.choreIndex, "Chore:", chore);
-
       if (!chore) return;
 
-      if (!assignments.has(chore)) assignments.set(chore, []);
+      if (!assignments.has(chore)) {
+        assignments.set(chore, []);
+      }
+
       assignments.get(chore).push(resident.name);
     });
-
-  console.log("Final Excel assignment map:", Object.fromEntries(assignments));
 
   return assignments;
 }
@@ -171,8 +160,8 @@ function applyAssignmentsToTemplate(sheet, state) {
     horizontal: "left"
   };
 }
+
 async function downloadFilledExcelTemplate() {
-  alert("Excel exporter is running");
   if (!window.ExcelJS) {
     alert("Excel export library did not load. Check your internet connection and try again.");
     return;
@@ -192,23 +181,28 @@ async function downloadFilledExcelTemplate() {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
 
- const sheet = workbook.worksheets[0];
+  const sheetName =
+    document.getElementById("seasonSelect")?.value || "Spring+Summer";
+
+  const sheet =
+    workbook.getWorksheet(sheetName) ||
+    workbook.getWorksheet("Spring+Summer") ||
+    workbook.worksheets[0];
 
   updateTemplateHeader(sheet);
   applyAssignmentsToTemplate(sheet, state);
 
-  // Force Column B to be left aligned
-for (let row = 1; row <= sheet.rowCount; row++) {
-  const cell = sheet.getCell(`B${row}`);
+  for (let row = 1; row <= sheet.rowCount; row++) {
+    const cell = sheet.getCell(`B${row}`);
 
-  cell.alignment = {
-    ...cell.alignment,
-    wrapText: true,
-    vertical: "middle",
-    horizontal: "left"
-  };
-}
-  
+    cell.alignment = {
+      ...cell.alignment,
+      wrapText: true,
+      vertical: "middle",
+      horizontal: "left"
+    };
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
 
   const blob = new Blob([buffer], {
