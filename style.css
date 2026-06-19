@@ -37,7 +37,8 @@ nav a.active {
   background: #2563eb;
 }
 
-h1, h2 {
+h1,
+h2 {
   margin: 0 0 8px;
 }
 
@@ -58,7 +59,7 @@ main {
   background: white;
   border-radius: 12px;
   padding: 18px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
 }
 
 .wide {
@@ -73,7 +74,8 @@ main {
   flex-wrap: wrap;
 }
 
-input, select {
+input,
+select {
   flex: 1;
   min-width: 180px;
   padding: 11px;
@@ -138,7 +140,8 @@ table {
   margin-top: 12px;
 }
 
-th, td {
+th,
+td {
   padding: 12px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
@@ -218,9 +221,7 @@ th {
   display: none;
 }
 
-/* =========================
-   LOGIN PAGE
-   ========================= */
+/* LOGIN PAGE */
 
 .login-body {
   min-height: 100vh;
@@ -259,9 +260,7 @@ th {
   font-size: 13px;
 }
 
-/* =========================
-   CLEANING PRINT TEMPLATE
-   ========================= */
+/* CLEANING PRINT TEMPLATE */
 
 .print-main {
   display: block;
@@ -272,7 +271,7 @@ th {
   background: white;
   padding: 32px;
   border: 3px solid #111827;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
 }
 
 .template-top {
@@ -352,9 +351,7 @@ th {
   line-height: 1.35;
 }
 
-/* =========================
-   MEAL CHORE EDIT TABLE
-   ========================= */
+/* MEAL CHORE EDIT TABLE */
 
 .meal-week-table th,
 .meal-week-table td {
@@ -366,9 +363,7 @@ th {
   background: #f9fafb;
 }
 
-/* =========================
-   DISH SCHEDULE PRINT PAGE
-   ========================= */
+/* DISH SCHEDULE PRINT PAGE */
 
 .dish-print-main {
   display: flex;
@@ -388,74 +383,79 @@ th {
 }
 
 .dish-print-template {
-  background: #2d2d2d;
-  color: white;
-  width: 360px;
-  padding: 18px;
+  background: white;
+  color: black;
+  width: 700px;
+  margin: 0 auto;
+  padding: 20px;
   font-family: Arial, Helvetica, sans-serif;
 }
 
 .dish-print-template h1 {
   text-align: center;
   text-decoration: underline;
-  font-size: 18px;
-  margin: 0 0 4px;
+  font-size: 28px;
+  margin: 0;
+  color: black;
 }
 
 .dish-print-template h2 {
   text-align: center;
-  font-size: 11px;
-  margin: 0 0 18px;
-  font-weight: 800;
+  font-size: 16px;
+  margin: 8px 0 18px;
+  font-weight: 700;
+  color: black;
 }
 
 .meal-note {
-  text-align: left;
-  font-size: 11px;
-  margin-bottom: 14px;
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 18px;
+  color: black;
 }
 
 .dish-day-block {
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 
 .dish-day-block h3 {
   text-decoration: underline;
-  font-size: 16px;
-  margin: 0 0 5px;
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: black;
 }
 
 .dish-day-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
   margin-top: 0;
 }
 
 .dish-day-table th,
 .dish-day-table td {
-  border: 1px solid white;
-  padding: 2px 8px;
-  color: white;
+  border: 1px solid black;
+  padding: 6px 10px;
 }
 
 .dish-day-table th {
-  width: 90px;
+  width: 110px;
   text-align: left;
-  font-weight: 800;
+  font-weight: 700;
+  background: white;
+  color: black;
 }
 
 .dish-day-table td {
+  background: white;
+  color: black;
   text-transform: uppercase;
 }
 
 .dish-day-table tr {
-  height: 18px;
+  height: 28px;
 }
 
-/* =========================
-   RESPONSIVE
-   ========================= */
+/* RESPONSIVE */
 
 @media (max-width: 760px) {
   header {
@@ -472,9 +472,7 @@ th {
   }
 }
 
-/* =========================
-   PRINT RULES
-   ========================= */
+/* PRINT RULES */
 
 @media print {
   body {
@@ -523,26 +521,27 @@ th {
   }
 
   .dish-print-template {
-    width: 360px;
-    margin: 0 auto;
-    padding: 12px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     box-shadow: none;
-    background: #2d2d2d !important;
-    color: white !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+    border: none;
+    background: white !important;
+    color: black !important;
   }
 
   .dish-print-template h1,
   .dish-print-template h2,
   .dish-day-block h3,
   .meal-note {
-    color: white !important;
+    color: black !important;
   }
 
   .dish-day-table th,
   .dish-day-table td {
-    border: 1px solid white !important;
-    color: white !important;
+    border: 1px solid black !important;
+    color: black !important;
+    background: white !important;
   }
 }
