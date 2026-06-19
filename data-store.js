@@ -47,7 +47,7 @@ function normalizeAppState(state) {
     ? merged.residents.map((resident, index) => ({
         id: resident.id || crypto.randomUUID(),
         name: resident.name || `Resident ${index + 1}`,
-        choreIndex: Number.isInteger(resident.choreIndex) ? resident.choreIndex : 0,
+        choreIndex: Number.isInteger(Number(resident.choreIndex)) ? Number(resident.choreIndex) : 0,
         exceptions: Array.isArray(resident.exceptions) ? resident.exceptions : [],
         lockedChore: resident.lockedChore || "",
         status: resident.status || "active",
