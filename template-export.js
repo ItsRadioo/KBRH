@@ -153,8 +153,9 @@ function applyAssignmentsToTemplate(sheet, state) {
   const outsideCell = sheet.getCell("B8");
 
   outsideCell.value =
-    outsideNames.length
-      ? `( ${outsideNames.map(name => name.toUpperCase()).join("\n")} )\n\n` +
+    outsideCell.value =
+  outsideNames.length
+    ? `( ${outsideNames.map(name => name.toUpperCase()).join(" + ")} )\n\n` +
         `Mow Lawn: Front, Back, Side of the home\n` +
         `Sweep: Front Porch, Ramp, Back Steps, Fire Escape, Smoking Section\n` +
         `Rake: Front Lawn, Back Yard\n\n` +
