@@ -1,5 +1,5 @@
 const AUTH_KEY = "residentChoreRotator.staffLoggedIn";
-const PASSWORD_HASH = "c62e4615bd39e222c5ed4cb3066e3dbebec559f43b48e16d6b30c95535ce97b4";
+const PASSWORD_HASH = "KBRH2026";
 // Default password: changeme
 
 async function sha256(text) {
