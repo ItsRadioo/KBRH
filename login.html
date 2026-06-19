@@ -19,7 +19,7 @@
       <p id="errorMessage" class="error"></p>
 
       <p class="hint small">
-        Default password is <strong>changeme</strong>. Change this before entering real resident information.
+        Staff password is managed in <strong>auth.js</strong>.
       </p>
     </section>
   </main>
@@ -30,7 +30,7 @@
       window.location.href = "index.html";
     }
 
-    async function handleLogin() {
+    function handleLogin() {
       const password = document.getElementById("password").value;
       const error = document.getElementById("errorMessage");
 
@@ -41,9 +41,7 @@
         return;
       }
 
-      const hash = await sha256(password);
-
-      if (hash === PASSWORD_HASH) {
+      if (password === PASSWORD_HASH) {
         sessionStorage.setItem(AUTH_KEY, "true");
         window.location.href = "index.html";
       } else {
