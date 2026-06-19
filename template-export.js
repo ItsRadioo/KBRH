@@ -175,12 +175,7 @@ async function downloadFilledExcelTemplate() {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
 
-  const sheetName = document.getElementById("seasonSelect")?.value || "Spring+Summer";
-
-  const sheet =
-    workbook.getWorksheet(sheetName) ||
-    workbook.getWorksheet("Spring+Summer") ||
-    workbook.worksheets[0];
+ const sheet = workbook.worksheets[0];
 
   updateTemplateHeader(sheet);
   applyAssignmentsToTemplate(sheet, state);
