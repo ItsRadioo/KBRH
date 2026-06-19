@@ -10,7 +10,7 @@ const CHORE_CELL_MAP = {
   "Morning dishes": "A9",
   "Resident Fridge": "A10",
   "General Disinfecting": "A11",
-  "Special Projects": "B12"
+  "Special Projects": "A12"
 };
 
 const STANDARD_CHORE_LABELS_IN_TEMPLATE = {
