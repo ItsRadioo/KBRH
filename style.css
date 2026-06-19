@@ -23,7 +23,18 @@ nav {
   gap: 8px;
   flex-wrap: wrap;
 }
+.page-nav-label {
+  font-weight: 700;
+  align-self: center;
+}
 
+.page-select {
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 0;
+  font-weight: 700;
+}
 nav a {
   color: white;
   text-decoration: none;
