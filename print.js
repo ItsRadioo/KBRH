@@ -46,7 +46,7 @@ function updatePrintedDates() {
   if (!startInput || !endInput) return;
 
   if (startInput.value) {
-    endInput.value = addDaysToDateString(startInput.value, 7);
+    endInput.value = addDaysToDateString(startInput.value, 6);
   } else {
     endInput.value = "";
   }
