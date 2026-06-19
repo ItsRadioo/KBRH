@@ -15,36 +15,42 @@
       <label for="password">Staff Password</label>
       <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
 
-      <button id="loginBtn">Login</button>
+      <button id="loginBtn" type="button">Login</button>
       <p id="errorMessage" class="error"></p>
     </section>
   </main>
 
-  <script src="auth.js"></script>
-<script src="auth.js"></script>
-<script>
-  if (isLoggedIn()) {
-    window.location.href = "index.html";
-  }
+  <script>
+    const AUTH_KEY = "residentChoreRotator.staffLoggedIn";
+    const STAFF_PASSWORD = "KBRH2026";
 
-  function handleLogin() {
-    const password = document.getElementById("password").value.trim();
-    const error = document.getElementById("errorMessage");
-
-    error.textContent = "";
-
-    if (password === STAFF_PASSWORD) {
-      sessionStorage.setItem(AUTH_KEY, "true");
+    if (sessionStorage.getItem(AUTH_KEY) === "true") {
       window.location.href = "index.html";
-    } else {
+    }
+
+    function handleLogin() {
+      const passwordInput = document.getElementById("password");
+      const error = document.getElementById("errorMessage");
+      const password = passwordInput.value.trim();
+
+      error.textContent = "";
+
+      if (password === STAFF_PASSWORD) {
+        sessionStorage.setItem(AUTH_KEY, "true");
+        window.location.href = "index.html";
+        return;
+      }
+
       error.textContent = "Incorrect password.";
     }
-  }
 
-  document.getElementById("loginBtn").addEventListener("click", handleLogin);
-  document.getElementById("password").addEventListener("keydown", event => {
-    if (event.key === "Enter") handleLogin();
-  });
-</script>
+    document.getElementById("loginBtn").onclick = handleLogin;
+
+    document.getElementById("password").addEventListener("keyup", function(event) {
+      if (event.key === "Enter") {
+        handleLogin();
+      }
+    });
+  </script>
 </body>
 </html>
