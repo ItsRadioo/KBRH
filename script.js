@@ -1,8 +1,82 @@
 let state = defaultAppState();
 let unsubscribeApp = null;
+let isSavingSync = false;
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function ensureStandardChoresExist() {
+  let changed = false;
+
+  if (!Array.isArray(state.chores) || state.chores.length === 0) {
+    state.chores = [...STANDARD_CHORES];
+    return true;
+  }
+
+  STANDARD_CHORES.forEach(chore => {
+    if (!state.chores.includes(chore)) {
+      state.chores.push(chore);
+      changed = true;
+    }
+  });
+
+  return changed;
+}
+
+function syncResidentsFromRoster() {
+  const existingResidents = Array.isArray(state.residents) ? state.residents : [];
+  const roster = Array.isArray(state.roster)
+    ? state.roster.filter(client => client && client !== "temp")
+    : [];
+
+  const phaseOneClients = roster.filter(client => (client.phase || "phase1") === "phase1");
+
+  const syncedResidents = phaseOneClients.map((client, index) => {
+    const fullName = `${client.firstName || ""} ${client.lastName || ""}`.trim();
+
+    const existing = existingResidents.find(resident =>
+      resident.rosterClientId === client.id ||
+      resident.name?.toLowerCase() === fullName.toLowerCase()
+    );
+
+    return {
+      id: existing?.id || crypto.randomUUID(),
+      rosterClientId: client.id,
+      name: fullName || `Resident ${index + 1}`,
+      choreIndex: Number.isInteger(Number(existing?.choreIndex))
+        ? Number(existing.choreIndex)
+        : index,
+      exceptions: Array.isArray(existing?.exceptions) ? existing.exceptions : [],
+      lockedChore: existing?.lockedChore || "",
+      status: existing?.status || "active",
+      awayUntil: existing?.awayUntil || ""
+    };
+  });
+
+  const before = JSON.stringify(existingResidents.map(r => ({
+    rosterClientId: r.rosterClientId || "",
+    name: r.name,
+    choreIndex: r.choreIndex,
+    exceptions: r.exceptions,
+    lockedChore: r.lockedChore,
+    status: r.status,
+    awayUntil: r.awayUntil
+  })));
+
+  const after = JSON.stringify(syncedResidents.map(r => ({
+    rosterClientId: r.rosterClientId || "",
+    name: r.name,
+    choreIndex: r.choreIndex,
+    exceptions: r.exceptions,
+    lockedChore: r.lockedChore,
+    status: r.status,
+    awayUntil: r.awayUntil
+  })));
+
+  state.residents = syncedResidents;
+
+  return before !== after;
 }
 
 function autoReturnAwayResidents() {
@@ -14,27 +88,28 @@ function autoReturnAwayResidents() {
       changed = true;
       return { ...resident, status: "active", awayUntil: "" };
     }
+
     return resident;
   });
 
-  if (changed) saveAppState(state);
+  return changed;
 }
 
 function activeResidents() {
-  return state.residents.filter(resident => resident.status === "active");
+  return (state.residents || []).filter(resident => resident.status === "active");
 }
 
 function archivedResidents() {
-  return state.residents.filter(resident => resident.status === "archived");
+  return (state.residents || []).filter(resident => resident.status === "archived");
 }
 
 function normalizeChoreIndex(index) {
-  if (state.chores.length === 0) return -1;
+  if (!state.chores.length) return -1;
   return ((index % state.chores.length) + state.chores.length) % state.chores.length;
 }
 
 function getChoreName(index) {
-  if (state.chores.length === 0 || index < 0) return "No chore";
+  if (!state.chores.length || index < 0) return "No chore";
   return state.chores[normalizeChoreIndex(index)];
 }
 
@@ -51,7 +126,7 @@ function allowsMultiple(choreName) {
 }
 
 function nextAllowedChoreIndex(resident, startIndex, occupiedChores = new Set()) {
-  if (state.chores.length === 0) return -1;
+  if (!state.chores.length) return -1;
 
   if (resident.lockedChore && state.chores.includes(resident.lockedChore)) {
     return choreIndexByName(resident.lockedChore);
@@ -69,39 +144,58 @@ function nextAllowedChoreIndex(resident, startIndex, occupiedChores = new Set())
 }
 
 async function saveAndRender() {
+  ensureStandardChoresExist();
   await saveAppState(state);
 }
 
-function addResident() {
-  const input = document.getElementById("residentName");
+function addChore() {
+  const input = document.getElementById("choreName");
   const name = input.value.trim();
-  if (!name) return;
 
-  state.residents.push({
-    id: crypto.randomUUID(),
-    name,
-    choreIndex: 0,
-    exceptions: [],
-    lockedChore: "",
-    status: "active",
-    awayUntil: ""
-  });
+  if (!name || state.chores.includes(name)) return;
 
+  state.chores.push(name);
   input.value = "";
   saveAndRender();
 }
 
-function editResident(id) {
-  const resident = state.residents.find(r => r.id === id);
+function resetDefaultChores() {
+  const confirmed = confirm("Reset the chore list to the standard 10 chores?");
+  if (!confirmed) return;
+
+  state.chores = [...STANDARD_CHORES];
+
+  state.residents = state.residents.map(resident => ({
+    ...resident,
+    choreIndex: normalizeChoreIndex(resident.choreIndex),
+    exceptions: resident.exceptions.filter(exception => state.chores.includes(exception)),
+    lockedChore: state.chores.includes(resident.lockedChore) ? resident.lockedChore : ""
+  }));
+
+  saveAndRender();
+}
+
+function removeChore(choreName) {
+  const confirmed = confirm(`Remove chore: ${choreName}?`);
+  if (!confirmed) return;
+
+  state.chores = state.chores.filter(chore => chore !== choreName);
+
+  state.residents = state.residents.map(resident => ({
+    ...resident,
+    choreIndex: normalizeChoreIndex(resident.choreIndex),
+    exceptions: resident.exceptions.filter(exception => exception !== choreName),
+    lockedChore: resident.lockedChore === choreName ? "" : resident.lockedChore
+  }));
+
+  saveAndRender();
+}
+
+function setResidentChore(residentId, choreIndex) {
+  const resident = state.residents.find(r => r.id === residentId);
   if (!resident) return;
 
-  const newName = prompt("Edit resident name:", resident.name);
-  if (newName === null) return;
-
-  const cleanName = newName.trim();
-  if (!cleanName) return;
-
-  resident.name = cleanName;
+  resident.choreIndex = Number(choreIndex);
   saveAndRender();
 }
 
@@ -131,67 +225,9 @@ function setAwayUntil() {
   saveAndRender();
 }
 
-function deleteResident(id) {
-  const resident = state.residents.find(r => r.id === id);
-  if (!resident) return;
-
-  const confirmed = confirm(`Permanently delete ${resident.name}? This cannot be undone.`);
-  if (!confirmed) return;
-
-  state.residents = state.residents.filter(r => r.id !== id);
-  saveAndRender();
-}
-
-function addChore() {
-  const input = document.getElementById("choreName");
-  const name = input.value.trim();
-  if (!name || state.chores.includes(name)) return;
-
-  state.chores.push(name);
-  input.value = "";
-  saveAndRender();
-}
-
-function resetDefaultChores() {
-  const confirmed = confirm("Reset the chore list to the standard 10 chores?");
-  if (!confirmed) return;
-
-  state.chores = STANDARD_CHORES;
-  state.residents = state.residents.map(resident => ({
-    ...resident,
-    choreIndex: normalizeChoreIndex(resident.choreIndex),
-    exceptions: resident.exceptions.filter(exception => state.chores.includes(exception)),
-    lockedChore: state.chores.includes(resident.lockedChore) ? resident.lockedChore : ""
-  }));
-
-  saveAndRender();
-}
-
-function removeChore(choreName) {
-  const confirmed = confirm(`Remove chore: ${choreName}?`);
-  if (!confirmed) return;
-
-  state.chores = state.chores.filter(chore => chore !== choreName);
-  state.residents = state.residents.map(resident => ({
-    ...resident,
-    choreIndex: normalizeChoreIndex(resident.choreIndex),
-    exceptions: resident.exceptions.filter(exception => exception !== choreName),
-    lockedChore: resident.lockedChore === choreName ? "" : resident.lockedChore
-  }));
-
-  saveAndRender();
-}
-
-function setResidentChore(residentId, choreIndex) {
-  const resident = state.residents.find(r => r.id === residentId);
-  if (!resident) return;
-
-  resident.choreIndex = Number(choreIndex);
-  saveAndRender();
-}
-
 function generateTable() {
   state.tableGenerated = true;
+
   state.residents = state.residents.map(resident => {
     if (resident.status !== "active") return resident;
     return { ...resident, choreIndex: nextAllowedChoreIndex(resident, resident.choreIndex) };
@@ -260,6 +296,7 @@ function addException() {
   const residentId = document.getElementById("exceptionResident").value;
   const choreName = document.getElementById("exceptionChore").value;
   const resident = state.residents.find(r => r.id === residentId);
+
   if (!resident || !choreName) return;
 
   if (resident.lockedChore === choreName) {
@@ -288,6 +325,7 @@ function lockResidentToChore() {
   const residentId = document.getElementById("exceptionResident").value;
   const choreName = document.getElementById("exceptionChore").value;
   const resident = state.residents.find(r => r.id === residentId);
+
   if (!resident || !choreName) return;
 
   resident.lockedChore = choreName;
@@ -300,6 +338,7 @@ function lockResidentToChore() {
 function clearResidentLock() {
   const residentId = document.getElementById("exceptionResident").value;
   const resident = state.residents.find(r => r.id === residentId);
+
   if (!resident) return;
 
   resident.lockedChore = "";
@@ -317,19 +356,25 @@ function clearHistory() {
 function exportBackup() {
   const backup = {
     app: "residentChoreRotator",
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     state
   };
 
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+    type: "application/json"
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = `resident-chore-backup-${todayDateString()}.json`;
+
   document.body.appendChild(a);
   a.click();
   a.remove();
+
   URL.revokeObjectURL(url);
 }
 
@@ -338,20 +383,18 @@ function importBackup(event) {
   if (!file) return;
 
   const reader = new FileReader();
+
   reader.onload = async () => {
     try {
       const parsed = JSON.parse(reader.result);
       const importedState = parsed.state || parsed;
 
-      if (!Array.isArray(importedState.residents) || !Array.isArray(importedState.chores)) {
-        alert("This does not look like a valid chore backup file.");
-        return;
-      }
-
-      const confirmed = confirm("Importing this backup will replace the shared online data. Continue?");
+      const confirmed = confirm("Importing this backup will replace shared online data. Continue?");
       if (!confirmed) return;
 
       state = normalizeAppState(importedState);
+      ensureStandardChoresExist();
+
       await saveAppState(state);
       alert("Backup imported successfully.");
     } catch {
@@ -365,7 +408,6 @@ function importBackup(event) {
 }
 
 function render() {
-  autoReturnAwayResidents();
   renderResidentLists();
   renderChoreList();
   renderManualAssignments();
@@ -376,9 +418,10 @@ function render() {
 }
 
 function renderResidentLists() {
-  const activeAndAway = state.residents.filter(r => r.status !== "archived");
   const residentList = document.getElementById("residentList");
-  const archivedList = document.getElementById("archivedResidentList");
+  if (!residentList) return;
+
+  const activeAndAway = state.residents.filter(r => r.status !== "archived");
 
   residentList.innerHTML = activeAndAway.length
     ? activeAndAway.map(r => `
@@ -388,33 +431,15 @@ function renderResidentLists() {
             ${statusBadge(r)}
           </span>
           <span class="actions">
-            <button class="secondary" onclick="editResident('${r.id}')">Edit</button>
             ${
               r.status === "away"
                 ? `<button class="success" onclick="setResidentStatus('${r.id}', 'active')">Return</button>`
                 : `<button class="warning" onclick="setResidentStatus('${r.id}', 'away')">Away</button>`
             }
-            <button class="danger" onclick="setResidentStatus('${r.id}', 'archived')">Archive</button>
           </span>
         </li>
       `).join("")
-    : `<li class="empty">No current residents added.</li>`;
-
-  archivedList.innerHTML = archivedResidents().length
-    ? archivedResidents().map(r => `
-        <li>
-          <span>
-            ${escapeHtml(r.name)}
-            <span class="status archived">Archived</span>
-          </span>
-          <span class="actions">
-            <button class="secondary" onclick="editResident('${r.id}')">Edit</button>
-            <button class="success" onclick="setResidentStatus('${r.id}', 'active')">Restore</button>
-            <button class="danger" onclick="deleteResident('${r.id}')">Delete</button>
-          </span>
-        </li>
-      `).join("")
-    : `<li class="empty">No archived residents.</li>`;
+    : `<li class="empty">No Phase 1 clients found in Current Roster.</li>`;
 }
 
 function statusBadge(resident) {
@@ -423,15 +448,14 @@ function statusBadge(resident) {
     return `<span class="status away">Away / Omitted${dateText}</span>`;
   }
 
-  if (resident.status === "archived") {
-    return `<span class="status archived">Archived</span>`;
-  }
-
   return `<span class="status active">Active</span>`;
 }
 
 function renderChoreList() {
-  document.getElementById("choreList").innerHTML = state.chores.length
+  const list = document.getElementById("choreList");
+  if (!list) return;
+
+  list.innerHTML = state.chores.length
     ? state.chores.map(chore => `
         <li>
           <span>${escapeHtml(chore)}</span>
@@ -443,10 +467,12 @@ function renderChoreList() {
 
 function renderManualAssignments() {
   const body = document.getElementById("assignmentBody");
+  if (!body) return;
+
   const residents = activeResidents();
 
-  if (residents.length === 0 || state.chores.length === 0) {
-    body.innerHTML = `<tr><td colspan="3" class="empty">Add active residents and chores first.</td></tr>`;
+  if (!residents.length || !state.chores.length) {
+    body.innerHTML = `<tr><td colspan="3" class="empty">Add Phase 1 clients in Current Roster first.</td></tr>`;
     return;
   }
 
@@ -469,6 +495,8 @@ function renderManualAssignments() {
 
 function renderGeneratedTable() {
   const body = document.getElementById("rotationBody");
+  if (!body) return;
+
   const residents = activeResidents();
 
   if (!state.tableGenerated) {
@@ -476,8 +504,8 @@ function renderGeneratedTable() {
     return;
   }
 
-  if (residents.length === 0) {
-    body.innerHTML = `<tr><td colspan="5" class="empty">No active residents. Away and archived residents are omitted.</td></tr>`;
+  if (!residents.length) {
+    body.innerHTML = `<tr><td colspan="5" class="empty">No active residents.</td></tr>`;
     return;
   }
 
@@ -498,9 +526,7 @@ function renderGeneratedTable() {
         <td>${exceptions}</td>
         <td>${resident.lockedChore ? `<span class="status away">${escapeHtml(resident.lockedChore)}</span>` : `<span class="empty">Not locked</span>`}</td>
         <td>
-          <button class="secondary" onclick="editResident('${resident.id}')">Edit</button>
           <button class="warning" onclick="setResidentStatus('${resident.id}', 'away')">Away</button>
-          <button class="danger" onclick="setResidentStatus('${resident.id}', 'archived')">Archive</button>
         </td>
       </tr>
     `;
@@ -508,11 +534,16 @@ function renderGeneratedTable() {
 }
 
 function renderExceptionControls() {
-  document.getElementById("exceptionResident").innerHTML = activeResidents().map(r =>
+  const residentSelect = document.getElementById("exceptionResident");
+  const choreSelect = document.getElementById("exceptionChore");
+
+  if (!residentSelect || !choreSelect) return;
+
+  residentSelect.innerHTML = activeResidents().map(r =>
     `<option value="${r.id}">${escapeHtml(r.name)}</option>`
   ).join("");
 
-  document.getElementById("exceptionChore").innerHTML = state.chores.map(chore =>
+  choreSelect.innerHTML = state.chores.map(chore =>
     `<option value="${escapeHtml(chore)}">${escapeHtml(chore)}</option>`
   ).join("");
 }
@@ -544,7 +575,7 @@ function renderHistory() {
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
+  return String(value || "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -554,35 +585,41 @@ function escapeHtml(value) {
 }
 
 function escapeJs(value) {
-  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-document.getElementById("rotateBtn").addEventListener("click", rotateChores);
-document.getElementById("generateTableBtn").addEventListener("click", generateTable);
-document.getElementById("addResidentBtn").addEventListener("click", addResident);
-document.getElementById("addChoreBtn").addEventListener("click", addChore);
-document.getElementById("resetChoresBtn").addEventListener("click", resetDefaultChores);
-document.getElementById("addExceptionBtn").addEventListener("click", addException);
-document.getElementById("lockChoreBtn").addEventListener("click", lockResidentToChore);
-document.getElementById("clearLockBtn").addEventListener("click", clearResidentLock);
-document.getElementById("setAwayUntilBtn").addEventListener("click", setAwayUntil);
-document.getElementById("clearHistoryBtn").addEventListener("click", clearHistory);
-document.getElementById("exportBackupBtn").addEventListener("click", exportBackup);
-document.getElementById("importBackupInput").addEventListener("change", importBackup);
+document.getElementById("rotateBtn")?.addEventListener("click", rotateChores);
+document.getElementById("generateTableBtn")?.addEventListener("click", generateTable);
+document.getElementById("addChoreBtn")?.addEventListener("click", addChore);
+document.getElementById("resetChoresBtn")?.addEventListener("click", resetDefaultChores);
+document.getElementById("addExceptionBtn")?.addEventListener("click", addException);
+document.getElementById("lockChoreBtn")?.addEventListener("click", lockResidentToChore);
+document.getElementById("clearLockBtn")?.addEventListener("click", clearResidentLock);
+document.getElementById("setAwayUntilBtn")?.addEventListener("click", setAwayUntil);
+document.getElementById("clearHistoryBtn")?.addEventListener("click", clearHistory);
+document.getElementById("exportBackupBtn")?.addEventListener("click", exportBackup);
+document.getElementById("importBackupInput")?.addEventListener("change", importBackup);
 
-document.getElementById("residentName").addEventListener("keydown", e => {
-  if (e.key === "Enter") addResident();
-});
-
-document.getElementById("choreName").addEventListener("keydown", e => {
+document.getElementById("choreName")?.addEventListener("keydown", e => {
   if (e.key === "Enter") addChore();
 });
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
 
-  unsubscribeApp = listenToAppState(nextState => {
+  unsubscribeApp = listenToAppState(async nextState => {
     state = nextState;
+
+    const choresChanged = ensureStandardChoresExist();
+    const residentsChanged = syncResidentsFromRoster();
+    const awayChanged = autoReturnAwayResidents();
+
     render();
+
+    if ((choresChanged || residentsChanged || awayChanged) && !isSavingSync) {
+      isSavingSync = true;
+      await saveAppState(state);
+      isSavingSync = false;
+    }
   });
 });
