@@ -27,9 +27,9 @@ function addClient() {
 
   const client = {
     id: crypto.randomUUID(),
-    clientId: getInputValue("clientId"),
     firstName: getInputValue("firstName"),
     lastName: getInputValue("lastName"),
+    clientId: getInputValue("clientId"),
     dob: getInputValue("dob"),
     phone: getInputValue("phone"),
     address: getInputValue("address"),
@@ -54,9 +54,9 @@ function addClient() {
 
 function clearClientForm() {
   [
-    "clientId",
     "firstName",
     "lastName",
+    "clientId",
     "dob",
     "phone",
     "address",
@@ -113,9 +113,9 @@ function saveInlineEdit(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
-  client.clientId = getInputValue(`editClientId-${clientId}`);
   client.firstName = getInputValue(`editFirstName-${clientId}`);
   client.lastName = getInputValue(`editLastName-${clientId}`);
+  client.clientId = getInputValue(`editClientId-${clientId}`);
   client.dob = getInputValue(`editDob-${clientId}`);
   client.phone = getInputValue(`editPhone-${clientId}`);
   client.address = getInputValue(`editAddress-${clientId}`);
@@ -257,9 +257,9 @@ function renderRosterTable(bodyId, phase) {
           return `
             <tr class="editing-row">
               <td>${index + 1}</td>
-              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
               <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
               <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
               <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
               <td><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
               <td><input id="editAddress-${client.id}" value="${escapeAttribute(client.address)}" /></td>
@@ -279,9 +279,9 @@ function renderRosterTable(bodyId, phase) {
         return `
           <tr>
             <td>${index + 1}</td>
-            <td>${escapeHtml(client.clientId)}</td>
             <td>${escapeHtml(client.firstName)}</td>
             <td>${escapeHtml(client.lastName)}</td>
+            <td>${escapeHtml(client.clientId)}</td>
             <td>${escapeHtml(formatDate(client.dob))}</td>
             <td>${escapeHtml(client.phone)}</td>
             <td>${escapeHtml(client.address)}</td>
