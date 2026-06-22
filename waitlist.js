@@ -45,40 +45,29 @@ function clearWaitlistForm() {
   });
 }
 
-function openEditApplicant(applicantId) {
+function startInlineEdit(applicantId) {
+  editingApplicantId = applicantId;
+  renderWaitlist();
+}
+
+function cancelInlineEdit() {
+  editingApplicantId = null;
+  renderWaitlist();
+}
+
+function saveInlineEdit(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
-  editingApplicantId = applicantId;
+  applicant.lastName = document.getElementById(`editLastName-${applicantId}`).value.trim();
+  applicant.firstName = document.getElementById(`editFirstName-${applicantId}`).value.trim();
+  applicant.contact = document.getElementById(`editContact-${applicantId}`).value.trim();
+  applicant.status = document.getElementById(`editStatus-${applicantId}`).value.trim();
+  applicant.city = document.getElementById(`editCity-${applicantId}`).value.trim();
+  applicant.dateApplied = document.getElementById(`editDateApplied-${applicantId}`).value;
 
-  document.getElementById("editLastName").value = applicant.lastName || "";
-  document.getElementById("editFirstName").value = applicant.firstName || "";
-  document.getElementById("editContact").value = applicant.contact || "";
-  document.getElementById("editStatus").value = applicant.status || "";
-  document.getElementById("editCity").value = applicant.city || "";
-  document.getElementById("editDateApplied").value = applicant.dateApplied || "";
-
-  document.getElementById("editModal").classList.remove("hidden");
-}
-
-function saveApplicantEdit() {
-  const applicant = waitlistState.waitlist.find(item => item.id === editingApplicantId);
-  if (!applicant) return;
-
-  applicant.lastName = document.getElementById("editLastName").value.trim();
-  applicant.firstName = document.getElementById("editFirstName").value.trim();
-  applicant.contact = document.getElementById("editContact").value.trim();
-  applicant.status = document.getElementById("editStatus").value.trim();
-  applicant.city = document.getElementById("editCity").value.trim();
-  applicant.dateApplied = document.getElementById("editDateApplied").value;
-
-  closeEditModal();
-  saveWaitlist();
-}
-
-function closeEditModal() {
   editingApplicantId = null;
-  document.getElementById("editModal").classList.add("hidden");
+  saveWaitlist();
 }
 
 function openNotes(applicantId) {
@@ -149,9 +138,35 @@ function renderWaitlist() {
 
   body.innerHTML = waitlist.length
     ? waitlist.map((item, index) => {
+        const isEditing = editingApplicantId === item.id;
+
         const lastCall = item.callInHistory?.[0]
           ? `${item.callInHistory[0].result} — ${item.callInHistory[0].timestamp}`
           : "No call-in recorded";
+
+        if (isEditing) {
+          return `
+            <tr class="editing-row">
+              <td>${index + 1}</td>
+              <td><input id="editLastName-${item.id}" value="${escapeAttribute(item.lastName)}" /></td>
+              <td><input id="editFirstName-${item.id}" value="${escapeAttribute(item.firstName)}" /></td>
+              <td><input id="editContact-${item.id}" value="${escapeAttribute(item.contact)}" /></td>
+              <td><input id="editStatus-${item.id}" value="${escapeAttribute(item.status)}" /></td>
+              <td><input id="editCity-${item.id}" value="${escapeAttribute(item.city)}" /></td>
+              <td><input id="editDateApplied-${item.id}" type="date" value="${escapeAttribute(item.dateApplied)}" /></td>
+              <td>
+                <span class="empty">Save or cancel edit first</span>
+              </td>
+              <td>
+                <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes</a>
+              </td>
+              <td>
+                <button type="button" class="success" onclick="saveInlineEdit('${item.id}')">Save</button>
+                <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+              </td>
+            </tr>
+          `;
+        }
 
         return `
           <tr>
@@ -171,7 +186,7 @@ function renderWaitlist() {
               <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes</a>
             </td>
             <td>
-              <button type="button" class="secondary" onclick="openEditApplicant('${item.id}')">Edit</button>
+              <button type="button" class="secondary" onclick="startInlineEdit('${item.id}')">Edit</button>
               <button type="button" class="danger" onclick="deleteApplicant('${item.id}')">Remove</button>
             </td>
           </tr>
@@ -190,10 +205,18 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function escapeAttribute(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWaitlistBtn")?.addEventListener("click", addWaitlistApplicant);
-  document.getElementById("saveEditBtn")?.addEventListener("click", saveApplicantEdit);
-  document.getElementById("cancelEditBtn")?.addEventListener("click", closeEditModal);
   document.getElementById("saveNotesBtn")?.addEventListener("click", saveNotes);
   document.getElementById("cancelNotesBtn")?.addEventListener("click", closeNotesModal);
 });
