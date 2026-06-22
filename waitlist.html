@@ -90,6 +90,59 @@
     </section>
   </main>
 
+<div id="editModal" class="modal-backdrop hidden">
+  <div class="modal-card wide-modal">
+    <h2>Edit Waitlist Applicant</h2>
+
+    <table>
+      <tbody>
+        <tr>
+          <th>Last Name</th>
+          <td><input id="editLastName" /></td>
+        </tr>
+        <tr>
+          <th>First Name</th>
+          <td><input id="editFirstName" /></td>
+        </tr>
+        <tr>
+          <th>Contact</th>
+          <td><input id="editContact" /></td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td><input id="editStatus" /></td>
+        </tr>
+        <tr>
+          <th>City</th>
+          <td><input id="editCity" /></td>
+        </tr>
+        <tr>
+          <th>Date Applied</th>
+          <td><input id="editDateApplied" type="date" /></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="button-row">
+      <button id="saveEditBtn" type="button">Save Changes</button>
+      <button id="cancelEditBtn" type="button" class="secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="notesModal" class="modal-backdrop hidden">
+  <div class="modal-card">
+    <h2 id="notesModalTitle">Notes</h2>
+
+    <textarea id="notesText" class="notes-box" placeholder="Enter notes here..."></textarea>
+
+    <div class="button-row">
+      <button id="saveNotesBtn" type="button">Save Notes</button>
+      <button id="cancelNotesBtn" type="button" class="secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+  
   <script src="waitlist.js"></script>
 </body>
 </html>
