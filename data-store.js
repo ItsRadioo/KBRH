@@ -98,16 +98,22 @@ function normalizeAppState(state) {
     : [];
 
   merged.roster = Array.isArray(merged.roster)
-    ? merged.roster
-        .filter(client => client && client !== "temp")
-        .map(client => ({
-          id: client.id || crypto.randomUUID(),
-          firstName: client.firstName || "",
-          lastName: client.lastName || "",
-          dob: client.dob || "",
-          entryDate: client.entryDate || ""
-        }))
-    : [];
+  ? merged.roster
+      .filter(client => client && client !== "temp")
+      .map(client => ({
+        id: client.id || crypto.randomUUID(),
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        dob: client.dob || "",
+        phone: client.phone || "",
+        address: client.address || "",
+        city: client.city || "",
+        contact: client.contact || "",
+        contactPhone: client.contactPhone || "",
+        entryDate: client.entryDate || "",
+        notes: client.notes || ""
+      }))
+  : [];
 
   return merged;
 }
