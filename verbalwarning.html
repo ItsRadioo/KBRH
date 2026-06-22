@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Verbal Warning Log</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="data-store.js"></script>
+  <script>requireLogin();</script>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Verbal Warning Log</h1>
+      <p>Track verbal warnings and resident responses.</p>
+    </div>
+
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="meal-print.html">Meal Print</option>
+        <option value="print.html">Cleaning Print</option>
+        <option value="waitlist.html">Waitlist</option>
+        <option value="roster.html">Current Roster</option>
+        <option value="verbalwarning.html">Verbal Warnings</option>
+      </select>
+
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card wide">
+      <h2>Add Verbal Warning</h2>
+
+      <div class="form-row">
+        <div class="field-group">
+          <label for="warningDate">Date</label>
+          <input id="warningDate" type="date" />
+        </div>
+
+        <div class="field-group">
+          <label>Time</label>
+          <div class="form-row" style="margin-top: 0;">
+            <select id="warningHour"></select>
+            <select id="warningMinute"></select>
+            <select id="warningAmPm"></select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="warningResident">Resident</label>
+          <select id="warningResident"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field-group">
+          <label for="warningIncident">Incident</label>
+          <textarea id="warningIncident" class="notes-box"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="warningStaffAction">Staff Action</label>
+          <textarea id="warningStaffAction" class="notes-box"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="warningResidentResponse">Resident Response</label>
+          <textarea id="warningResidentResponse" class="notes-box"></textarea>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="addWarningBtn" type="button">Add Verbal Warning</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Warning Log</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Resident</th>
+              <th>Incident</th>
+              <th>Staff Action</th>
+              <th>Resident Response</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="warningBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const pageSelect = document.getElementById("pageSelect");
+    pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+
+    pageSelect.addEventListener("change", () => {
+      window.location.href = pageSelect.value;
+    });
+  </script>
+
+  <script src="verbalwarning.js"></script>
+</body>
+</html>
