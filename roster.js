@@ -1,16 +1,13 @@
-alert("roster.js" loaded);
 let rosterState = defaultAppState();
 let editingClientId = null;
 let notesClientId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
-
   if (!input) {
     alert(`Missing input field: ${id}`);
     throw new Error(`Missing input field: ${id}`);
   }
-
   return input.value.trim();
 }
 
@@ -51,6 +48,7 @@ function addClient() {
 
   rosterState.roster.push(client);
   clearClientForm();
+  renderRoster();
   saveRoster();
 }
 
@@ -74,18 +72,14 @@ function clearClientForm() {
 
 function calculateExitDate(entryDate) {
   if (!entryDate) return "";
-
   const date = new Date(entryDate + "T00:00:00");
   date.setDate(date.getDate() + 89);
-
   return date.toISOString().slice(0, 10);
 }
 
 function formatDate(value) {
   if (!value) return "";
-
   const date = new Date(value + "T00:00:00");
-
   return date.toLocaleDateString("en-CA", {
     year: "numeric",
     month: "short",
@@ -95,9 +89,7 @@ function formatDate(value) {
 
 function formatDateTime(value) {
   if (!value) return "";
-
   const date = new Date(value);
-
   return date.toLocaleString("en-CA", {
     year: "numeric",
     month: "short",
@@ -133,6 +125,7 @@ function saveInlineEdit(clientId) {
   client.entryDate = getInputValue(`editEntryDate-${clientId}`);
 
   editingClientId = null;
+  renderRoster();
   saveRoster();
 }
 
@@ -141,6 +134,7 @@ function moveToPhase(clientId, phase) {
   if (!client) return;
 
   client.phase = phase;
+  renderRoster();
   saveRoster();
 }
 
@@ -151,6 +145,7 @@ function removeClient(clientId) {
   if (!confirm(`Remove ${client.firstName} ${client.lastName} from the roster?`)) return;
 
   rosterState.roster = rosterState.roster.filter(item => item.id !== clientId);
+  renderRoster();
   saveRoster();
 }
 
@@ -159,7 +154,6 @@ function openNotes(clientId) {
   if (!client) return;
 
   notesClientId = clientId;
-
   document.getElementById("notesModalTitle").textContent =
     `Notes — ${client.firstName || ""} ${client.lastName || ""}`.trim();
 
@@ -185,7 +179,6 @@ function addClientNote() {
   }
 
   client.notes = Array.isArray(client.notes) ? client.notes : [];
-
   client.notes.unshift({
     id: crypto.randomUUID(),
     text,
@@ -194,6 +187,7 @@ function addClientNote() {
 
   document.getElementById("newNoteText").value = "";
   renderNotesModal(client);
+  renderRoster();
   saveRoster();
 }
 
@@ -208,6 +202,7 @@ function deleteClientNote(noteId) {
     : [];
 
   renderNotesModal(client);
+  renderRoster();
   saveRoster();
 }
 
@@ -321,18 +316,6 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const addClientBtn = document.getElementById("addClientBtn");
-  if (!addClientBtn) {
-    alert("Add Client button not found.");
-    return;
-  }
-
-  addClientBtn.addEventListener("click", addClient);
-  document.getElementById("addNoteBtn")?.addEventListener("click", addClientNote);
-  document.getElementById("closeNotesBtn")?.addEventListener("click", closeNotesModal);
-});
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
