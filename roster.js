@@ -4,10 +4,12 @@ let notesClientId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
+
   if (!input) {
     alert(`Missing input field: ${id}`);
     throw new Error(`Missing input field: ${id}`);
   }
+
   return input.value.trim();
 }
 
@@ -37,6 +39,7 @@ function addClient() {
     contact: getInputValue("contact"),
     contactPhone: getInputValue("contactPhone"),
     entryDate: getInputValue("entryDate"),
+    phase2AdmissionDate: "",
     phase: "phase1",
     notes: []
   };
@@ -72,14 +75,18 @@ function clearClientForm() {
 
 function calculateExitDate(entryDate) {
   if (!entryDate) return "";
+
   const date = new Date(entryDate + "T00:00:00");
   date.setDate(date.getDate() + 89);
+
   return date.toISOString().slice(0, 10);
 }
 
 function formatDate(value) {
   if (!value) return "";
+
   const date = new Date(value + "T00:00:00");
+
   return date.toLocaleDateString("en-CA", {
     year: "numeric",
     month: "short",
@@ -89,7 +96,9 @@ function formatDate(value) {
 
 function formatDateTime(value) {
   if (!value) return "";
+
   const date = new Date(value);
+
   return date.toLocaleString("en-CA", {
     year: "numeric",
     month: "short",
@@ -118,11 +127,16 @@ function saveInlineEdit(clientId) {
   client.clientId = getInputValue(`editClientId-${clientId}`);
   client.dob = getInputValue(`editDob-${clientId}`);
   client.phone = getInputValue(`editPhone-${clientId}`);
-  client.address = getInputValue(`editAddress-${clientId}`);
-  client.city = getInputValue(`editCity-${clientId}`);
-  client.contact = getInputValue(`editContact-${clientId}`);
-  client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
-  client.entryDate = getInputValue(`editEntryDate-${clientId}`);
+
+  if ((client.phase || "phase1") === "phase1") {
+    client.address = getInputValue(`editAddress-${clientId}`);
+    client.city = getInputValue(`editCity-${clientId}`);
+    client.contact = getInputValue(`editContact-${clientId}`);
+    client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
+    client.entryDate = getInputValue(`editEntryDate-${clientId}`);
+  } else {
+    client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
+  }
 
   editingClientId = null;
   renderRoster();
@@ -159,10 +173,12 @@ function openNotes(clientId) {
   if (!client) return;
 
   notesClientId = clientId;
+
   document.getElementById("notesModalTitle").textContent =
     `Notes — ${client.firstName || ""} ${client.lastName || ""}`.trim();
 
   document.getElementById("newNoteText").value = "";
+
   renderNotesModal(client);
   document.getElementById("notesModal").classList.remove("hidden");
 }
@@ -184,6 +200,7 @@ function addClientNote() {
   }
 
   client.notes = Array.isArray(client.notes) ? client.notes : [];
+
   client.notes.unshift({
     id: crypto.randomUUID(),
     text,
@@ -191,6 +208,7 @@ function addClientNote() {
   });
 
   document.getElementById("newNoteText").value = "";
+
   renderNotesModal(client);
   renderRoster();
   saveRoster();
@@ -231,21 +249,25 @@ function renderNotesModal(client) {
 }
 
 function renderRoster() {
-  renderRosterTable("rosterBody", "phase1");
-  renderRosterTable("phase2RosterBody", "phase2");
+  renderPhase1Roster();
+  renderPhase2Roster();
 }
 
-function renderRosterTable(bodyId, phase) {
-  const body = document.getElementById(bodyId);
-  if (!body) return;
-
-  const roster = Array.isArray(rosterState.roster)
+function getPhaseClients(phase) {
+  return Array.isArray(rosterState.roster)
     ? rosterState.roster.filter(client =>
         client &&
         client !== "temp" &&
         (client.phase || "phase1") === phase
       )
     : [];
+}
+
+function renderPhase1Roster() {
+  const body = document.getElementById("rosterBody");
+  if (!body) return;
+
+  const roster = getPhaseClients("phase1");
 
   body.innerHTML = roster.length
     ? roster.map((client, index) => {
@@ -294,18 +316,66 @@ function renderRosterTable(bodyId, phase) {
               <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
               <div class="actions" style="margin-top: 8px;">
                 <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
-                ${
-                  phase === "phase1"
-                    ? `<button type="button" class="success" onclick="moveToPhase('${client.id}', 'phase2')">Move to Phase 2</button>`
-                    : `<button type="button" class="warning" onclick="moveToPhase('${client.id}', 'phase1')">Move to Phase 1</button>`
-                }
+                <button type="button" class="success" onclick="moveToPhase('${client.id}', 'phase2')">Move to Phase 2</button>
                 <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
               </div>
             </td>
           </tr>
         `;
       }).join("")
-    : `<tr><td colspan="13" class="empty">No clients in this section.</td></tr>`;
+    : `<tr><td colspan="13" class="empty">No Phase 1 clients.</td></tr>`;
+}
+
+function renderPhase2Roster() {
+  const body = document.getElementById("phase2RosterBody");
+  if (!body) return;
+
+  const roster = getPhaseClients("phase2");
+
+  body.innerHTML = roster.length
+    ? roster.map((client, index) => {
+        const isEditing = editingClientId === client.id;
+        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+
+        if (isEditing) {
+          return `
+            <tr class="editing-row">
+              <td>${index + 1}</td>
+              <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
+              <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
+              <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
+              <td><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
+              <td><input id="editPhase2AdmissionDate-${client.id}" type="date" value="${escapeAttribute(client.phase2AdmissionDate)}" /></td>
+              <td>
+                <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
+                <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+              </td>
+            </tr>
+          `;
+        }
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(client.firstName)}</td>
+            <td>${escapeHtml(client.lastName)}</td>
+            <td>${escapeHtml(client.clientId)}</td>
+            <td>${escapeHtml(formatDate(client.dob))}</td>
+            <td>${escapeHtml(client.phone)}</td>
+            <td>${escapeHtml(formatDate(client.phase2AdmissionDate))}</td>
+            <td>
+              <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
+              <div class="actions" style="margin-top: 8px;">
+                <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
+                <button type="button" class="warning" onclick="moveToPhase('${client.id}', 'phase1')">Move to Phase 1</button>
+                <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="8" class="empty">No Phase 2 clients.</td></tr>`;
 }
 
 function escapeHtml(value) {
@@ -335,6 +405,7 @@ auth.onAuthStateChanged(user => {
     rosterState.roster.forEach(client => {
       client.phase = client.phase || "phase1";
       client.notes = Array.isArray(client.notes) ? client.notes : [];
+      client.phase2AdmissionDate = client.phase2AdmissionDate || "";
     });
 
     renderRoster();
