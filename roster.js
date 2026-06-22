@@ -136,7 +136,7 @@ function moveToPhase(clientId, phase) {
   client.phase = phase;
 
   if (phase === "phase2") {
-    client.entryDate = new Date().toISOString().slice(0, 10);
+    client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
   }
 
   renderRoster();
