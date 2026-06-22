@@ -16,6 +16,15 @@ function getSelectedResident() {
   const select = document.getElementById("warningResident");
   const residentId = select.value;
 
+  if (residentId === "OTHER") {
+    const otherName = getInputValue("otherResidentName");
+
+    return {
+      residentId: "OTHER",
+      residentName: otherName
+    };
+  }
+
   const resident = (warningState.roster || []).find(client => client.id === residentId);
 
   return {
@@ -24,6 +33,22 @@ function getSelectedResident() {
       ? `${resident.firstName || ""} ${resident.lastName || ""}`.trim()
       : ""
   };
+}
+
+function toggleOtherResidentField() {
+  const selected = document.getElementById("warningResident")?.value;
+  const wrap = document.getElementById("otherResidentWrap");
+
+  if (!wrap) return;
+
+  if (selected === "OTHER") {
+    wrap.classList.remove("hidden");
+  } else {
+    wrap.classList.add("hidden");
+
+    const input = document.getElementById("otherResidentName");
+    if (input) input.value = "";
+  }
 }
 
 function getWarningTime() {
@@ -59,8 +84,8 @@ function addVerbalWarning() {
     createdAt: new Date().toISOString()
   };
 
-  if (!warning.date || !warning.residentId || !warning.incident) {
-    alert("Date, resident, and incident are required.");
+  if (!warning.date || !warning.residentName || !warning.incident) {
+    alert("Date, resident name, and incident are required.");
     return;
   }
 
@@ -75,13 +100,15 @@ function clearWarningForm() {
     "warningDate",
     "warningIncident",
     "warningStaffAction",
-    "warningResidentResponse"
+    "warningResidentResponse",
+    "otherResidentName"
   ].forEach(id => {
     const input = document.getElementById(id);
     if (input) input.value = "";
   });
 
   setDefaultTime();
+  toggleOtherResidentField();
 }
 
 function setDefaultTime() {
@@ -140,12 +167,17 @@ function populateResidentDropdown() {
     return phase === "phase1" || phase === "phase2";
   });
 
-  select.innerHTML = activeClients.length
-    ? activeClients.map(client => {
-        const name = `${client.firstName || ""} ${client.lastName || ""}`.trim();
-        return `<option value="${client.id}">${escapeHtml(name)}</option>`;
-      }).join("")
-    : `<option value="">No clients found</option>`;
+  const clientOptions = activeClients.map(client => {
+    const name = `${client.firstName || ""} ${client.lastName || ""}`.trim();
+    return `<option value="${client.id}">${escapeHtml(name)}</option>`;
+  }).join("");
+
+  select.innerHTML = `
+    ${clientOptions}
+    <option value="OTHER">Other / Manual Entry</option>
+  `;
+
+  toggleOtherResidentField();
 }
 
 function startEditWarning(warningId) {
@@ -164,6 +196,7 @@ function saveEditWarning(warningId) {
 
   warning.date = getInputValue(`editDate-${warningId}`);
   warning.time = getInputValue(`editTime-${warningId}`);
+  warning.residentName = getInputValue(`editResidentName-${warningId}`);
   warning.incident = getInputValue(`editIncident-${warningId}`);
   warning.staffAction = getInputValue(`editStaffAction-${warningId}`);
   warning.residentResponse = getInputValue(`editResidentResponse-${warningId}`);
@@ -202,7 +235,7 @@ function renderWarnings() {
             <tr class="editing-row">
               <td><input id="editDate-${warning.id}" type="date" value="${escapeAttribute(warning.date)}" /></td>
               <td><input id="editTime-${warning.id}" value="${escapeAttribute(warning.time)}" /></td>
-              <td>${escapeHtml(warning.residentName)}</td>
+              <td><input id="editResidentName-${warning.id}" value="${escapeAttribute(warning.residentName)}" /></td>
               <td><textarea id="editIncident-${warning.id}">${escapeHtml(warning.incident)}</textarea></td>
               <td><textarea id="editStaffAction-${warning.id}">${escapeHtml(warning.staffAction)}</textarea></td>
               <td><textarea id="editResidentResponse-${warning.id}">${escapeHtml(warning.residentResponse)}</textarea></td>
@@ -249,6 +282,7 @@ function escapeAttribute(value) {
 document.addEventListener("DOMContentLoaded", () => {
   populateTimeDropdowns();
 
+  document.getElementById("warningResident")?.addEventListener("change", toggleOtherResidentField);
   document.getElementById("addWarningBtn")?.addEventListener("click", addVerbalWarning);
 });
 
