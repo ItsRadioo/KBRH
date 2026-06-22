@@ -21,15 +21,30 @@ function defaultAppState() {
     history: [],
     mealSchedule: defaultMealSchedule(),
     waitlist: [],
+    roster: [],
     updatedAt: new Date().toISOString()
   };
 }
 
 function defaultMealSchedule() {
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ];
+
   return {
     weekSchedule: days.reduce((schedule, day) => {
-      schedule[day] = { lunch: "", supper1: "", supper2: "" };
+      schedule[day] = {
+        lunch: "",
+        supper1: "",
+        supper2: ""
+      };
+
       return schedule;
     }, {}),
     history: []
@@ -38,7 +53,10 @@ function defaultMealSchedule() {
 
 function normalizeAppState(state) {
   const base = defaultAppState();
-  const merged = { ...base, ...(state || {}) };
+  const merged = {
+    ...base,
+    ...(state || {})
+  };
 
   merged.chores = Array.isArray(merged.chores) && merged.chores.length
     ? merged.chores
@@ -48,7 +66,9 @@ function normalizeAppState(state) {
     ? merged.residents.map((resident, index) => ({
         id: resident.id || crypto.randomUUID(),
         name: resident.name || `Resident ${index + 1}`,
-        choreIndex: Number.isInteger(Number(resident.choreIndex)) ? Number(resident.choreIndex) : 0,
+        choreIndex: Number.isInteger(Number(resident.choreIndex))
+          ? Number(resident.choreIndex)
+          : 0,
         exceptions: Array.isArray(resident.exceptions) ? resident.exceptions : [],
         lockedChore: resident.lockedChore || "",
         status: resident.status || "active",
@@ -60,26 +80,47 @@ function normalizeAppState(state) {
   merged.mealSchedule = normalizeMealSchedule(merged.mealSchedule);
 
   merged.waitlist = Array.isArray(merged.waitlist)
-  ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
-      id: item.id || crypto.randomUUID(),
-      lastName: item.lastName || "",
-      firstName: item.firstName || "",
-      contact: item.contact || "",
-      status: item.status || "",
-      city: item.city || "",
-      dateApplied: item.dateApplied || "",
-      notes: item.notes || "",
-      callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
-    }))
-  : [];
+    ? merged.waitlist
+        .filter(item => item && item !== "temp")
+        .map(item => ({
+          id: item.id || crypto.randomUUID(),
+          lastName: item.lastName || "",
+          firstName: item.firstName || "",
+          contact: item.contact || "",
+          status: item.status || "",
+          city: item.city || "",
+          dateApplied: item.dateApplied || "",
+          notes: item.notes || "",
+          callInHistory: Array.isArray(item.callInHistory)
+            ? item.callInHistory
+            : []
+        }))
+    : [];
+
+  merged.roster = Array.isArray(merged.roster)
+    ? merged.roster
+        .filter(client => client && client !== "temp")
+        .map(client => ({
+          id: client.id || crypto.randomUUID(),
+          firstName: client.firstName || "",
+          lastName: client.lastName || "",
+          dob: client.dob || "",
+          entryDate: client.entryDate || ""
+        }))
+    : [];
+
   return merged;
 }
 
 function normalizeMealSchedule(mealSchedule) {
   const base = defaultMealSchedule();
-  const merged = { ...base, ...(mealSchedule || {}) };
+  const merged = {
+    ...base,
+    ...(mealSchedule || {})
+  };
 
   const days = Object.keys(base.weekSchedule);
+
   days.forEach(day => {
     merged.weekSchedule[day] = {
       lunch: merged.weekSchedule?.[day]?.lunch || "",
@@ -89,6 +130,7 @@ function normalizeMealSchedule(mealSchedule) {
   });
 
   merged.history = Array.isArray(merged.history) ? merged.history : [];
+
   return merged;
 }
 
@@ -107,7 +149,10 @@ async function loadAppState() {
 async function saveAppState(state) {
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
-  await APP_DOC_REF().set(cleaned, { merge: false });
+
+  await APP_DOC_REF().set(cleaned, {
+    merge: false
+  });
 }
 
 function listenToAppState(callback) {
@@ -125,12 +170,14 @@ function listenToAppState(callback) {
 
 function migrateLocalStorageToFirestore() {
   const local = localStorage.getItem("residentChoreRotator.github.v1");
+
   if (!local) {
     alert("No local backup data found in this browser.");
     return;
   }
 
   let parsed;
+
   try {
     parsed = JSON.parse(local);
   } catch {
@@ -138,7 +185,10 @@ function migrateLocalStorageToFirestore() {
     return;
   }
 
-  const confirmed = confirm("This will replace the shared online Firestore data with the data saved in this browser. Continue?");
+  const confirmed = confirm(
+    "This will replace the shared online Firestore data with the data saved in this browser. Continue?"
+  );
+
   if (!confirmed) return;
 
   loadAppState()
@@ -146,8 +196,11 @@ function migrateLocalStorageToFirestore() {
       const next = normalizeAppState({
         ...current,
         ...parsed,
-        mealSchedule: current.mealSchedule || defaultMealSchedule()
+        mealSchedule: current.mealSchedule || defaultMealSchedule(),
+        waitlist: current.waitlist || [],
+        roster: current.roster || []
       });
+
       return saveAppState(next);
     })
     .then(() => alert("Local browser data migrated to Firestore."))
