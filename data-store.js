@@ -22,6 +22,7 @@ function defaultAppState() {
     mealSchedule: defaultMealSchedule(),
     waitlist: [],
     roster: [],
+    verbalWarnings: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -121,6 +122,23 @@ function normalizeAppState(state) {
         }))
     : [];
 
+  merged.verbalWarnings = Array.isArray(merged.verbalWarnings)
+    ? merged.verbalWarnings
+        .filter(warning => warning && warning !== "temp")
+        .map(warning => ({
+          id: warning.id || crypto.randomUUID(),
+          date: warning.date || "",
+          time: warning.time || "",
+          residentId: warning.residentId || "",
+          residentName: warning.residentName || "",
+          incident: warning.incident || "",
+          staffAction: warning.staffAction || "",
+          residentResponse: warning.residentResponse || "",
+          staffUser: warning.staffUser || "",
+          createdAt: warning.createdAt || new Date().toISOString()
+        }))
+    : [];
+
   return merged;
 }
 
@@ -202,7 +220,8 @@ function migrateLocalStorageToFirestore() {
         ...parsed,
         mealSchedule: current.mealSchedule || defaultMealSchedule(),
         waitlist: current.waitlist || [],
-        roster: current.roster || []
+        roster: current.roster || [],
+        verbalWarnings: current.verbalWarnings || []
       });
 
       return saveAppState(next);
