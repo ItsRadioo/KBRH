@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>Client Roster</title>
   <link rel="stylesheet" href="style.css" />
 
@@ -18,7 +17,6 @@
 </head>
 
 <body>
-  <script>alert("roster.html loaded");</script>
   <header>
     <div>
       <h1>Client Roster</h1>
@@ -35,7 +33,6 @@
         <option value="waitlist.html">Waitlist</option>
         <option value="roster.html">Current Roster</option>
       </select>
-
       <button class="logout-btn" onclick="logout()">Logout</button>
     </nav>
   </header>
@@ -45,65 +42,25 @@
       <h2>Add Client</h2>
 
       <div class="form-row">
-        <div class="field-group">
-          <label for="clientId">Client ID</label>
-          <input id="clientId" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="firstName">First Name</label>
-          <input id="firstName" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="lastName">Last Name</label>
-          <input id="lastName" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="dob">Date of Birth</label>
-          <input id="dob" type="date" />
-        </div>
-
-        <div class="field-group">
-          <label for="phone">Phone Number</label>
-          <input id="phone" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="address">Address</label>
-          <input id="address" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="city">City</label>
-          <input id="city" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="contact">Emergency Contact</label>
-          <input id="contact" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="contactPhone">Emergency Contact Phone</label>
-          <input id="contactPhone" type="text" />
-        </div>
-
-        <div class="field-group">
-          <label for="entryDate">Entry Date</label>
-          <input id="entryDate" type="date" />
-        </div>
+        <div class="field-group"><label>Client ID</label><input id="clientId" type="text" /></div>
+        <div class="field-group"><label>First Name</label><input id="firstName" type="text" /></div>
+        <div class="field-group"><label>Last Name</label><input id="lastName" type="text" /></div>
+        <div class="field-group"><label>Date of Birth</label><input id="dob" type="date" /></div>
+        <div class="field-group"><label>Phone Number</label><input id="phone" type="text" /></div>
+        <div class="field-group"><label>Address</label><input id="address" type="text" /></div>
+        <div class="field-group"><label>City</label><input id="city" type="text" /></div>
+        <div class="field-group"><label>Emergency Contact</label><input id="contact" type="text" /></div>
+        <div class="field-group"><label>Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
+        <div class="field-group"><label>Entry Date</label><input id="entryDate" type="date" /></div>
       </div>
 
       <div class="button-row">
-        <button id="addClientBtn" type="button">Add Client</button>
+        <button id="addClientBtn" type="button" onclick="addClient()">Add Client</button>
       </div>
     </section>
 
     <section class="card wide">
       <h2>Phase 1 Clients</h2>
-
       <div class="table-wrap">
         <table>
           <thead>
@@ -130,7 +87,6 @@
 
     <section class="card wide">
       <h2>Phase 2 Clients</h2>
-
       <div class="table-wrap">
         <table>
           <thead>
@@ -159,12 +115,11 @@
   <div id="notesModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <h2 id="notesModalTitle">Notes</h2>
-
       <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
 
       <div class="button-row">
-        <button id="addNoteBtn" type="button">Add Note</button>
-        <button id="closeNotesBtn" type="button" class="secondary">Close</button>
+        <button id="addNoteBtn" type="button" onclick="addClientNote()">Add Note</button>
+        <button id="closeNotesBtn" type="button" class="secondary" onclick="closeNotesModal()">Close</button>
       </div>
 
       <ul id="notesList" class="list"></ul>
@@ -174,7 +129,6 @@
   <script>
     const pageSelect = document.getElementById("pageSelect");
     pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
-
     pageSelect.addEventListener("change", () => {
       window.location.href = pageSelect.value;
     });
