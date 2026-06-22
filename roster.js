@@ -2,15 +2,6 @@ let rosterState = defaultAppState();
 let editingClientId = null;
 let notesClientId = null;
 
-async function saveRoster() {
-  try {
-    await saveAppState(rosterState);
-  } catch (error) {
-    console.error("Roster save failed:", error);
-    alert("Could not save roster. Check Console for details.");
-  }
-}
-
 function getInputValue(id) {
   const input = document.getElementById(id);
 
@@ -20,6 +11,15 @@ function getInputValue(id) {
   }
 
   return input.value.trim();
+}
+
+async function saveRoster() {
+  try {
+    await saveAppState(rosterState);
+  } catch (error) {
+    console.error("Roster save failed:", error);
+    alert("Could not save roster. Check Console for details.");
+  }
 }
 
 function addClient() {
@@ -55,9 +55,9 @@ function addClient() {
 
 function clearClientForm() {
   [
+    "clientId",
     "firstName",
     "lastName",
-    "clientId",
     "dob",
     "phone",
     "address",
@@ -92,6 +92,20 @@ function formatDate(value) {
   });
 }
 
+function formatDateTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  return date.toLocaleString("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
 function startInlineEdit(clientId) {
   editingClientId = clientId;
   renderRoster();
@@ -106,16 +120,16 @@ function saveInlineEdit(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
-  client.firstName = document.getElementById(`editFirstName-${clientId}`).value.trim();
-  client.lastName = document.getElementById(`editLastName-${clientId}`).value.trim();
-  client.clientId = document.getElementById(`editClientId-${clientId}`).value.trim();
-  client.dob = document.getElementById(`editDob-${clientId}`).value;
-  client.phone = document.getElementById(`editPhone-${clientId}`).value.trim();
-  client.address = document.getElementById(`editAddress-${clientId}`).value.trim();
-  client.city = document.getElementById(`editCity-${clientId}`).value.trim();
-  client.contact = document.getElementById(`editContact-${clientId}`).value.trim();
-  client.contactPhone = document.getElementById(`editContactPhone-${clientId}`).value.trim();
-  client.entryDate = document.getElementById(`editEntryDate-${clientId}`).value;
+  client.clientId = getInputValue(`editClientId-${clientId}`);
+  client.firstName = getInputValue(`editFirstName-${clientId}`);
+  client.lastName = getInputValue(`editLastName-${clientId}`);
+  client.dob = getInputValue(`editDob-${clientId}`);
+  client.phone = getInputValue(`editPhone-${clientId}`);
+  client.address = getInputValue(`editAddress-${clientId}`);
+  client.city = getInputValue(`editCity-${clientId}`);
+  client.contact = getInputValue(`editContact-${clientId}`);
+  client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
+  client.entryDate = getInputValue(`editEntryDate-${clientId}`);
 
   editingClientId = null;
   saveRoster();
@@ -162,7 +176,7 @@ function addClientNote() {
   const client = rosterState.roster.find(item => item.id === notesClientId);
   if (!client) return;
 
-  const text = document.getElementById("newNoteText").value.trim();
+  const text = getInputValue("newNoteText");
 
   if (!text) {
     alert("Enter a note first.");
@@ -206,27 +220,13 @@ function renderNotesModal(client) {
     ? notes.map(note => `
         <li class="note-item">
           <div>
-            <div>${escapeHtml(note.text)}</div>
+            <div>• ${escapeHtml(note.text)}</div>
             <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
           </div>
           <button type="button" class="danger" onclick="deleteClientNote('${note.id}')">Delete</button>
         </li>
       `).join("")
     : `<li class="empty">No notes yet.</li>`;
-}
-
-function formatDateTime(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-
-  return date.toLocaleString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit"
-  });
 }
 
 function renderRoster() {
@@ -239,7 +239,11 @@ function renderRosterTable(bodyId, phase) {
   if (!body) return;
 
   const roster = Array.isArray(rosterState.roster)
-    ? rosterState.roster.filter(client => client && client !== "temp" && (client.phase || "phase1") === phase)
+    ? rosterState.roster.filter(client =>
+        client &&
+        client !== "temp" &&
+        (client.phase || "phase1") === phase
+      )
     : [];
 
   body.innerHTML = roster.length
@@ -318,7 +322,13 @@ function escapeAttribute(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("addClientBtn")?.addEventListener("click", addClient);
+  const addClientBtn = document.getElementById("addClientBtn");
+  if (!addClientBtn) {
+    alert("Add Client button not found.");
+    return;
+  }
+
+  addClientBtn.addEventListener("click", addClient);
   document.getElementById("addNoteBtn")?.addEventListener("click", addClientNote);
   document.getElementById("closeNotesBtn")?.addEventListener("click", closeNotesModal);
 });
@@ -328,6 +338,7 @@ auth.onAuthStateChanged(user => {
 
   listenToAppState(nextState => {
     rosterState = nextState;
+
     rosterState.roster = Array.isArray(rosterState.roster)
       ? rosterState.roster.filter(client => client && client !== "temp")
       : [];
