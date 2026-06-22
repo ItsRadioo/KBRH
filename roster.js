@@ -134,6 +134,11 @@ function moveToPhase(clientId, phase) {
   if (!client) return;
 
   client.phase = phase;
+
+  if (phase === "phase2") {
+    client.entryDate = new Date().toISOString().slice(0, 10);
+  }
+
   renderRoster();
   saveRoster();
 }
