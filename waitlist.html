@@ -21,20 +21,21 @@
   <header>
     <div>
       <h1>Waitlist</h1>
-      <p>Manage applicants and call-in status.</p>
+      <p>Manage applicants, call-in status, notes, and archived applicants.</p>
     </div>
 
-  <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="roster.html">Current Roster</option>
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-    <option value="verbalwarning.html">Verbal WArning Log</option>
-  </select>
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="roster.html">Current Roster</option>
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="verbalwarning.html">Verbal Warning Log</option>
+        <option value="waitlist.html">Waitlist</option>
+      </select>
 
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
   </header>
 
   <main>
@@ -51,7 +52,7 @@
       </div>
 
       <div class="form-row">
-        <input id="notes" placeholder="Notes" />
+        <input id="notes" placeholder="Initial note optional" />
         <button id="addWaitlistBtn" type="button">Add to Waitlist</button>
       </div>
     </section>
@@ -59,7 +60,7 @@
     <section class="card wide">
       <h2>Current Waitlist</h2>
       <p class="hint">
-        Yes keeps the applicant in place. No/Late moves them to the bottom of the list.
+        Yes records a successful call-in. No/Late records the reason and moves the applicant to the bottom.
       </p>
 
       <div class="table-wrap">
@@ -74,6 +75,7 @@
               <th>City</th>
               <th>Date Applied</th>
               <th>Call In</th>
+              <th>Last Call-In</th>
               <th>Notes</th>
               <th>Actions</th>
             </tr>
@@ -82,23 +84,84 @@
         </table>
       </div>
     </section>
+
+    <section class="card wide">
+      <h2>Archived Waitlist Applicants</h2>
+      <p class="hint">
+        Archived applicants are removed from the active waitlist but can be reinstated to the bottom.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Last Name</th>
+              <th>First Name</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>City</th>
+              <th>Date Applied</th>
+              <th>Archived</th>
+              <th>Reason</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="archivedWaitlistBody"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
-  
+
+  <div id="notesModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <h2 id="notesModalTitle">Notes</h2>
 
-      <textarea id="notesText" class="notes-box" placeholder="Enter notes here..."></textarea>
+      <textarea id="newWaitlistNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
 
       <div class="button-row">
-        <button id="saveNotesBtn" type="button">Save Notes</button>
-        <button id="cancelNotesBtn" type="button" class="secondary">Cancel</button>
+        <button id="addWaitlistNoteBtn" type="button">Add Note</button>
+        <button id="closeWaitlistNotesBtn" type="button" class="secondary">Close</button>
+      </div>
+
+      <ul id="waitlistNotesList" class="list"></ul>
+    </div>
+  </div>
+
+  <div id="callInModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h2 id="callInModalTitle">No/Late Call-In</h2>
+
+      <div class="form-row">
+        <div class="field-group">
+          <label for="callInReason">Reason</label>
+          <select id="callInReason">
+            <option value="No call">No call</option>
+            <option value="Called late">Called late</option>
+            <option value="Unable to reach">Unable to reach</option>
+            <option value="Declined bed/placement">Declined bed/placement</option>
+            <option value="Wrong number / disconnected">Wrong number / disconnected</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="callInDetails">Details</label>
+          <input id="callInDetails" placeholder="Optional details" />
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="confirmNoLateBtn" type="button" class="warning">Confirm No/Late</button>
+        <button id="cancelNoLateBtn" type="button" class="secondary">Cancel</button>
       </div>
     </div>
   </div>
 
   <script>
     const pageSelect = document.getElementById("pageSelect");
-    pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+    pageSelect.value = window.location.pathname.split("/").pop() || "waitlist.html";
 
     pageSelect.addEventListener("change", () => {
       window.location.href = pageSelect.value;
