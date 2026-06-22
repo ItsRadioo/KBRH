@@ -44,11 +44,30 @@ function defaultMealSchedule() {
         supper1: "",
         supper2: ""
       };
-
       return schedule;
     }, {}),
     history: []
   };
+}
+
+function normalizeNotes(notes) {
+  if (Array.isArray(notes)) {
+    return notes.map(note => ({
+      id: note.id || crypto.randomUUID(),
+      text: note.text || "",
+      createdAt: note.createdAt || new Date().toISOString()
+    }));
+  }
+
+  if (notes) {
+    return [{
+      id: crypto.randomUUID(),
+      text: String(notes),
+      createdAt: new Date().toISOString()
+    }];
+  }
+
+  return [];
 }
 
 function normalizeAppState(state) {
@@ -98,25 +117,24 @@ function normalizeAppState(state) {
     : [];
 
   merged.roster = Array.isArray(merged.roster)
-  ? merged.roster
-      .filter(client => client && client !== "temp")
-      .map(client => ({
-        id: client.id || crypto.randomUUID(),
-        firstName: client.firstName || "",
-        lastName: client.lastName || "",
-        dob: client.dob || "",
-        phone: client.phone || "",
-        address: client.address || "",
-        city: client.city || "",
-        contact: client.contact || "",
-        contactPhone: client.contactPhone || "",
-        entryDate: client.entryDate || "",
-        notes: client.notes || ""
-        clientId: client.clientId || "",
-        phase: client.phase || "phase1",
-        notes: Array.isArray(client.notes) ? client.notes : []
-      }))
-  : [];
+    ? merged.roster
+        .filter(client => client && client !== "temp")
+        .map(client => ({
+          id: client.id || crypto.randomUUID(),
+          clientId: client.clientId || "",
+          firstName: client.firstName || "",
+          lastName: client.lastName || "",
+          dob: client.dob || "",
+          phone: client.phone || "",
+          address: client.address || "",
+          city: client.city || "",
+          contact: client.contact || "",
+          contactPhone: client.contactPhone || "",
+          entryDate: client.entryDate || "",
+          phase: client.phase || "phase1",
+          notes: normalizeNotes(client.notes)
+        }))
+    : [];
 
   return merged;
 }
