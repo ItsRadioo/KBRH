@@ -23,17 +23,19 @@
       <p>Current clients attending the home.</p>
     </div>
 
-        <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="waitlist.html">Waitlist</option>
-    <option value="roster.html">Current Roster</option>
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-  </select>
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="meal-print.html">Meal Print</option>
+        <option value="print.html">Cleaning Print</option>
+        <option value="waitlist.html">Waitlist</option>
+        <option value="roster.html">Current Roster</option>
+      </select>
 
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
   </header>
 
   <main>
@@ -41,25 +43,47 @@
       <h2>Add Client</h2>
 
       <div class="form-row">
+        <input id="clientId" placeholder="Client ID" />
         <input id="firstName" placeholder="First Name" />
         <input id="lastName" placeholder="Last Name" />
-        <input id="dob" type="date" />
-        <input id="entryDate" type="date" />
+
+        <div class="field-group">
+          <label for="dob">Date of Birth</label>
+          <input id="dob" type="date" />
+        </div>
+
+        <input id="phone" placeholder="Phone Number" />
+        <input id="address" placeholder="Address" />
+        <input id="city" placeholder="City" />
+        <input id="contact" placeholder="Emergency Contact" />
+        <input id="contactPhone" placeholder="Emergency Contact #" />
+
+        <div class="field-group">
+          <label for="entryDate">Entry Date</label>
+          <input id="entryDate" type="date" />
+        </div>
+
         <button id="addClientBtn" type="button">Add Client</button>
       </div>
     </section>
 
     <section class="card wide">
-      <h2>Current Roster</h2>
+      <h2>Phase 1 Clients</h2>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>#</th>
+              <th>Client ID</th>
               <th>First Name</th>
               <th>Last Name</th>
               <th>DOB</th>
+              <th>Phone</th>
+              <th>Address</th>
+              <th>City</th>
+              <th>Contact</th>
+              <th>Contact #</th>
               <th>Entry Date</th>
               <th>Exit Date</th>
               <th>Actions</th>
@@ -69,11 +93,54 @@
         </table>
       </div>
     </section>
+
+    <section class="card wide">
+      <h2>Phase 2 Clients</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Client ID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>DOB</th>
+              <th>Phone</th>
+              <th>Address</th>
+              <th>City</th>
+              <th>Contact</th>
+              <th>Contact #</th>
+              <th>Entry Date</th>
+              <th>Exit Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="phase2RosterBody"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
+
+  <div id="notesModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h2 id="notesModalTitle">Notes</h2>
+
+      <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
+
+      <div class="button-row">
+        <button id="addNoteBtn" type="button">Add Note</button>
+        <button id="closeNotesBtn" type="button" class="secondary">Close</button>
+      </div>
+
+      <ul id="notesList" class="list"></ul>
+    </div>
+  </div>
 
   <script>
     const pageSelect = document.getElementById("pageSelect");
     pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+
     pageSelect.addEventListener("change", () => {
       window.location.href = pageSelect.value;
     });
