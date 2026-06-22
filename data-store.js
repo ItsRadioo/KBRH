@@ -27,23 +27,11 @@ function defaultAppState() {
 }
 
 function defaultMealSchedule() {
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday"
-  ];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   return {
     weekSchedule: days.reduce((schedule, day) => {
-      schedule[day] = {
-        lunch: "",
-        supper1: "",
-        supper2: ""
-      };
+      schedule[day] = { lunch: "", supper1: "", supper2: "" };
       return schedule;
     }, {}),
     history: []
@@ -72,10 +60,7 @@ function normalizeNotes(notes) {
 
 function normalizeAppState(state) {
   const base = defaultAppState();
-  const merged = {
-    ...base,
-    ...(state || {})
-  };
+  const merged = { ...base, ...(state || {}) };
 
   merged.chores = Array.isArray(merged.chores) && merged.chores.length
     ? merged.chores
@@ -84,6 +69,7 @@ function normalizeAppState(state) {
   merged.residents = Array.isArray(merged.residents)
     ? merged.residents.map((resident, index) => ({
         id: resident.id || crypto.randomUUID(),
+        rosterClientId: resident.rosterClientId || "",
         name: resident.name || `Resident ${index + 1}`,
         choreIndex: Number.isInteger(Number(resident.choreIndex))
           ? Number(resident.choreIndex)
@@ -110,9 +96,7 @@ function normalizeAppState(state) {
           city: item.city || "",
           dateApplied: item.dateApplied || "",
           notes: item.notes || "",
-          callInHistory: Array.isArray(item.callInHistory)
-            ? item.callInHistory
-            : []
+          callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
         }))
     : [];
 
@@ -132,6 +116,7 @@ function normalizeAppState(state) {
           contactPhone: client.contactPhone || "",
           entryDate: client.entryDate || "",
           phase: client.phase || "phase1",
+          phase2AdmissionDate: client.phase2AdmissionDate || "",
           notes: normalizeNotes(client.notes)
         }))
     : [];
@@ -141,14 +126,9 @@ function normalizeAppState(state) {
 
 function normalizeMealSchedule(mealSchedule) {
   const base = defaultMealSchedule();
-  const merged = {
-    ...base,
-    ...(mealSchedule || {})
-  };
+  const merged = { ...base, ...(mealSchedule || {}) };
 
-  const days = Object.keys(base.weekSchedule);
-
-  days.forEach(day => {
+  Object.keys(base.weekSchedule).forEach(day => {
     merged.weekSchedule[day] = {
       lunch: merged.weekSchedule?.[day]?.lunch || "",
       supper1: merged.weekSchedule?.[day]?.supper1 || "",
@@ -157,7 +137,6 @@ function normalizeMealSchedule(mealSchedule) {
   });
 
   merged.history = Array.isArray(merged.history) ? merged.history : [];
-
   return merged;
 }
 
@@ -177,9 +156,7 @@ async function saveAppState(state) {
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
 
-  await APP_DOC_REF().set(cleaned, {
-    merge: false
-  });
+  await APP_DOC_REF().set(cleaned, { merge: true });
 }
 
 function listenToAppState(callback) {
