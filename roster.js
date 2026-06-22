@@ -55,9 +55,9 @@ function addClient() {
 
 function clearClientForm() {
   [
-    "clientId",
     "firstName",
     "lastName",
+    "clientId",
     "dob",
     "phone",
     "address",
@@ -106,9 +106,9 @@ function saveInlineEdit(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
-  client.clientId = document.getElementById(`editClientId-${clientId}`).value.trim();
   client.firstName = document.getElementById(`editFirstName-${clientId}`).value.trim();
   client.lastName = document.getElementById(`editLastName-${clientId}`).value.trim();
+  client.clientId = document.getElementById(`editClientId-${clientId}`).value.trim();
   client.dob = document.getElementById(`editDob-${clientId}`).value;
   client.phone = document.getElementById(`editPhone-${clientId}`).value.trim();
   client.address = document.getElementById(`editAddress-${clientId}`).value.trim();
