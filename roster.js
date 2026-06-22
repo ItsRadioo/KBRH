@@ -1,4 +1,4 @@
-alert('roster.js" loaded);
+alert("roster.js" loaded);
 let rosterState = defaultAppState();
 let editingClientId = null;
 let notesClientId = null;
