@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Waitlist</title>
   <link rel="stylesheet" href="style.css" />
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
   <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
   <script src="data-store.js"></script>
@@ -23,26 +25,17 @@
     </div>
 
     <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-    <option value="meal-print.html">Meal Print</option>
-    <option value="print.html">Cleaning Print</option>
-    <option value="waitlist.html">Waitlist</option>
-  </select>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="meal-print.html">Meal Print</option>
+        <option value="print.html">Cleaning Print</option>
+        <option value="waitlist.html">Waitlist</option>
+      </select>
 
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
-
-<script>
-  const pageSelect = document.getElementById("pageSelect");
-  pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
-
-  pageSelect.addEventListener("change", () => {
-    window.location.href = pageSelect.value;
-  });
-</script>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
   </header>
 
   <main>
@@ -66,7 +59,9 @@
 
     <section class="card wide">
       <h2>Current Waitlist</h2>
-      <p class="hint">Yes keeps the applicant in place. No/Late moves them to the bottom of the list.</p>
+      <p class="hint">
+        Yes keeps the applicant in place. No/Late moves them to the bottom of the list.
+      </p>
 
       <div class="table-wrap">
         <table>
@@ -90,59 +85,28 @@
     </section>
   </main>
 
-<div id="editModal" class="modal-backdrop hidden">
-  <div class="modal-card wide-modal">
-    <h2>Edit Waitlist Applicant</h2>
+  <div id="notesModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h2 id="notesModalTitle">Notes</h2>
 
-    <table>
-      <tbody>
-        <tr>
-          <th>Last Name</th>
-          <td><input id="editLastName" /></td>
-        </tr>
-        <tr>
-          <th>First Name</th>
-          <td><input id="editFirstName" /></td>
-        </tr>
-        <tr>
-          <th>Contact</th>
-          <td><input id="editContact" /></td>
-        </tr>
-        <tr>
-          <th>Status</th>
-          <td><input id="editStatus" /></td>
-        </tr>
-        <tr>
-          <th>City</th>
-          <td><input id="editCity" /></td>
-        </tr>
-        <tr>
-          <th>Date Applied</th>
-          <td><input id="editDateApplied" type="date" /></td>
-        </tr>
-      </tbody>
-    </table>
+      <textarea id="notesText" class="notes-box" placeholder="Enter notes here..."></textarea>
 
-    <div class="button-row">
-      <button id="saveEditBtn" type="button">Save Changes</button>
-      <button id="cancelEditBtn" type="button" class="secondary">Cancel</button>
+      <div class="button-row">
+        <button id="saveNotesBtn" type="button">Save Notes</button>
+        <button id="cancelNotesBtn" type="button" class="secondary">Cancel</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="notesModal" class="modal-backdrop hidden">
-  <div class="modal-card">
-    <h2 id="notesModalTitle">Notes</h2>
+  <script>
+    const pageSelect = document.getElementById("pageSelect");
+    pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
 
-    <textarea id="notesText" class="notes-box" placeholder="Enter notes here..."></textarea>
+    pageSelect.addEventListener("change", () => {
+      window.location.href = pageSelect.value;
+    });
+  </script>
 
-    <div class="button-row">
-      <button id="saveNotesBtn" type="button">Save Notes</button>
-      <button id="cancelNotesBtn" type="button" class="secondary">Cancel</button>
-    </div>
-  </div>
-</div>
-  
   <script src="waitlist.js"></script>
 </body>
 </html>
