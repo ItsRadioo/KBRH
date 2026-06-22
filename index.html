@@ -13,44 +13,38 @@
   <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
+
 <body>
   <header>
     <div>
       <h1>Resident Chore Rotator</h1>
-      <p>Manual assignments, rotation history, pass dates, backups, locked chores, and print sheets.</p>
+      <p>Residents are pulled from the Current Roster. Manage clients there first.</p>
     </div>
-   <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-    <option value="meal-print.html">Meal Print</option>
-    <option value="print.html">Cleaning Print</option>
-    <option value="waitlist.html">Waitlist</option>
-    <option value="roster.html">Current Roster</option>
-  </select>
 
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="waitlist.html">Waitlist</option>
+        <option value="roster.html">Current Roster</option>
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+      </select>
 
-<script>
-  const pageSelect = document.getElementById("pageSelect");
-  pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
-
-  pageSelect.addEventListener("change", () => {
-    window.location.href = pageSelect.value;
-  });
-</script>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
   </header>
 
   <main>
-    <section class="card">
+    <section class="card wide">
       <h2>Current Residents</h2>
-      <div class="form-row">
-        <input id="residentName" type="text" placeholder="Resident name" />
-        <button id="addResidentBtn">Add Resident</button>
+      <p class="hint">
+        This list is generated from the Current Roster page. Add, edit, or remove clients from the roster page.
+      </p>
+
+      <div class="button-row">
+        <a class="button-link" href="roster.html">Open Current Roster</a>
       </div>
-      <p class="hint">Use Away Until for passes/weekend leave. Residents automatically return after the selected date.</p>
+
       <ul id="residentList" class="list"></ul>
     </section>
 
@@ -149,7 +143,7 @@
 
     <section class="card wide">
       <h2>Backup / Restore</h2>
-      <p class="hint">Export before major edits. Import restores residents, chores, exceptions, locks, leave status, and history.</p>
+      <p class="hint">Export before major edits. Import restores shared app data.</p>
       <div class="button-row">
         <button id="exportBackupBtn">Export Backup JSON</button>
         <button id="migrateLocalBtn" type="button" class="secondary" onclick="migrateLocalStorageToFirestore()">Migrate This Browser Data Online</button>
@@ -159,13 +153,16 @@
         </label>
       </div>
     </section>
-
-    <section class="card wide">
-      <h2>Archived / Former Residents</h2>
-      <p class="hint">Archived residents are stored but omitted from all chore rotations.</p>
-      <ul id="archivedResidentList" class="list"></ul>
-    </section>
   </main>
+
+  <script>
+    const pageSelect = document.getElementById("pageSelect");
+    pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+
+    pageSelect.addEventListener("change", () => {
+      window.location.href = pageSelect.value;
+    });
+  </script>
 
   <script src="script.js"></script>
 </body>
