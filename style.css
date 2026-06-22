@@ -582,4 +582,17 @@ th {
   font-size: 15px;
   box-sizing: border-box;
 }
+  .field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.field-group label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
 }
