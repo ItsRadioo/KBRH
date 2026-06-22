@@ -11,6 +11,17 @@ async function saveRoster() {
   }
 }
 
+function getInputValue(id) {
+  const input = document.getElementById(id);
+
+  if (!input) {
+    alert(`Missing input field: ${id}`);
+    throw new Error(`Missing input field: ${id}`);
+  }
+
+  return input.value.trim();
+}
+
 function addClient() {
   rosterState.roster = Array.isArray(rosterState.roster)
     ? rosterState.roster.filter(client => client && client !== "temp")
@@ -18,16 +29,16 @@ function addClient() {
 
   const client = {
     id: crypto.randomUUID(),
-    clientId: document.getElementById("clientId").value.trim(),
-    firstName: document.getElementById("firstName").value.trim(),
-    lastName: document.getElementById("lastName").value.trim(),
-    dob: document.getElementById("dob").value,
-    phone: document.getElementById("phone").value.trim(),
-    address: document.getElementById("address").value.trim(),
-    city: document.getElementById("city").value.trim(),
-    contact: document.getElementById("contact").value.trim(),
-    contactPhone: document.getElementById("contactPhone").value.trim(),
-    entryDate: document.getElementById("entryDate").value,
+    clientId: getInputValue("clientId"),
+    firstName: getInputValue("firstName"),
+    lastName: getInputValue("lastName"),
+    dob: getInputValue("dob"),
+    phone: getInputValue("phone"),
+    address: getInputValue("address"),
+    city: getInputValue("city"),
+    contact: getInputValue("contact"),
+    contactPhone: getInputValue("contactPhone"),
+    entryDate: getInputValue("entryDate"),
     phase: "phase1",
     notes: []
   };
