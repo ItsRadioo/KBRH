@@ -112,6 +112,9 @@ function normalizeAppState(state) {
         contactPhone: client.contactPhone || "",
         entryDate: client.entryDate || "",
         notes: client.notes || ""
+        clientId: client.clientId || "",
+        phase: client.phase || "phase1",
+        notes: Array.isArray(client.notes) ? client.notes : []
       }))
   : [];
 
