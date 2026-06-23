@@ -59,6 +59,26 @@ function normalizeNotes(notes) {
   return [];
 }
 
+function getWaitlistCallPriority(item) {
+  if (item.callPriority) return item.callPriority;
+
+  const last = Array.isArray(item.callInHistory) ? item.callInHistory[0] : null;
+  if (!last) return "normal";
+
+  if (last.result === "Yes") return "normal";
+  if (last.reason === "Called late") return "late";
+
+  if (
+    last.reason === "No call" ||
+    last.reason === "Unable to reach" ||
+    last.reason === "Wrong number / disconnected"
+  ) {
+    return "nocall";
+  }
+
+  return "late";
+}
+
 function normalizeAppState(state) {
   const base = defaultAppState();
   const merged = { ...base, ...(state || {}) };
@@ -86,23 +106,24 @@ function normalizeAppState(state) {
   merged.mealSchedule = normalizeMealSchedule(merged.mealSchedule);
 
   merged.waitlist = Array.isArray(merged.waitlist)
-  ? merged.waitlist
-      .filter(item => item && item !== "temp")
-      .map(item => ({
-        id: item.id || crypto.randomUUID(),
-        lastName: item.lastName || "",
-        firstName: item.firstName || "",
-        contact: item.contact || "",
-        status: item.status || "",
-        city: item.city || "",
-        dateApplied: item.dateApplied || "",
-        archived: item.archived || false,
-        archivedAt: item.archivedAt || "",
-        archiveReason: item.archiveReason || "",
-        notes: normalizeNotes(item.notes),
-        callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
-      }))
-  : [];
+    ? merged.waitlist
+        .filter(item => item && item !== "temp")
+        .map(item => ({
+          id: item.id || crypto.randomUUID(),
+          lastName: item.lastName || "",
+          firstName: item.firstName || "",
+          contact: item.contact || "",
+          status: item.status || "",
+          city: item.city || "",
+          dateApplied: item.dateApplied || "",
+          archived: item.archived || false,
+          archivedAt: item.archivedAt || "",
+          archiveReason: item.archiveReason || "",
+          callPriority: getWaitlistCallPriority(item),
+          notes: normalizeNotes(item.notes),
+          callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
+        }))
+    : [];
 
   merged.roster = Array.isArray(merged.roster)
     ? merged.roster
