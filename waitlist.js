@@ -37,6 +37,22 @@ function normalizeWaitlistNotes(notes) {
   return [];
 }
 
+function getActiveWaitlist() {
+  return Array.isArray(waitlistState.waitlist)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
+    : [];
+}
+
+function getArchivedWaitlist() {
+  return Array.isArray(waitlistState.waitlist)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp" && item.archived)
+    : [];
+}
+
+function getActiveIndex(applicantId) {
+  return getActiveWaitlist().findIndex(item => item.id === applicantId);
+}
+
 function getCallPriority(item) {
   if (item.callPriority) return item.callPriority;
 
@@ -57,23 +73,66 @@ function getCallPriority(item) {
   return "late";
 }
 
-function reorderActiveWaitlistByPriority() {
-  const active = [];
-  const archived = [];
+function rebuildWaitlist(activeList, archivedList) {
+  waitlistState.waitlist = [...activeList, ...archivedList];
+}
 
-  waitlistState.waitlist.forEach(item => {
-    if (item.archived) {
-      archived.push(item);
-    } else {
-      active.push(item);
-    }
-  });
+function reorderActiveWaitlistByPriority() {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
 
   const normal = active.filter(item => getCallPriority(item) === "normal");
   const late = active.filter(item => getCallPriority(item) === "late");
   const nocall = active.filter(item => getCallPriority(item) === "nocall");
 
-  waitlistState.waitlist = [...normal, ...late, ...nocall, ...archived];
+  rebuildWaitlist([...normal, ...late, ...nocall], archived);
+}
+
+function moveApplicantToPriorActiveIndex(applicantId, priorIndex) {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+
+  const currentIndex = active.findIndex(item => item.id === applicantId);
+  if (currentIndex === -1) return;
+
+  const [applicant] = active.splice(currentIndex, 1);
+  const safeIndex = Math.max(0, Math.min(Number(priorIndex) || 0, active.length));
+
+  active.splice(safeIndex, 0, applicant);
+  rebuildWaitlist(active, archived);
+}
+
+function moveLateApplicantAboveNoCalls(applicantId) {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+
+  const currentIndex = active.findIndex(item => item.id === applicantId);
+  if (currentIndex === -1) return;
+
+  const [applicant] = active.splice(currentIndex, 1);
+
+  let firstNoCallIndex = active.findIndex(item => getCallPriority(item) === "nocall");
+
+  if (firstNoCallIndex === -1) {
+    active.push(applicant);
+  } else {
+    active.splice(firstNoCallIndex, 0, applicant);
+  }
+
+  rebuildWaitlist(active, archived);
+}
+
+function moveNoCallApplicantToBottom(applicantId) {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+
+  const currentIndex = active.findIndex(item => item.id === applicantId);
+  if (currentIndex === -1) return;
+
+  const [applicant] = active.splice(currentIndex, 1);
+  active.push(applicant);
+
+  rebuildWaitlist(active, archived);
 }
 
 function addWaitlistApplicant() {
@@ -232,6 +291,8 @@ function callInYes(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
+  const previousActiveIndex = getActiveIndex(applicantId);
+
   if (!confirm(`Record YES call-in for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
   applicant.callPriority = "normal";
@@ -242,6 +303,7 @@ function callInYes(applicantId) {
     result: "Yes",
     reason: "",
     details: "",
+    previousActiveIndex,
     timestamp: new Date().toLocaleString(),
     createdAt: new Date().toISOString()
   });
@@ -275,6 +337,7 @@ function confirmNoLateCallIn() {
   const applicant = waitlistState.waitlist.find(item => item.id === pendingNoLateApplicantId);
   if (!applicant) return;
 
+  const previousActiveIndex = getActiveIndex(applicant.id);
   const reason = getInputValue("callInReason");
   const details = getInputValue("callInDetails");
 
@@ -283,7 +346,6 @@ function confirmNoLateCallIn() {
   }
 
   applicant.callPriority = reason === "Called late" ? "late" : "nocall";
-
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
 
   applicant.callInHistory.unshift({
@@ -291,11 +353,17 @@ function confirmNoLateCallIn() {
     result: "No/Late",
     reason,
     details,
+    previousActiveIndex,
     timestamp: new Date().toLocaleString(),
     createdAt: new Date().toISOString()
   });
 
-  reorderActiveWaitlistByPriority();
+  if (reason === "Called late") {
+    moveLateApplicantAboveNoCalls(applicant.id);
+  } else {
+    moveNoCallApplicantToBottom(applicant.id);
+  }
+
   closeNoLateModal();
   renderWaitlist();
   saveWaitlist();
@@ -305,12 +373,19 @@ function undoLastCallIn(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant || !Array.isArray(applicant.callInHistory) || !applicant.callInHistory.length) return;
 
+  const lastRecord = applicant.callInHistory[0];
+
   if (!confirm(`Undo the last call-in record for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
   applicant.callInHistory.shift();
   applicant.callPriority = getCallPriority({ ...applicant, callPriority: "" });
 
-  reorderActiveWaitlistByPriority();
+  if (Number.isInteger(Number(lastRecord.previousActiveIndex))) {
+    moveApplicantToPriorActiveIndex(applicantId, Number(lastRecord.previousActiveIndex));
+  } else {
+    reorderActiveWaitlistByPriority();
+  }
+
   renderWaitlist();
   saveWaitlist();
 }
@@ -328,7 +403,6 @@ function archiveApplicant(applicantId) {
   applicant.archivedAt = new Date().toISOString();
   applicant.archiveReason = reason.trim();
 
-  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -349,7 +423,6 @@ function reinstateApplicant(applicantId) {
   waitlistState.waitlist.splice(applicantIndex, 1);
   waitlistState.waitlist.push(applicant);
 
-  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -386,11 +459,7 @@ function renderActiveWaitlist() {
   const body = document.getElementById("waitlistBody");
   if (!body) return;
 
-  reorderActiveWaitlistByPriority();
-
-  const waitlist = Array.isArray(waitlistState.waitlist)
-    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
-    : [];
+  const waitlist = getActiveWaitlist();
 
   body.innerHTML = waitlist.length
     ? waitlist.map((item, index) => {
@@ -452,9 +521,7 @@ function renderArchivedWaitlist() {
   const body = document.getElementById("archivedWaitlistBody");
   if (!body) return;
 
-  const archived = Array.isArray(waitlistState.waitlist)
-    ? waitlistState.waitlist.filter(item => item && item !== "temp" && item.archived)
-    : [];
+  const archived = getArchivedWaitlist();
 
   body.innerHTML = archived.length
     ? archived.map((item, index) => {
