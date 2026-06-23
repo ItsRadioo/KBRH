@@ -23,6 +23,7 @@ nav {
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .page-nav-label {
   font-weight: 700;
   align-self: center;
@@ -35,6 +36,7 @@ nav {
   border: 0;
   font-weight: 700;
 }
+
 nav a {
   color: white;
   text-decoration: none;
@@ -70,7 +72,7 @@ main {
   background: white;
   border-radius: 12px;
   padding: 18px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .wide {
@@ -85,14 +87,35 @@ main {
   flex-wrap: wrap;
 }
 
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.field-group label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
 input,
-select {
+select,
+textarea {
   flex: 1;
   min-width: 180px;
   padding: 11px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 15px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
 }
 
 button,
@@ -127,12 +150,24 @@ button.secondary {
   background: #4b5563;
 }
 
+button.secondary:hover {
+  background: #374151;
+}
+
 button.warning {
   background: #d97706;
 }
 
+button.warning:hover {
+  background: #b45309;
+}
+
 button.success {
   background: #059669;
+}
+
+button.success:hover {
+  background: #047857;
 }
 
 .hint {
@@ -232,6 +267,59 @@ th {
   display: none;
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-card {
+  background: white;
+  color: #1f2937;
+  border-radius: 12px;
+  padding: 20px;
+  width: min(650px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.wide-modal {
+  width: min(760px, 92vw);
+}
+
+.notes-box {
+  width: 100%;
+  min-height: 180px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.note-item {
+  align-items: flex-start;
+}
+
+.note-item small {
+  display: block;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Login */
 .login-body {
   min-height: 100vh;
   display: grid;
@@ -269,6 +357,7 @@ th {
   font-size: 13px;
 }
 
+/* Cleaning Print */
 .print-main {
   display: block;
   max-width: 900px;
@@ -278,7 +367,7 @@ th {
   background: white;
   padding: 32px;
   border: 3px solid #111827;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .template-top {
@@ -358,6 +447,7 @@ th {
   line-height: 1.35;
 }
 
+/* Meal Pages */
 .meal-week-table th,
 .meal-week-table td {
   vertical-align: middle;
@@ -484,7 +574,8 @@ th {
   nav,
   .logout-btn,
   .dish-print-controls,
-  .button-row.no-print {
+  .button-row.no-print,
+  .modal-backdrop {
     display: none !important;
   }
 
@@ -543,103 +634,4 @@ th {
     color: black !important;
     background: white !important;
   }
-  .hidden {
-  display: none !important;
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.65);
-  display: grid;
-  place-items: center;
-  z-index: 9999;
-  padding: 20px;
-}
-
-.modal-card {
-  background: white;
-  color: #1f2937;
-  border-radius: 12px;
-  padding: 20px;
-  width: min(620px, 100%);
-  max-height: 90vh;
-  overflow: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-}
-
-.wide-modal {
-  width: min(760px, 100%);
-}
-
-.notes-box {
-  width: 100%;
-  min-height: 240px;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-family: Arial, sans-serif;
-  font-size: 15px;
-  box-sizing: border-box;
-}
-  .field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 220px;
-  flex: 1;
-}
-
-.field-group label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #374151;
-}
-
-  .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  z-index: 9999;
-}
-
-.modal-card {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: min(600px, 90vw);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.hidden {
-  display: none !important;
-}
-  .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.modal-card {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: min(650px, 92vw);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.hidden {
-  display: none !important;
-}
 }
