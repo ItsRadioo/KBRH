@@ -27,11 +27,11 @@
     <nav>
       <label class="page-nav-label" for="pageSelect">Go to:</label>
       <select id="pageSelect" class="page-select">
+        <option value="waitlist.html">Waitlist</option>
         <option value="roster.html">Current Roster</option>
         <option value="index.html">House Chores</option>
         <option value="meal-chores.html">Meal Chores</option>
         <option value="verbalwarning.html">Verbal Warning Log</option>
-        <option value="waitlist.html">Waitlist</option>
       </select>
 
       <button class="logout-btn" onclick="logout()">Logout</button>
@@ -60,7 +60,7 @@
     <section class="card wide">
       <h2>Current Waitlist</h2>
       <p class="hint">
-        Yes records a successful call-in. No/Late records the reason and moves the applicant to the bottom.
+        Yes records a successful call-in. No/Late opens a reason selector and moves the applicant to the bottom.
       </p>
 
       <div class="table-wrap">
@@ -87,9 +87,6 @@
 
     <section class="card wide">
       <h2>Archived Waitlist Applicants</h2>
-      <p class="hint">
-        Archived applicants are removed from the active waitlist but can be reinstated to the bottom.
-      </p>
 
       <div class="table-wrap">
         <table>
