@@ -620,5 +620,26 @@ th {
 .hidden {
   display: none !important;
 }
-  
+  .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: min(650px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.hidden {
+  display: none !important;
+}
 }
