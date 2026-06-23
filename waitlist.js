@@ -37,6 +37,45 @@ function normalizeWaitlistNotes(notes) {
   return [];
 }
 
+function getCallPriority(item) {
+  if (item.callPriority) return item.callPriority;
+
+  const last = item.callInHistory?.[0];
+  if (!last) return "normal";
+
+  if (last.result === "Yes") return "normal";
+  if (last.reason === "Called late") return "late";
+
+  if (
+    last.reason === "No call" ||
+    last.reason === "Unable to reach" ||
+    last.reason === "Wrong number / disconnected"
+  ) {
+    return "nocall";
+  }
+
+  return "late";
+}
+
+function reorderActiveWaitlistByPriority() {
+  const active = [];
+  const archived = [];
+
+  waitlistState.waitlist.forEach(item => {
+    if (item.archived) {
+      archived.push(item);
+    } else {
+      active.push(item);
+    }
+  });
+
+  const normal = active.filter(item => getCallPriority(item) === "normal");
+  const late = active.filter(item => getCallPriority(item) === "late");
+  const nocall = active.filter(item => getCallPriority(item) === "nocall");
+
+  waitlistState.waitlist = [...normal, ...late, ...nocall, ...archived];
+}
+
 function addWaitlistApplicant() {
   waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp")
@@ -55,6 +94,7 @@ function addWaitlistApplicant() {
     archived: false,
     archivedAt: "",
     archiveReason: "",
+    callPriority: "normal",
     notes: initialNote
       ? [{
           id: crypto.randomUUID(),
@@ -194,6 +234,7 @@ function callInYes(applicantId) {
 
   if (!confirm(`Record YES call-in for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
+  applicant.callPriority = "normal";
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
 
   applicant.callInHistory.unshift({
@@ -205,6 +246,7 @@ function callInYes(applicantId) {
     createdAt: new Date().toISOString()
   });
 
+  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -230,16 +272,17 @@ function closeNoLateModal() {
 }
 
 function confirmNoLateCallIn() {
-  const applicantIndex = waitlistState.waitlist.findIndex(item => item.id === pendingNoLateApplicantId);
-  if (applicantIndex === -1) return;
+  const applicant = waitlistState.waitlist.find(item => item.id === pendingNoLateApplicantId);
+  if (!applicant) return;
 
-  const applicant = waitlistState.waitlist[applicantIndex];
   const reason = getInputValue("callInReason");
   const details = getInputValue("callInDetails");
 
-  if (!confirm(`Record "${reason}" for ${applicant.firstName} ${applicant.lastName} and move them to the bottom?`)) {
+  if (!confirm(`Record "${reason}" for ${applicant.firstName} ${applicant.lastName}?`)) {
     return;
   }
+
+  applicant.callPriority = reason === "Called late" ? "late" : "nocall";
 
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
 
@@ -252,9 +295,7 @@ function confirmNoLateCallIn() {
     createdAt: new Date().toISOString()
   });
 
-  waitlistState.waitlist.splice(applicantIndex, 1);
-  waitlistState.waitlist.push(applicant);
-
+  reorderActiveWaitlistByPriority();
   closeNoLateModal();
   renderWaitlist();
   saveWaitlist();
@@ -267,7 +308,9 @@ function undoLastCallIn(applicantId) {
   if (!confirm(`Undo the last call-in record for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
   applicant.callInHistory.shift();
+  applicant.callPriority = getCallPriority({ ...applicant, callPriority: "" });
 
+  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -285,6 +328,7 @@ function archiveApplicant(applicantId) {
   applicant.archivedAt = new Date().toISOString();
   applicant.archiveReason = reason.trim();
 
+  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -300,10 +344,12 @@ function reinstateApplicant(applicantId) {
   applicant.archived = false;
   applicant.archivedAt = "";
   applicant.archiveReason = "";
+  applicant.callPriority = "normal";
 
   waitlistState.waitlist.splice(applicantIndex, 1);
   waitlistState.waitlist.push(applicant);
 
+  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -339,6 +385,8 @@ function renderWaitlist() {
 function renderActiveWaitlist() {
   const body = document.getElementById("waitlistBody");
   if (!body) return;
+
+  reorderActiveWaitlistByPriority();
 
   const waitlist = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
@@ -484,6 +532,7 @@ auth.onAuthStateChanged(user => {
           archived: item.archived || false,
           archivedAt: item.archivedAt || "",
           archiveReason: item.archiveReason || "",
+          callPriority: item.callPriority || getCallPriority(item),
           notes: normalizeWaitlistNotes(item.notes),
           callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
         }))
