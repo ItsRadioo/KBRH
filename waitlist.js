@@ -49,8 +49,30 @@ function getArchivedWaitlist() {
     : [];
 }
 
-function getActiveIndex(applicantId) {
-  return getActiveWaitlist().findIndex(item => item.id === applicantId);
+function getActiveOrderSnapshot() {
+  return getActiveWaitlist().map(item => item.id);
+}
+
+function restoreActiveOrder(orderSnapshot) {
+  if (!Array.isArray(orderSnapshot) || !orderSnapshot.length) return false;
+
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+
+  const activeById = new Map(active.map(item => [item.id, item]));
+  const ordered = [];
+
+  orderSnapshot.forEach(id => {
+    if (activeById.has(id)) {
+      ordered.push(activeById.get(id));
+      activeById.delete(id);
+    }
+  });
+
+  activeById.forEach(item => ordered.push(item));
+
+  waitlistState.waitlist = [...ordered, ...archived];
+  return true;
 }
 
 function getCallPriority(item) {
@@ -77,31 +99,6 @@ function rebuildWaitlist(activeList, archivedList) {
   waitlistState.waitlist = [...activeList, ...archivedList];
 }
 
-function reorderActiveWaitlistByPriority() {
-  const active = getActiveWaitlist();
-  const archived = getArchivedWaitlist();
-
-  const normal = active.filter(item => getCallPriority(item) === "normal");
-  const late = active.filter(item => getCallPriority(item) === "late");
-  const nocall = active.filter(item => getCallPriority(item) === "nocall");
-
-  rebuildWaitlist([...normal, ...late, ...nocall], archived);
-}
-
-function moveApplicantToPriorActiveIndex(applicantId, priorIndex) {
-  const active = getActiveWaitlist();
-  const archived = getArchivedWaitlist();
-
-  const currentIndex = active.findIndex(item => item.id === applicantId);
-  if (currentIndex === -1) return;
-
-  const [applicant] = active.splice(currentIndex, 1);
-  const safeIndex = Math.max(0, Math.min(Number(priorIndex) || 0, active.length));
-
-  active.splice(safeIndex, 0, applicant);
-  rebuildWaitlist(active, archived);
-}
-
 function moveLateApplicantAboveNoCalls(applicantId) {
   const active = getActiveWaitlist();
   const archived = getArchivedWaitlist();
@@ -110,8 +107,7 @@ function moveLateApplicantAboveNoCalls(applicantId) {
   if (currentIndex === -1) return;
 
   const [applicant] = active.splice(currentIndex, 1);
-
-  let firstNoCallIndex = active.findIndex(item => getCallPriority(item) === "nocall");
+  const firstNoCallIndex = active.findIndex(item => getCallPriority(item) === "nocall");
 
   if (firstNoCallIndex === -1) {
     active.push(applicant);
@@ -291,7 +287,7 @@ function callInYes(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
-  const previousActiveIndex = getActiveIndex(applicantId);
+  const previousActiveOrder = getActiveOrderSnapshot();
 
   if (!confirm(`Record YES call-in for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
@@ -303,12 +299,11 @@ function callInYes(applicantId) {
     result: "Yes",
     reason: "",
     details: "",
-    previousActiveIndex,
+    previousActiveOrder,
     timestamp: new Date().toLocaleString(),
     createdAt: new Date().toISOString()
   });
 
-  reorderActiveWaitlistByPriority();
   renderWaitlist();
   saveWaitlist();
 }
@@ -337,7 +332,7 @@ function confirmNoLateCallIn() {
   const applicant = waitlistState.waitlist.find(item => item.id === pendingNoLateApplicantId);
   if (!applicant) return;
 
-  const previousActiveIndex = getActiveIndex(applicant.id);
+  const previousActiveOrder = getActiveOrderSnapshot();
   const reason = getInputValue("callInReason");
   const details = getInputValue("callInDetails");
 
@@ -353,7 +348,7 @@ function confirmNoLateCallIn() {
     result: "No/Late",
     reason,
     details,
-    previousActiveIndex,
+    previousActiveOrder,
     timestamp: new Date().toLocaleString(),
     createdAt: new Date().toISOString()
   });
@@ -380,10 +375,8 @@ function undoLastCallIn(applicantId) {
   applicant.callInHistory.shift();
   applicant.callPriority = getCallPriority({ ...applicant, callPriority: "" });
 
-  if (Number.isInteger(Number(lastRecord.previousActiveIndex))) {
-    moveApplicantToPriorActiveIndex(applicantId, Number(lastRecord.previousActiveIndex));
-  } else {
-    reorderActiveWaitlistByPriority();
+  if (lastRecord.previousActiveOrder) {
+    restoreActiveOrder(lastRecord.previousActiveOrder);
   }
 
   renderWaitlist();
