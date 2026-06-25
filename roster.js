@@ -1,134 +1,417 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Client Roster</title>
-  <link rel="stylesheet" href="style.css" />
+let rosterState = defaultAppState();
+let editingClientId = null;
+let notesClientId = null;
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+function getInputValue(id) {
+  const input = document.getElementById(id);
 
-  <script src="firebase-config.js"></script>
-  <script src="auth.js"></script>
-  <script src="data-store.js"></script>
-  <script>requireLogin();</script>
-</head>
+  if (!input) {
+    alert(`Missing input field: ${id}`);
+    throw new Error(`Missing input field: ${id}`);
+  }
 
-<body>
-  <header>
-    <div>
-      <h1>Client Roster</h1>
-      <p>Current clients attending the home.</p>
-    </div>
+  return input.value.trim();
+}
 
-    <nav>
-      <label class="page-nav-label" for="pageSelect">Go to:</label>
-      <select id="pageSelect" class="page-select">
-        <option value="waitlist.html">Waitlist</option>
-        <option value="roster.html">Current Roster</option>
-        <option value="index.html">House Chores</option>
-        <option value="meal-chores.html">Meal Chores</option>
-        <option value="verbalwarning.html">Verbal Warning Log</option>
-      </select>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </nav>
-  </header>
+async function saveRoster() {
+  try {
+    await saveAppState(rosterState);
+  } catch (error) {
+    console.error("Roster save failed:", error);
+    alert("Could not save roster. Check Console for details.");
+  }
+}
 
-  <main>
-    <section class="card wide">
-      <h2>Add Client</h2>
+function addClient() {
+  rosterState.roster = Array.isArray(rosterState.roster)
+    ? rosterState.roster.filter(client => client && client !== "temp")
+    : [];
 
-      <div class="form-row">
-        <div class="field-group"><label>Room Number</label><input id="roomNumber" type="text" /></div>
-        <div class="field-group"><label>First Name</label><input id="firstName" type="text" /></div>
-        <div class="field-group"><label>Last Name</label><input id="lastName" type="text" /></div>
-        <div class="field-group"><label>Client ID</label><input id="clientId" type="text" /></div>
-        <div class="field-group"><label>Date of Birth</label><input id="dob" type="date" /></div>
-        <div class="field-group"><label>Phone Number</label><input id="phone" type="text" /></div>
-        <div class="field-group"><label>Address</label><input id="address" type="text" /></div>
-        <div class="field-group"><label>City</label><input id="city" type="text" /></div>
-        <div class="field-group"><label>Emergency Contact</label><input id="contact" type="text" /></div>
-        <div class="field-group"><label>Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
-        <div class="field-group"><label>Entry Date</label><input id="entryDate" type="date" /></div>
-      </div>
+  const client = {
+    id: crypto.randomUUID(),
+    roomNumber: getInputValue("roomNumber"),
+    firstName: getInputValue("firstName"),
+    lastName: getInputValue("lastName"),
+    clientId: getInputValue("clientId"),
+    dob: getInputValue("dob"),
+    phone: getInputValue("phone"),
+    address: getInputValue("address"),
+    city: getInputValue("city"),
+    contact: getInputValue("contact"),
+    contactPhone: getInputValue("contactPhone"),
+    entryDate: getInputValue("entryDate"),
+    phase2AdmissionDate: "",
+    phase: "phase1",
+    notes: []
+  };
 
-      <div class="button-row">
-        <button id="addClientBtn" type="button" onclick="addClient()">Add Client</button>
-      </div>
-    </section>
+  if (!client.firstName || !client.lastName) {
+    alert("Enter at least a first and last name.");
+    return;
+  }
 
-    <section class="card wide">
-      <h2>Phase 1 Clients</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Client ID</th>
-              <th>DOB</th>
-              <th>Phone</th>
-              <th>Address</th>
-              <th>City</th>
-              <th>Contact</th>
-              <th>Contact #</th>
-              <th>Entry Date</th>
-              <th>Exit Date</th>
-              <th>Actions</th>
+  rosterState.roster.push(client);
+  clearClientForm();
+  renderRoster();
+  saveRoster();
+}
+
+function clearClientForm() {
+  [
+    "roomNumber",
+    "firstName",
+    "lastName",
+    "clientId",
+    "dob",
+    "phone",
+    "address",
+    "city",
+    "contact",
+    "contactPhone",
+    "entryDate"
+  ].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+}
+
+function calculateExitDate(entryDate) {
+  if (!entryDate) return "";
+
+  const date = new Date(entryDate + "T00:00:00");
+  date.setDate(date.getDate() + 89);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value + "T00:00:00");
+
+  return date.toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit"
+  });
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  return date.toLocaleString("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function startInlineEdit(clientId) {
+  editingClientId = clientId;
+  renderRoster();
+}
+
+function cancelInlineEdit() {
+  editingClientId = null;
+  renderRoster();
+}
+
+function saveInlineEdit(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  client.roomNumber = getInputValue(`editRoomNumber-${clientId}`);
+  client.firstName = getInputValue(`editFirstName-${clientId}`);
+  client.lastName = getInputValue(`editLastName-${clientId}`);
+  client.clientId = getInputValue(`editClientId-${clientId}`);
+  client.dob = getInputValue(`editDob-${clientId}`);
+  client.phone = getInputValue(`editPhone-${clientId}`);
+
+  if ((client.phase || "phase1") === "phase1") {
+    client.address = getInputValue(`editAddress-${clientId}`);
+    client.city = getInputValue(`editCity-${clientId}`);
+    client.contact = getInputValue(`editContact-${clientId}`);
+    client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
+    client.entryDate = getInputValue(`editEntryDate-${clientId}`);
+  } else {
+    client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
+  }
+
+  editingClientId = null;
+  renderRoster();
+  saveRoster();
+}
+
+function moveToPhase(clientId, phase) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  client.phase = phase;
+
+  if (phase === "phase2") {
+    client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
+  }
+
+  renderRoster();
+  saveRoster();
+}
+
+function removeClient(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  if (!confirm(`Remove ${client.firstName} ${client.lastName} from the roster?`)) return;
+
+  rosterState.roster = rosterState.roster.filter(item => item.id !== clientId);
+  renderRoster();
+  saveRoster();
+}
+
+function openNotes(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  notesClientId = clientId;
+
+  document.getElementById("notesModalTitle").textContent =
+    `Notes — ${client.firstName || ""} ${client.lastName || ""}`.trim();
+
+  document.getElementById("newNoteText").value = "";
+
+  renderNotesModal(client);
+  document.getElementById("notesModal").classList.remove("hidden");
+}
+
+function closeNotesModal() {
+  notesClientId = null;
+  document.getElementById("notesModal").classList.add("hidden");
+}
+
+function addClientNote() {
+  const client = rosterState.roster.find(item => item.id === notesClientId);
+  if (!client) return;
+
+  const text = getInputValue("newNoteText");
+
+  if (!text) {
+    alert("Enter a note first.");
+    return;
+  }
+
+  client.notes = Array.isArray(client.notes) ? client.notes : [];
+
+  client.notes.unshift({
+    id: crypto.randomUUID(),
+    text,
+    createdAt: new Date().toISOString()
+  });
+
+  document.getElementById("newNoteText").value = "";
+
+  renderNotesModal(client);
+  renderRoster();
+  saveRoster();
+}
+
+function deleteClientNote(noteId) {
+  const client = rosterState.roster.find(item => item.id === notesClientId);
+  if (!client) return;
+
+  if (!confirm("Delete this note?")) return;
+
+  client.notes = Array.isArray(client.notes)
+    ? client.notes.filter(note => note.id !== noteId)
+    : [];
+
+  renderNotesModal(client);
+  renderRoster();
+  saveRoster();
+}
+
+function renderNotesModal(client) {
+  const list = document.getElementById("notesList");
+  if (!list) return;
+
+  const notes = Array.isArray(client.notes) ? client.notes : [];
+
+  list.innerHTML = notes.length
+    ? notes.map(note => `
+        <li class="note-item">
+          <div>
+            <div>• ${escapeHtml(note.text)}</div>
+            <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
+          </div>
+          <button type="button" class="danger" onclick="deleteClientNote('${note.id}')">Delete</button>
+        </li>
+      `).join("")
+    : `<li class="empty">No notes yet.</li>`;
+}
+
+function renderRoster() {
+  renderPhase1Roster();
+  renderPhase2Roster();
+}
+
+function getPhaseClients(phase) {
+  return Array.isArray(rosterState.roster)
+    ? rosterState.roster.filter(client =>
+        client &&
+        client !== "temp" &&
+        (client.phase || "phase1") === phase
+      )
+    : [];
+}
+
+function renderPhase1Roster() {
+  const body = document.getElementById("rosterBody");
+  if (!body) return;
+
+  const roster = getPhaseClients("phase1");
+
+  body.innerHTML = roster.length
+    ? roster.map(client => {
+        const isEditing = editingClientId === client.id;
+        const exitDate = calculateExitDate(client.entryDate);
+        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+
+        if (isEditing) {
+          return `
+            <tr class="editing-row">
+              <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+              <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
+              <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
+              <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
+              <td><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
+              <td><input id="editAddress-${client.id}" value="${escapeAttribute(client.address)}" /></td>
+              <td><input id="editCity-${client.id}" value="${escapeAttribute(client.city)}" /></td>
+              <td><input id="editContact-${client.id}" value="${escapeAttribute(client.contact)}" /></td>
+              <td><input id="editContactPhone-${client.id}" value="${escapeAttribute(client.contactPhone)}" /></td>
+              <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
+              <td>${escapeHtml(formatDate(exitDate))}</td>
+              <td>
+                <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
+                <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+              </td>
             </tr>
-          </thead>
-          <tbody id="rosterBody"></tbody>
-        </table>
-      </div>
-    </section>
+          `;
+        }
 
-    <section class="card wide">
-      <h2>Phase 2 Clients</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Client ID</th>
-              <th>DOB</th>
-              <th>Phone</th>
-              <th>Entry Date</th>
-              <th>Actions</th>
+        return `
+          <tr>
+            <td>${escapeHtml(client.roomNumber)}</td>
+            <td>${escapeHtml(client.firstName)}</td>
+            <td>${escapeHtml(client.lastName)}</td>
+            <td>${escapeHtml(client.clientId)}</td>
+            <td>${escapeHtml(formatDate(client.dob))}</td>
+            <td>${escapeHtml(client.phone)}</td>
+            <td>${escapeHtml(client.address)}</td>
+            <td>${escapeHtml(client.city)}</td>
+            <td>${escapeHtml(client.contact)}</td>
+            <td>${escapeHtml(client.contactPhone)}</td>
+            <td>${escapeHtml(formatDate(client.entryDate))}</td>
+            <td>${escapeHtml(formatDate(exitDate))}</td>
+            <td>
+              <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
+              <div class="actions" style="margin-top: 8px;">
+                <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
+                <button type="button" class="success" onclick="moveToPhase('${client.id}', 'phase2')">Move to Phase 2</button>
+                <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="13" class="empty">No Phase 1 clients.</td></tr>`;
+}
+
+function renderPhase2Roster() {
+  const body = document.getElementById("phase2RosterBody");
+  if (!body) return;
+
+  const roster = getPhaseClients("phase2");
+
+  body.innerHTML = roster.length
+    ? roster.map(client => {
+        const isEditing = editingClientId === client.id;
+        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+
+        if (isEditing) {
+          return `
+            <tr class="editing-row">
+              <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+              <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
+              <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
+              <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
+              <td><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
+              <td><input id="editPhase2AdmissionDate-${client.id}" type="date" value="${escapeAttribute(client.phase2AdmissionDate)}" /></td>
+              <td>
+                <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
+                <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+              </td>
             </tr>
-          </thead>
-          <tbody id="phase2RosterBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+          `;
+        }
 
-  <div id="notesModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <h2 id="notesModalTitle">Notes</h2>
-      <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
+        return `
+          <tr>
+            <td>${escapeHtml(client.roomNumber)}</td>
+            <td>${escapeHtml(client.firstName)}</td>
+            <td>${escapeHtml(client.lastName)}</td>
+            <td>${escapeHtml(client.clientId)}</td>
+            <td>${escapeHtml(formatDate(client.dob))}</td>
+            <td>${escapeHtml(client.phone)}</td>
+            <td>${escapeHtml(formatDate(client.phase2AdmissionDate))}</td>
+            <td>
+              <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
+              <div class="actions" style="margin-top: 8px;">
+                <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
+                <button type="button" class="warning" onclick="moveToPhase('${client.id}', 'phase1')">Move to Phase 1</button>
+                <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="8" class="empty">No Phase 2 clients.</td></tr>`;
+}
 
-      <div class="button-row">
-        <button id="addNoteBtn" type="button" onclick="addClientNote()">Add Note</button>
-        <button id="closeNotesBtn" type="button" class="secondary" onclick="closeNotesModal()">Close</button>
-      </div>
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
+}
 
-      <ul id="notesList" class="list"></ul>
-    </div>
-  </div>
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
 
-  <script>
-    const pageSelect = document.getElementById("pageSelect");
-    pageSelect.value = window.location.pathname.split("/").pop() || "roster.html";
-    pageSelect.addEventListener("change", () => {
-      window.location.href = pageSelect.value;
+auth.onAuthStateChanged(user => {
+  if (!user) return;
+
+  listenToAppState(nextState => {
+    rosterState = nextState;
+
+    rosterState.roster = Array.isArray(rosterState.roster)
+      ? rosterState.roster.filter(client => client && client !== "temp")
+      : [];
+
+    rosterState.roster.forEach(client => {
+      client.roomNumber = client.roomNumber || "";
+      client.phase = client.phase || "phase1";
+      client.notes = Array.isArray(client.notes) ? client.notes : [];
+      client.phase2AdmissionDate = client.phase2AdmissionDate || "";
     });
-  </script>
 
-  <script src="roster.js"></script>
-</body>
-</html>
+    renderRoster();
+  });
+});
