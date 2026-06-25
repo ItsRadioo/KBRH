@@ -130,6 +130,7 @@ function normalizeAppState(state) {
         .filter(client => client && client !== "temp")
         .map(client => ({
           id: client.id || crypto.randomUUID(),
+          roomNumber: client.roomNumber || "",
           clientId: client.clientId || "",
           firstName: client.firstName || "",
           lastName: client.lastName || "",
