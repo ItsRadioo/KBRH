@@ -41,6 +41,7 @@
       <h2>Add Client</h2>
 
       <div class="form-row">
+        <div class="field-group"><label>Room Number</label><input id="roomNumber" type="text" /></div>
         <div class="field-group"><label>First Name</label><input id="firstName" type="text" /></div>
         <div class="field-group"><label>Last Name</label><input id="lastName" type="text" /></div>
         <div class="field-group"><label>Client ID</label><input id="clientId" type="text" /></div>
@@ -64,7 +65,7 @@
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th>Room #</th>
               <th>First Name</th>
               <th>Last Name</th>
               <th>Client ID</th>
@@ -90,7 +91,7 @@
         <table>
           <thead>
             <tr>
-              <th>#</th>
+              <th>Room #</th>
               <th>First Name</th>
               <th>Last Name</th>
               <th>Client ID</th>
@@ -122,7 +123,7 @@
 
   <script>
     const pageSelect = document.getElementById("pageSelect");
-    pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+    pageSelect.value = window.location.pathname.split("/").pop() || "roster.html";
     pageSelect.addEventListener("change", () => {
       window.location.href = pageSelect.value;
     });
