@@ -565,7 +565,7 @@ function renderActiveWaitlist() {
             </td>
             <td>
               <select onchange="handleApplicantAction('${item.id}', this.value); this.value='';">
-                <option value="">Actions ▼</option>
+                <option value="">Actions</option>
                 <option value="edit">Edit</option>
                 <option value="moveToRoster">Move to Roster</option>
                 <option value="archive">Archive</option>
