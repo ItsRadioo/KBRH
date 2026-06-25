@@ -14,6 +14,10 @@ function getInputValue(id) {
   return input.value.trim();
 }
 
+function todayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 async function saveWaitlist() {
   try {
     await saveAppState(waitlistState);
@@ -202,6 +206,66 @@ function saveInlineEdit(applicantId) {
   editingApplicantId = null;
   renderWaitlist();
   saveWaitlist();
+}
+
+function moveToRoster(applicantId) {
+  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
+  if (!applicant) return;
+
+  waitlistState.roster = Array.isArray(waitlistState.roster)
+    ? waitlistState.roster.filter(client => client && client !== "temp")
+    : [];
+
+  const clientId = prompt("Enter Client ID:", "");
+  if (clientId === null) return;
+
+  const dob = prompt("Enter DOB as YYYY-MM-DD:", "");
+  if (dob === null) return;
+
+  const entryDate = prompt("Enter admission / entry date as YYYY-MM-DD:", todayDateString());
+  if (entryDate === null) return;
+
+  if (!confirm(`Move ${applicant.firstName} ${applicant.lastName} to Current Roster?`)) return;
+
+  waitlistState.roster.push({
+    id: crypto.randomUUID(),
+    clientId: clientId.trim(),
+    firstName: applicant.firstName || "",
+    lastName: applicant.lastName || "",
+    dob: dob.trim(),
+    phone: applicant.contact || "",
+    address: applicant.address || "",
+    city: applicant.city || "",
+    contact: "",
+    contactPhone: "",
+    entryDate: entryDate.trim(),
+    phase: "phase1",
+    phase2AdmissionDate: "",
+    notes: normalizeWaitlistNotes(applicant.notes)
+  });
+
+  applicant.archived = true;
+  applicant.archivedAt = new Date().toISOString();
+  applicant.archiveReason = "Moved to Current Roster";
+
+  renderWaitlist();
+  saveWaitlist();
+}
+
+function handleApplicantAction(applicantId, action) {
+  if (!action) return;
+
+  if (action === "edit") startInlineEdit(applicantId);
+  if (action === "archive") archiveApplicant(applicantId);
+  if (action === "moveToRoster") moveToRoster(applicantId);
+  if (action === "delete") deleteApplicant(applicantId);
+}
+
+function handleArchivedApplicantAction(applicantId, action) {
+  if (!action) return;
+
+  if (action === "reinstate") reinstateApplicant(applicantId);
+  if (action === "delete") deleteApplicant(applicantId);
 }
 
 function openNotes(applicantId) {
@@ -500,9 +564,13 @@ function renderActiveWaitlist() {
               <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
             </td>
             <td>
-              <button type="button" class="secondary" onclick="startInlineEdit('${item.id}')">Edit</button>
-              <button type="button" class="warning" onclick="archiveApplicant('${item.id}')">Archive</button>
-              <button type="button" class="danger" onclick="deleteApplicant('${item.id}')">Delete</button>
+              <select onchange="handleApplicantAction('${item.id}', this.value); this.value='';">
+                <option value="">Actions ▼</option>
+                <option value="edit">Edit</option>
+                <option value="moveToRoster">Move to Roster</option>
+                <option value="archive">Archive</option>
+                <option value="delete">Delete</option>
+              </select>
             </td>
           </tr>
         `;
@@ -535,8 +603,11 @@ function renderArchivedWaitlist() {
               <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
             </td>
             <td>
-              <button type="button" class="success" onclick="reinstateApplicant('${item.id}')">Reinstate</button>
-              <button type="button" class="danger" onclick="deleteApplicant('${item.id}')">Delete</button>
+              <select onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">
+                <option value="">Actions ▼</option>
+                <option value="reinstate">Reinstate</option>
+                <option value="delete">Delete</option>
+              </select>
             </td>
           </tr>
         `;
@@ -596,6 +667,10 @@ auth.onAuthStateChanged(user => {
           notes: normalizeWaitlistNotes(item.notes),
           callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
         }))
+      : [];
+
+    waitlistState.roster = Array.isArray(waitlistState.roster)
+      ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
     renderWaitlist();
