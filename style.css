@@ -207,17 +207,17 @@ th {
 }
 
 .phone-col {
-  min-width: 145px;
+  min-width: 125px;
   white-space: nowrap;
 }
 
 .phone-cell {
-  min-width: 145px;
+  min-width: 125px;
   white-space: nowrap;
 }
 
 .phone-cell input {
-  min-width: 145px;
+  min-width: 125px;
 }
 
 .list {
