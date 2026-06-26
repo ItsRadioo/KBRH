@@ -41,6 +41,7 @@ function addClient() {
     contact: getInputValue("contact"),
     contactPhone: getInputValue("contactPhone"),
     entryDate: getInputValue("entryDate"),
+    expectedDischargeDate: calculateExitDate(getInputValue("entryDate")),
     phase2AdmissionDate: "",
     phase: "phase1",
     notes: []
@@ -211,6 +212,7 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
     client.contact = getInputValue(`editContact-${clientId}`);
     client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
     client.entryDate = getInputValue(`editEntryDate-${clientId}`);
+    client.expectedDischargeDate = getInputValue(`editDischargeDate-${clientId}`);
   } else {
     client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
   }
@@ -374,7 +376,13 @@ function renderPhase1Roster() {
               <td><input id="editContact-${client.id}" value="${escapeAttribute(client.contact)}" /></td>
               <td class="phone-cell"><input id="editContactPhone-${client.id}" value="${escapeAttribute(client.contactPhone)}" /></td>
               <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
-              <td>${escapeHtml(formatDate(exitDate))}</td>
+              <td>
+  <input
+    id="editDischargeDate-${client.id}"
+    type="date"
+    value="${escapeAttribute(client.expectedDischargeDate || exitDate)}"
+  />
+</td>
               <td>${escapeHtml(daysRemaining)}</td>
               <td>
                 ${
@@ -403,7 +411,7 @@ function renderPhase1Roster() {
             <td>${escapeHtml(client.contact)}</td>
             <td class="phone-cell">${escapeHtml(client.contactPhone)}</td>
             <td>${escapeHtml(formatDate(client.entryDate))}</td>
-            <td>${escapeHtml(formatDate(exitDate))}</td>
+            <td>${escapeHtml(formatDate(client.expectedDischargeDate || exitDate))}</td>
             <td>${escapeHtml(daysRemaining)}</td>
             <td>
               <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
