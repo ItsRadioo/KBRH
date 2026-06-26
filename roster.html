@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Client Roster</title>
   <link rel="stylesheet" href="style.css" />
 
@@ -32,6 +33,7 @@
         <option value="meal-chores.html">Meal Chores</option>
         <option value="verbalwarning.html">Verbal Warning Log</option>
       </select>
+
       <button class="logout-btn" onclick="logout()">Logout</button>
     </nav>
   </header>
@@ -41,17 +43,60 @@
       <h2>Add Client</h2>
 
       <div class="form-row">
-        <div class="field-group"><label>Room Number</label><input id="roomNumber" type="text" /></div>
-        <div class="field-group"><label>First Name</label><input id="firstName" type="text" /></div>
-        <div class="field-group"><label>Last Name</label><input id="lastName" type="text" /></div>
-        <div class="field-group"><label>Client ID</label><input id="clientId" type="text" /></div>
-        <div class="field-group"><label>Date of Birth</label><input id="dob" type="date" /></div>
-        <div class="field-group phone-field"><label>Phone Number</label><input id="phone" type="text" /></div>
-        <div class="field-group"><label>Address</label><input id="address" type="text" /></div>
-        <div class="field-group"><label>City</label><input id="city" type="text" /></div>
-        <div class="field-group"><label>Emergency Contact</label><input id="contact" type="text" /></div>
-        <div class="field-group phone-field"><label>Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
-        <div class="field-group"><label>Entry Date</label><input id="entryDate" type="date" /></div>
+        <div class="field-group">
+          <label for="roomNumber">Room Number</label>
+          <input id="roomNumber" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="firstName">First Name</label>
+          <input id="firstName" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="lastName">Last Name</label>
+          <input id="lastName" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="clientId">Client ID</label>
+          <input id="clientId" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="dob">Date of Birth</label>
+          <input id="dob" type="date" />
+        </div>
+
+        <div class="field-group phone-field">
+          <label for="phone">Phone Number</label>
+          <input id="phone" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="address">Address</label>
+          <input id="address" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="city">City</label>
+          <input id="city" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="contact">Emergency Contact</label>
+          <input id="contact" type="text" />
+        </div>
+
+        <div class="field-group phone-field">
+          <label for="contactPhone">Emergency Contact Phone</label>
+          <input id="contactPhone" type="text" />
+        </div>
+
+        <div class="field-group">
+          <label for="entryDate">Entry Date</label>
+          <input id="entryDate" type="date" />
+        </div>
       </div>
 
       <div class="button-row">
@@ -62,6 +107,7 @@
     <section class="card wide">
       <h2>Roster Edit Controls</h2>
       <p class="hint">Use Edit All to update multiple residents at once.</p>
+
       <div class="button-row">
         <button id="editAllBtn" type="button" onclick="startEditAll()">Edit All Residents</button>
         <button id="saveAllBtn" type="button" class="success hidden" onclick="saveAllEdits()">Save All Changes</button>
@@ -71,8 +117,9 @@
 
     <section class="card wide">
       <h2>Phase 1 Clients</h2>
+
       <div class="table-wrap">
-        .roster-table th, .roster-table td {   padding: 8px;   font-size: 13px; }  .roster-table input, .roster-table select {   min-width: 110px;   padding: 8px;   font-size: 13px; }
+        <table class="roster-table">
           <thead>
             <tr>
               <th>Room #</th>
@@ -86,8 +133,9 @@
               <th>Contact</th>
               <th class="phone-col">Contact #</th>
               <th>Entry Date</th>
-              <th>Exit Date</th>
+              <th>Discharge Date</th>
               <th>Days Remaining</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -98,8 +146,9 @@
 
     <section class="card wide">
       <h2>Phase 2 Clients</h2>
+
       <div class="table-wrap">
-        .roster-table th, .roster-table td {   padding: 8px;   font-size: 13px; }  .roster-table input, .roster-table select {   min-width: 110px;   padding: 8px;   font-size: 13px; }
+        <table class="roster-table">
           <thead>
             <tr>
               <th>Room #</th>
@@ -109,8 +158,9 @@
               <th>DOB</th>
               <th class="phone-col">Phone</th>
               <th>Phase 2 Entry Date</th>
-              <th>Program Exit Date</th>
+              <th>Discharge Date</th>
               <th>Days Remaining</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -123,6 +173,7 @@
   <div id="notesModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <h2 id="notesModalTitle">Notes</h2>
+
       <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
 
       <div class="button-row">
@@ -137,6 +188,7 @@
   <script>
     const pageSelect = document.getElementById("pageSelect");
     pageSelect.value = window.location.pathname.split("/").pop() || "roster.html";
+
     pageSelect.addEventListener("change", () => {
       window.location.href = pageSelect.value;
     });
