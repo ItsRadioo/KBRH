@@ -46,16 +46,26 @@
         <div class="field-group"><label>Last Name</label><input id="lastName" type="text" /></div>
         <div class="field-group"><label>Client ID</label><input id="clientId" type="text" /></div>
         <div class="field-group"><label>Date of Birth</label><input id="dob" type="date" /></div>
-        <div class="field-group"><label>Phone Number</label><input id="phone" type="text" /></div>
+        <div class="field-group phone-field"><label>Phone Number</label><input id="phone" type="text" /></div>
         <div class="field-group"><label>Address</label><input id="address" type="text" /></div>
         <div class="field-group"><label>City</label><input id="city" type="text" /></div>
         <div class="field-group"><label>Emergency Contact</label><input id="contact" type="text" /></div>
-        <div class="field-group"><label>Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
+        <div class="field-group phone-field"><label>Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
         <div class="field-group"><label>Entry Date</label><input id="entryDate" type="date" /></div>
       </div>
 
       <div class="button-row">
         <button id="addClientBtn" type="button" onclick="addClient()">Add Client</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Roster Edit Controls</h2>
+      <p class="hint">Use Edit All to update multiple residents at once.</p>
+      <div class="button-row">
+        <button id="editAllBtn" type="button" onclick="startEditAll()">Edit All Residents</button>
+        <button id="saveAllBtn" type="button" class="success hidden" onclick="saveAllEdits()">Save All Changes</button>
+        <button id="cancelAllBtn" type="button" class="secondary hidden" onclick="cancelEditAll()">Cancel Edit All</button>
       </div>
     </section>
 
@@ -70,13 +80,14 @@
               <th>Last Name</th>
               <th>Client ID</th>
               <th>DOB</th>
-              <th>Phone</th>
+              <th class="phone-col">Phone</th>
               <th>Address</th>
               <th>City</th>
               <th>Contact</th>
-              <th>Contact #</th>
+              <th class="phone-col">Contact #</th>
               <th>Entry Date</th>
               <th>Exit Date</th>
+              <th>Days Remaining</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -96,8 +107,10 @@
               <th>Last Name</th>
               <th>Client ID</th>
               <th>DOB</th>
-              <th>Phone</th>
-              <th>Entry Date</th>
+              <th class="phone-col">Phone</th>
+              <th>Phase 2 Entry Date</th>
+              <th>Program Exit Date</th>
+              <th>Days Remaining</th>
               <th>Actions</th>
             </tr>
           </thead>
