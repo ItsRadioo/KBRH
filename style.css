@@ -60,9 +60,9 @@ p {
 }
 
 main {
-  max-width: 96vw;
+  max-width: 98vw;
   margin: 24px auto;
-  padding: 0 16px;
+  padding: 0 10px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -96,7 +96,7 @@ main {
 }
 
 .phone-field {
-  min-width: 260px;
+  min-width: 240px;
 }
 
 .field-group label {
@@ -119,7 +119,7 @@ textarea {
 }
 
 .phone-input {
-  min-width: 260px;
+  min-width: 240px;
 }
 
 textarea {
@@ -194,7 +194,6 @@ table {
   margin-top: 12px;
 }
 
-
 th,
 td {
   padding: 12px;
@@ -207,31 +206,103 @@ th {
   background: #f9fafb;
 }
 
+/* Compact roster tables */
+.roster-table {
+  width: 100%;
+  table-layout: auto;
+}
+
 .roster-table th,
 .roster-table td {
-  padding: 8px;
-  font-size: 13px;
+  padding: 6px 7px;
+  font-size: 12px;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .roster-table input,
 .roster-table select {
-  min-width: 110px;
-  padding: 8px;
-  font-size: 13px;
+  min-width: 75px;
+  width: 100%;
+  padding: 6px 7px;
+  font-size: 12px;
 }
 
-.phone-col {
-  min-width: 125px;
-  white-space: nowrap;
+/* Phase 1 roster column sizing */
+.roster-table th:nth-child(1),
+.roster-table td:nth-child(1) {
+  width: 55px;
 }
 
+.roster-table th:nth-child(2),
+.roster-table td:nth-child(2),
+.roster-table th:nth-child(3),
+.roster-table td:nth-child(3) {
+  width: 95px;
+}
+
+.roster-table th:nth-child(4),
+.roster-table td:nth-child(4) {
+  width: 80px;
+}
+
+.roster-table th:nth-child(5),
+.roster-table td:nth-child(5) {
+  width: 85px;
+}
+
+.roster-table th:nth-child(6),
+.roster-table td:nth-child(6),
+.roster-table th:nth-child(10),
+.roster-table td:nth-child(10) {
+  width: 125px;
+}
+
+.roster-table th:nth-child(7),
+.roster-table td:nth-child(7) {
+  width: 155px;
+}
+
+.roster-table th:nth-child(8),
+.roster-table td:nth-child(8) {
+  width: 90px;
+}
+
+.roster-table th:nth-child(9),
+.roster-table td:nth-child(9) {
+  width: 115px;
+}
+
+.roster-table th:nth-child(11),
+.roster-table td:nth-child(11),
+.roster-table th:nth-child(12),
+.roster-table td:nth-child(12) {
+  width: 95px;
+}
+
+.roster-table th:nth-child(13),
+.roster-table td:nth-child(13) {
+  width: 90px;
+}
+
+.roster-table th:nth-child(14),
+.roster-table td:nth-child(14) {
+  width: 75px;
+}
+
+.roster-table th:nth-child(15),
+.roster-table td:nth-child(15) {
+  width: 95px;
+}
+
+.phone-col,
 .phone-cell {
   min-width: 125px;
   white-space: nowrap;
 }
 
 .phone-cell input {
-  min-width: 125px;
+  min-width: 115px;
 }
 
 .list {
