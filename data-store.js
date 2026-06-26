@@ -141,6 +141,7 @@ function normalizeAppState(state) {
           contact: client.contact || "",
           contactPhone: client.contactPhone || "",
           entryDate: client.entryDate || "",
+          expectedDischargeDate: client.expectedDischargeDate || "",
           phase: client.phase || "phase1",
           phase2AdmissionDate: client.phase2AdmissionDate || "",
           notes: normalizeNotes(client.notes)
