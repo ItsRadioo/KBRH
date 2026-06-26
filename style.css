@@ -95,6 +95,10 @@ main {
   flex: 1;
 }
 
+.phone-field {
+  min-width: 260px;
+}
+
 .field-group label {
   font-size: 13px;
   font-weight: 700;
@@ -112,6 +116,10 @@ textarea {
   font-size: 15px;
   font-family: Arial, sans-serif;
   box-sizing: border-box;
+}
+
+.phone-input {
+  min-width: 260px;
 }
 
 textarea {
@@ -198,6 +206,20 @@ th {
   background: #f9fafb;
 }
 
+.phone-col {
+  min-width: 190px;
+  white-space: nowrap;
+}
+
+.phone-cell {
+  min-width: 190px;
+  white-space: nowrap;
+}
+
+.phone-cell input {
+  min-width: 190px;
+}
+
 .list {
   padding-left: 0;
   list-style: none;
@@ -271,7 +293,6 @@ th {
   display: none !important;
 }
 
-/* Modal Styles */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -319,7 +340,6 @@ th {
   margin-top: 4px;
 }
 
-/* Login */
 .login-body {
   min-height: 100vh;
   display: grid;
@@ -357,7 +377,6 @@ th {
   font-size: 13px;
 }
 
-/* Cleaning Print */
 .print-main {
   display: block;
   max-width: 900px;
@@ -447,7 +466,6 @@ th {
   line-height: 1.35;
 }
 
-/* Meal Pages */
 .meal-week-table th,
 .meal-week-table td {
   vertical-align: middle;
