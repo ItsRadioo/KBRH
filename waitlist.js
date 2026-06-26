@@ -215,33 +215,22 @@ function moveToRoster(applicantId) {
     ? waitlistState.roster.filter(client => client && client !== "temp")
     : [];
 
-  const roomNumber = prompt("Enter Room Number:", "");
-  if (roomNumber === null) return;
-
-  const clientId = prompt("Enter Client ID:", "");
-  if (clientId === null) return;
-
-  const dob = prompt("Enter DOB as YYYY-MM-DD:", "");
-  if (dob === null) return;
-
-  const entryDate = prompt("Enter admission / entry date as YYYY-MM-DD:", todayDateString());
-  if (entryDate === null) return;
-
   if (!confirm(`Move ${applicant.firstName} ${applicant.lastName} to Current Roster?`)) return;
 
   waitlistState.roster.push({
     id: crypto.randomUUID(),
-    roomNumber: roomNumber.trim(),
-    clientId: clientId.trim(),
+    roomNumber: "",
+    clientId: "",
     firstName: applicant.firstName || "",
     lastName: applicant.lastName || "",
-    dob: dob.trim(),
+    dob: "",
     phone: applicant.contact || "",
-    address: applicant.address || "",
+    address: "",
     city: applicant.city || "",
     contact: "",
     contactPhone: "",
-    entryDate: entryDate.trim(),
+    entryDate: "",
+    expectedDischargeDate: "",
     phase: "phase1",
     phase2AdmissionDate: "",
     notes: normalizeWaitlistNotes(applicant.notes)
