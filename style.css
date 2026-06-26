@@ -60,7 +60,7 @@ p {
 }
 
 main {
-  max-width: 1200px;
+  max-width: 96vw;
   margin: 24px auto;
   padding: 0 16px;
   display: grid;
@@ -194,6 +194,7 @@ table {
   margin-top: 12px;
 }
 
+
 th,
 td {
   padding: 12px;
@@ -204,6 +205,19 @@ td {
 
 th {
   background: #f9fafb;
+}
+
+.roster-table th,
+.roster-table td {
+  padding: 8px;
+  font-size: 13px;
+}
+
+.roster-table input,
+.roster-table select {
+  min-width: 110px;
+  padding: 8px;
+  font-size: 13px;
 }
 
 .phone-col {
