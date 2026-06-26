@@ -1,7 +1,6 @@
 let waitlistState = defaultAppState();
 let editingApplicantId = null;
 let notesApplicantId = null;
-let pendingNoLateApplicantId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -216,6 +215,9 @@ function moveToRoster(applicantId) {
     ? waitlistState.roster.filter(client => client && client !== "temp")
     : [];
 
+  const roomNumber = prompt("Enter Room Number:", "");
+  if (roomNumber === null) return;
+
   const clientId = prompt("Enter Client ID:", "");
   if (clientId === null) return;
 
@@ -229,6 +231,7 @@ function moveToRoster(applicantId) {
 
   waitlistState.roster.push({
     id: crypto.randomUUID(),
+    roomNumber: roomNumber.trim(),
     clientId: clientId.trim(),
     firstName: applicant.firstName || "",
     lastName: applicant.lastName || "",
@@ -266,6 +269,64 @@ function handleArchivedApplicantAction(applicantId, action) {
 
   if (action === "reinstate") reinstateApplicant(applicantId);
   if (action === "delete") deleteApplicant(applicantId);
+}
+
+function handleCallInAction(applicantId, action) {
+  if (!action) return;
+
+  if (action === "yes") {
+    callInYes(applicantId);
+    return;
+  }
+
+  recordNoLateCallIn(applicantId, action);
+}
+
+function recordNoLateCallIn(applicantId, reason) {
+  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
+  if (!applicant) return;
+
+  const previousActiveOrder = getActiveOrderSnapshot();
+
+  let details = "";
+
+  if (reason === "Other") {
+    const customReason = prompt("Enter reason:", "");
+    if (customReason === null) return;
+
+    reason = customReason.trim() || "Other";
+  } else {
+    const optionalDetails = prompt("Optional details:", "");
+    if (optionalDetails === null) return;
+
+    details = optionalDetails.trim();
+  }
+
+  if (!confirm(`Record "${reason}" for ${applicant.firstName} ${applicant.lastName}?`)) {
+    return;
+  }
+
+  applicant.callPriority = reason === "Called late" ? "late" : "nocall";
+  applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
+
+  applicant.callInHistory.unshift({
+    id: crypto.randomUUID(),
+    result: "No/Late",
+    reason,
+    details,
+    previousActiveOrder,
+    timestamp: new Date().toLocaleString(),
+    createdAt: new Date().toISOString()
+  });
+
+  if (reason === "Called late") {
+    moveLateApplicantAboveNoCalls(applicant.id);
+  } else {
+    moveNoCallApplicantToBottom(applicant.id);
+  }
+
+  renderWaitlist();
+  saveWaitlist();
 }
 
 function openNotes(applicantId) {
@@ -372,62 +433,6 @@ function callInYes(applicantId) {
   saveWaitlist();
 }
 
-function openNoLateModal(applicantId) {
-  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
-  if (!applicant) return;
-
-  pendingNoLateApplicantId = applicantId;
-
-  document.getElementById("callInModalTitle").textContent =
-    `No/Late — ${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
-
-  document.getElementById("callInReason").value = "No call";
-  document.getElementById("callInDetails").value = "";
-
-  document.getElementById("callInModal").classList.remove("hidden");
-}
-
-function closeNoLateModal() {
-  pendingNoLateApplicantId = null;
-  document.getElementById("callInModal").classList.add("hidden");
-}
-
-function confirmNoLateCallIn() {
-  const applicant = waitlistState.waitlist.find(item => item.id === pendingNoLateApplicantId);
-  if (!applicant) return;
-
-  const previousActiveOrder = getActiveOrderSnapshot();
-  const reason = getInputValue("callInReason");
-  const details = getInputValue("callInDetails");
-
-  if (!confirm(`Record "${reason}" for ${applicant.firstName} ${applicant.lastName}?`)) {
-    return;
-  }
-
-  applicant.callPriority = reason === "Called late" ? "late" : "nocall";
-  applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
-
-  applicant.callInHistory.unshift({
-    id: crypto.randomUUID(),
-    result: "No/Late",
-    reason,
-    details,
-    previousActiveOrder,
-    timestamp: new Date().toLocaleString(),
-    createdAt: new Date().toISOString()
-  });
-
-  if (reason === "Called late") {
-    moveLateApplicantAboveNoCalls(applicant.id);
-  } else {
-    moveNoCallApplicantToBottom(applicant.id);
-  }
-
-  closeNoLateModal();
-  renderWaitlist();
-  saveWaitlist();
-}
-
 function undoLastCallIn(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant || !Array.isArray(applicant.callInHistory) || !applicant.callInHistory.length) return;
@@ -530,7 +535,7 @@ function renderActiveWaitlist() {
               <td>${index + 1}</td>
               <td><input id="editLastName-${item.id}" value="${escapeAttribute(item.lastName)}" /></td>
               <td><input id="editFirstName-${item.id}" value="${escapeAttribute(item.firstName)}" /></td>
-              <td><input id="editContact-${item.id}" value="${escapeAttribute(item.contact)}" /></td>
+              <td class="phone-cell"><input id="editContact-${item.id}" value="${escapeAttribute(item.contact)}" /></td>
               <td><input id="editStatus-${item.id}" value="${escapeAttribute(item.status)}" /></td>
               <td><input id="editCity-${item.id}" value="${escapeAttribute(item.city)}" /></td>
               <td><input id="editDateApplied-${item.id}" type="date" value="${escapeAttribute(item.dateApplied)}" /></td>
@@ -550,14 +555,22 @@ function renderActiveWaitlist() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
-            <td>${escapeHtml(item.contact)}</td>
+            <td class="phone-cell">${escapeHtml(item.contact)}</td>
             <td>${escapeHtml(item.status)}</td>
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
             <td>
-              <button type="button" class="success" onclick="callInYes('${item.id}')">Yes</button>
-              <button type="button" class="warning" onclick="openNoLateModal('${item.id}')">No/Late</button>
-              <button type="button" class="secondary" onclick="undoLastCallIn('${item.id}')">Undo Last</button>
+              <select onchange="handleCallInAction('${item.id}', this.value); this.value='';">
+                <option value="">Call In</option>
+                <option value="yes">Yes</option>
+                <option value="Called late">Called Late</option>
+                <option value="No call">No Call</option>
+                <option value="Unable to reach">Unable to Reach</option>
+                <option value="Wrong number / disconnected">Wrong Number / Disconnected</option>
+                <option value="Declined bed/placement">Declined Bed / Placement</option>
+                <option value="Other">Other</option>
+              </select>
+              <button type="button" class="secondary" onclick="undoLastCallIn('${item.id}')">Undo</button>
             </td>
             <td>${escapeHtml(lastCall)}</td>
             <td>
@@ -593,7 +606,7 @@ function renderArchivedWaitlist() {
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
-            <td>${escapeHtml(item.contact)}</td>
+            <td class="phone-cell">${escapeHtml(item.contact)}</td>
             <td>${escapeHtml(item.status)}</td>
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
@@ -604,7 +617,7 @@ function renderArchivedWaitlist() {
             </td>
             <td>
               <select onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">
-                <option value="">Actions ▼</option>
+                <option value="">Actions</option>
                 <option value="reinstate">Reinstate</option>
                 <option value="delete">Delete</option>
               </select>
@@ -647,8 +660,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWaitlistBtn")?.addEventListener("click", addWaitlistApplicant);
   document.getElementById("addWaitlistNoteBtn")?.addEventListener("click", addWaitlistNote);
   document.getElementById("closeWaitlistNotesBtn")?.addEventListener("click", closeNotesModal);
-  document.getElementById("confirmNoLateBtn")?.addEventListener("click", confirmNoLateCallIn);
-  document.getElementById("cancelNoLateBtn")?.addEventListener("click", closeNoLateModal);
 });
 
 auth.onAuthStateChanged(user => {
