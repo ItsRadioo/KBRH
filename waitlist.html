@@ -45,7 +45,7 @@
       <div class="form-row">
         <input id="lastName" placeholder="Last Name" />
         <input id="firstName" placeholder="First Name" />
-        <input id="contact" placeholder="Contact" />
+        <input id="contact" class="phone-input" placeholder="Contact / Phone Number" />
         <input id="status" placeholder="Status" />
         <input id="city" placeholder="City" />
         <input id="dateApplied" type="date" />
@@ -60,7 +60,7 @@
     <section class="card wide">
       <h2>Current Waitlist</h2>
       <p class="hint">
-        Yes records a successful call-in. No/Late opens a reason selector and moves the applicant to the bottom.
+        Use the Call In dropdown to record Yes, Late, or No Call.
       </p>
 
       <div class="table-wrap">
@@ -70,7 +70,7 @@
               <th>#</th>
               <th>Last Name</th>
               <th>First Name</th>
-              <th>Contact</th>
+              <th class="phone-col">Contact</th>
               <th>Status</th>
               <th>City</th>
               <th>Date Applied</th>
@@ -95,7 +95,7 @@
               <th>#</th>
               <th>Last Name</th>
               <th>First Name</th>
-              <th>Contact</th>
+              <th class="phone-col">Contact</th>
               <th>Status</th>
               <th>City</th>
               <th>Date Applied</th>
@@ -123,36 +123,6 @@
       </div>
 
       <ul id="waitlistNotesList" class="list"></ul>
-    </div>
-  </div>
-
-  <div id="callInModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <h2 id="callInModalTitle">No/Late Call-In</h2>
-
-      <div class="form-row">
-        <div class="field-group">
-          <label for="callInReason">Reason</label>
-          <select id="callInReason">
-            <option value="No call">No call</option>
-            <option value="Called late">Called late</option>
-            <option value="Unable to reach">Unable to reach</option>
-            <option value="Declined bed/placement">Declined bed/placement</option>
-            <option value="Wrong number / disconnected">Wrong number / disconnected</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div class="field-group">
-          <label for="callInDetails">Details</label>
-          <input id="callInDetails" placeholder="Optional details" />
-        </div>
-      </div>
-
-      <div class="button-row">
-        <button id="confirmNoLateBtn" type="button" class="warning">Confirm No/Late</button>
-        <button id="cancelNoLateBtn" type="button" class="secondary">Cancel</button>
-      </div>
     </div>
   </div>
 
