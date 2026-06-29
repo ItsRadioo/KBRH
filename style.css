@@ -206,7 +206,6 @@ th {
   background: #f9fafb;
 }
 
-/* Compact roster tables */
 .roster-table {
   width: 100%;
   table-layout: auto;
@@ -228,73 +227,6 @@ th {
   font-size: 12px;
 }
 
-/* Phase 1 roster column sizing */
-.roster-table th:nth-child(1),
-.roster-table td:nth-child(1) {
-  width: 55px;
-}
-
-.roster-table th:nth-child(2),
-.roster-table td:nth-child(2),
-.roster-table th:nth-child(3),
-.roster-table td:nth-child(3) {
-  width: 95px;
-}
-
-.roster-table th:nth-child(4),
-.roster-table td:nth-child(4) {
-  width: 80px;
-}
-
-.roster-table th:nth-child(5),
-.roster-table td:nth-child(5) {
-  width: 85px;
-}
-
-.roster-table th:nth-child(6),
-.roster-table td:nth-child(6),
-.roster-table th:nth-child(10),
-.roster-table td:nth-child(10) {
-  width: 125px;
-}
-
-.roster-table th:nth-child(7),
-.roster-table td:nth-child(7) {
-  width: 155px;
-}
-
-.roster-table th:nth-child(8),
-.roster-table td:nth-child(8) {
-  width: 90px;
-}
-
-.roster-table th:nth-child(9),
-.roster-table td:nth-child(9) {
-  width: 115px;
-}
-
-.roster-table th:nth-child(11),
-.roster-table td:nth-child(11),
-.roster-table th:nth-child(12),
-.roster-table td:nth-child(12) {
-  width: 95px;
-}
-
-.roster-table th:nth-child(13),
-.roster-table td:nth-child(13) {
-  width: 90px;
-}
-
-.roster-table th:nth-child(14),
-.roster-table td:nth-child(14) {
-  width: 75px;
-}
-
-.roster-table th:nth-child(15),
-.roster-table td:nth-child(15) {
-  width: 95px;
-}
-
 .phone-col,
 .phone-cell {
   min-width: 125px;
@@ -303,6 +235,58 @@ th {
 
 .phone-cell input {
   min-width: 115px;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.away {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.archived {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.warning-status {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.discharge-ok {
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+}
+
+.discharge-warning {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
+}
+
+.discharge-overdue {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.discharge-missing {
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 700;
 }
 
 .list {
@@ -340,29 +324,6 @@ th {
 .badge button {
   padding: 2px 6px;
   font-size: 12px;
-}
-
-.status {
-  display: inline-block;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.status.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status.away {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status.archived {
-  background: #e5e7eb;
-  color: #374151;
 }
 
 .empty {
