@@ -2,6 +2,7 @@ let rosterState = defaultAppState();
 let editingClientId = null;
 let notesClientId = null;
 let editingAll = false;
+let rosterSearchTerm = "";
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -12,6 +13,16 @@ function getInputValue(id) {
   }
 
   return input.value.trim();
+}
+
+function formatPhoneNumber(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  return String(value || "");
 }
 
 async function saveRoster() {
@@ -28,6 +39,8 @@ function addClient() {
     ? rosterState.roster.filter(client => client && client !== "temp")
     : [];
 
+  const entryDate = getInputValue("entryDate");
+
   const client = {
     id: crypto.randomUUID(),
     roomNumber: getInputValue("roomNumber"),
@@ -35,15 +48,18 @@ function addClient() {
     lastName: getInputValue("lastName"),
     clientId: getInputValue("clientId"),
     dob: getInputValue("dob"),
-    phone: getInputValue("phone"),
+    phone: formatPhoneNumber(getInputValue("phone")),
     address: getInputValue("address"),
     city: getInputValue("city"),
     contact: getInputValue("contact"),
-    contactPhone: getInputValue("contactPhone"),
-    entryDate: getInputValue("entryDate"),
-    expectedDischargeDate: calculateExitDate(getInputValue("entryDate")),
+    contactPhone: formatPhoneNumber(getInputValue("contactPhone")),
+    entryDate,
+    expectedDischargeDate: calculateExitDate(entryDate),
     phase2AdmissionDate: "",
     phase: "phase1",
+    archived: false,
+    archivedAt: "",
+    archiveReason: "",
     notes: []
   };
 
@@ -92,14 +108,18 @@ function calculateExitDate(entryDate) {
   return exitDate.toISOString().slice(0, 10);
 }
 
-function calculateDaysRemaining(entryDate) {
-  const exitDate = calculateExitDate(entryDate);
-  if (!exitDate) return "";
+function getDischargeDate(client) {
+  return client.expectedDischargeDate || calculateExitDate(client.entryDate);
+}
+
+function calculateDaysRemainingForClient(client) {
+  const dischargeDate = getDischargeDate(client);
+  if (!dischargeDate) return "";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const exit = new Date(exitDate + "T00:00:00");
+  const exit = new Date(dischargeDate + "T00:00:00");
   const diffMs = exit.getTime() - today.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -108,6 +128,46 @@ function calculateDaysRemaining(entryDate) {
   if (diffDays === 1) return "1 day";
 
   return `${diffDays} days`;
+}
+
+function getDischargeClass(client) {
+  const dischargeDate = getDischargeDate(client);
+  if (!dischargeDate) return "discharge-missing";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const exit = new Date(dischargeDate + "T00:00:00");
+  const diffMs = exit.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "discharge-overdue";
+  if (diffDays <= 14) return "discharge-warning";
+
+  return "discharge-ok";
+}
+
+function getMissingAdmissionFields(client) {
+  const missing = [];
+
+  if (!client.roomNumber) missing.push("Room");
+  if (!client.clientId) missing.push("Client ID");
+  if (!client.dob) missing.push("DOB");
+  if (!client.phone) missing.push("Phone");
+  if (!client.entryDate) missing.push("Entry");
+  if (!getDischargeDate(client)) missing.push("Discharge");
+
+  return missing;
+}
+
+function getCompletionBadge(client) {
+  const missing = getMissingAdmissionFields(client);
+
+  if (!missing.length) {
+    return `<span class="status active">Complete</span>`;
+  }
+
+  return `<span class="status warning-status">Missing: ${escapeHtml(missing.join(", "))}</span>`;
 }
 
 function formatDate(value) {
@@ -181,7 +241,7 @@ function updateEditAllButtons() {
 
 function saveAllEdits() {
   const roster = Array.isArray(rosterState.roster)
-    ? rosterState.roster.filter(client => client && client !== "temp")
+    ? rosterState.roster.filter(client => client && client !== "temp" && !client.archived)
     : [];
 
   roster.forEach(client => {
@@ -204,15 +264,15 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
   client.lastName = getInputValue(`editLastName-${clientId}`);
   client.clientId = getInputValue(`editClientId-${clientId}`);
   client.dob = getInputValue(`editDob-${clientId}`);
-  client.phone = getInputValue(`editPhone-${clientId}`);
+  client.phone = formatPhoneNumber(getInputValue(`editPhone-${clientId}`));
+  client.expectedDischargeDate = getInputValue(`editDischargeDate-${clientId}`);
 
   if ((client.phase || "phase1") === "phase1") {
     client.address = getInputValue(`editAddress-${clientId}`);
     client.city = getInputValue(`editCity-${clientId}`);
     client.contact = getInputValue(`editContact-${clientId}`);
-    client.contactPhone = getInputValue(`editContactPhone-${clientId}`);
+    client.contactPhone = formatPhoneNumber(getInputValue(`editContactPhone-${clientId}`));
     client.entryDate = getInputValue(`editEntryDate-${clientId}`);
-    client.expectedDischargeDate = getInputValue(`editDischargeDate-${clientId}`);
   } else {
     client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
   }
@@ -226,6 +286,17 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
 
 function saveInlineEdit(clientId) {
   saveClientFromEditInputs(clientId, true);
+}
+
+function handleRosterAction(clientId, action) {
+  if (!action) return;
+
+  if (action === "edit") startInlineEdit(clientId);
+  if (action === "phase2") moveToPhase(clientId, "phase2");
+  if (action === "phase1") moveToPhase(clientId, "phase1");
+  if (action === "archive") archiveClient(clientId);
+  if (action === "restore") restoreClient(clientId);
+  if (action === "delete") deleteArchivedClient(clientId);
 }
 
 function moveToPhase(clientId, phase) {
@@ -242,13 +313,64 @@ function moveToPhase(clientId, phase) {
   saveRoster();
 }
 
-function removeClient(clientId) {
+function archiveClient(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
-  if (!confirm(`Remove ${client.firstName} ${client.lastName} from the roster?`)) return;
+  const reason = prompt("Archive / discharge reason:", "Discharged");
+  if (reason === null) return;
+
+  if (!confirm(`Archive ${client.firstName} ${client.lastName}?`)) return;
+
+  client.archived = true;
+  client.archivedAt = new Date().toISOString();
+  client.archiveReason = reason.trim();
+
+  client.notes = Array.isArray(client.notes) ? client.notes : [];
+  client.notes.unshift({
+    id: crypto.randomUUID(),
+    text: `Archived from roster on ${new Date().toLocaleDateString("en-CA")}. Reason: ${client.archiveReason || "Not specified"}.`,
+    createdAt: new Date().toISOString()
+  });
+
+  renderRoster();
+  saveRoster();
+}
+
+function restoreClient(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  if (!confirm(`Restore ${client.firstName} ${client.lastName} to the active roster?`)) return;
+
+  client.archived = false;
+  client.archivedAt = "";
+  client.archiveReason = "";
+
+  client.notes = Array.isArray(client.notes) ? client.notes : [];
+  client.notes.unshift({
+    id: crypto.randomUUID(),
+    text: `Restored to active roster on ${new Date().toLocaleDateString("en-CA")}.`,
+    createdAt: new Date().toISOString()
+  });
+
+  renderRoster();
+  saveRoster();
+}
+
+function deleteArchivedClient(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  if (!client.archived) {
+    alert("Only archived roster records can be permanently deleted.");
+    return;
+  }
+
+  if (!confirm(`Permanently delete archived record for ${client.firstName} ${client.lastName}? This cannot be undone.`)) return;
 
   rosterState.roster = rosterState.roster.filter(item => item.id !== clientId);
+
   renderRoster();
   saveRoster();
 }
@@ -333,19 +455,56 @@ function renderNotesModal(client) {
     : `<li class="empty">No notes yet.</li>`;
 }
 
+function handleRosterSearch(value) {
+  rosterSearchTerm = String(value || "").toLowerCase().trim();
+  renderRoster();
+}
+
+function matchesRosterSearch(client) {
+  if (!rosterSearchTerm) return true;
+
+  const haystack = [
+    client.roomNumber,
+    client.firstName,
+    client.lastName,
+    client.clientId,
+    client.phone,
+    client.city
+  ].join(" ").toLowerCase();
+
+  return haystack.includes(rosterSearchTerm);
+}
+
 function renderRoster() {
   updateEditAllButtons();
   renderPhase1Roster();
   renderPhase2Roster();
+  renderArchivedRoster();
 }
 
 function getPhaseClients(phase) {
   return Array.isArray(rosterState.roster)
-    ? rosterState.roster.filter(client =>
-        client &&
-        client !== "temp" &&
-        (client.phase || "phase1") === phase
-      )
+    ? rosterState.roster
+        .filter(client =>
+          client &&
+          client !== "temp" &&
+          !client.archived &&
+          (client.phase || "phase1") === phase &&
+          matchesRosterSearch(client)
+        )
+        .sort((a, b) => {
+          const aDate = a.entryDate || "9999-12-31";
+          const bDate = b.entryDate || "9999-12-31";
+          return aDate.localeCompare(bDate);
+        })
+    : [];
+}
+
+function getArchivedClients() {
+  return Array.isArray(rosterState.roster)
+    ? rosterState.roster
+        .filter(client => client && client !== "temp" && client.archived && matchesRosterSearch(client))
+        .sort((a, b) => String(b.archivedAt || "").localeCompare(String(a.archivedAt || "")))
     : [];
 }
 
@@ -356,75 +515,8 @@ function renderPhase1Roster() {
   const roster = getPhaseClients("phase1");
 
   body.innerHTML = roster.length
-    ? roster.map(client => {
-        const isEditing = editingAll || editingClientId === client.id;
-        const exitDate = calculateExitDate(client.entryDate);
-        const daysRemaining = calculateDaysRemaining(client.entryDate);
-        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
-
-        if (isEditing) {
-          return `
-            <tr class="editing-row">
-              <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
-              <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
-              <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
-              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
-              <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
-              <td class="phone-cell"><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
-              <td><input id="editAddress-${client.id}" value="${escapeAttribute(client.address)}" /></td>
-              <td><input id="editCity-${client.id}" value="${escapeAttribute(client.city)}" /></td>
-              <td><input id="editContact-${client.id}" value="${escapeAttribute(client.contact)}" /></td>
-              <td class="phone-cell"><input id="editContactPhone-${client.id}" value="${escapeAttribute(client.contactPhone)}" /></td>
-              <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
-              <td>
-  <input
-    id="editDischargeDate-${client.id}"
-    type="date"
-    value="${escapeAttribute(client.expectedDischargeDate || exitDate)}"
-  />
-</td>
-              <td>${escapeHtml(daysRemaining)}</td>
-              <td>
-                ${
-                  editingAll
-                    ? `<span class="empty">Use Save All above</span>`
-                    : `
-                      <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
-                      <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
-                    `
-                }
-              </td>
-            </tr>
-          `;
-        }
-
-        return `
-          <tr>
-            <td>${escapeHtml(client.roomNumber)}</td>
-            <td>${escapeHtml(client.firstName)}</td>
-            <td>${escapeHtml(client.lastName)}</td>
-            <td>${escapeHtml(client.clientId)}</td>
-            <td>${escapeHtml(formatDate(client.dob))}</td>
-            <td class="phone-cell">${escapeHtml(client.phone)}</td>
-            <td>${escapeHtml(client.address)}</td>
-            <td>${escapeHtml(client.city)}</td>
-            <td>${escapeHtml(client.contact)}</td>
-            <td class="phone-cell">${escapeHtml(client.contactPhone)}</td>
-            <td>${escapeHtml(formatDate(client.entryDate))}</td>
-            <td>${escapeHtml(formatDate(client.expectedDischargeDate || exitDate))}</td>
-            <td>${escapeHtml(daysRemaining)}</td>
-            <td>
-              <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
-              <div class="actions" style="margin-top: 8px;">
-                <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
-                <button type="button" class="success" onclick="moveToPhase('${client.id}', 'phase2')">Move to Phase 2</button>
-                <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("")
-    : `<tr><td colspan="14" class="empty">No Phase 1 clients.</td></tr>`;
+    ? roster.map(client => renderActiveRosterRow(client, "phase1")).join("")
+    : `<tr><td colspan="16" class="empty">No Phase 1 clients.</td></tr>`;
 }
 
 function renderPhase2Roster() {
@@ -434,37 +526,141 @@ function renderPhase2Roster() {
   const roster = getPhaseClients("phase2");
 
   body.innerHTML = roster.length
-    ? roster.map(client => {
-        const isEditing = editingAll || editingClientId === client.id;
-        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
-        const exitDate = calculateExitDate(client.entryDate);
-        const daysRemaining = calculateDaysRemaining(client.entryDate);
+    ? roster.map(client => renderActiveRosterRow(client, "phase2")).join("")
+    : `<tr><td colspan="12" class="empty">No Phase 2 clients.</td></tr>`;
+}
 
-        if (isEditing) {
-          return `
-            <tr class="editing-row">
-              <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
-              <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
-              <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
-              <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
-              <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
-              <td class="phone-cell"><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
-              <td><input id="editPhase2AdmissionDate-${client.id}" type="date" value="${escapeAttribute(client.phase2AdmissionDate)}" /></td>
-              <td>${escapeHtml(formatDate(exitDate))}</td>
-              <td>${escapeHtml(daysRemaining)}</td>
-              <td>
-                ${
-                  editingAll
-                    ? `<span class="empty">Use Save All above</span>`
-                    : `
-                      <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
-                      <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
-                    `
-                }
-              </td>
-            </tr>
-          `;
-        }
+function renderActiveRosterRow(client, phase) {
+  const isEditing = editingAll || editingClientId === client.id;
+  const dischargeDate = getDischargeDate(client);
+  const daysRemaining = calculateDaysRemainingForClient(client);
+  const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+  const dischargeClass = getDischargeClass(client);
+
+  if (isEditing) {
+    if (phase === "phase1") {
+      return `
+        <tr class="editing-row">
+          <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+          <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
+          <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+          <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
+          <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
+          <td class="phone-cell"><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
+          <td><input id="editAddress-${client.id}" value="${escapeAttribute(client.address)}" /></td>
+          <td><input id="editCity-${client.id}" value="${escapeAttribute(client.city)}" /></td>
+          <td><input id="editContact-${client.id}" value="${escapeAttribute(client.contact)}" /></td>
+          <td class="phone-cell"><input id="editContactPhone-${client.id}" value="${escapeAttribute(client.contactPhone)}" /></td>
+          <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
+          <td><input id="editDischargeDate-${client.id}" type="date" value="${escapeAttribute(dischargeDate)}" /></td>
+          <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+          <td>${getCompletionBadge(client)}</td>
+          <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
+          <td>
+            ${
+              editingAll
+                ? `<span class="empty">Use Save All above</span>`
+                : `
+                  <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
+                  <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+                `
+            }
+          </td>
+        </tr>
+      `;
+    }
+
+    return `
+      <tr class="editing-row">
+        <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+        <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
+        <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
+        <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
+        <td><input id="editDob-${client.id}" type="date" value="${escapeAttribute(client.dob)}" /></td>
+        <td class="phone-cell"><input id="editPhone-${client.id}" value="${escapeAttribute(client.phone)}" /></td>
+        <td><input id="editPhase2AdmissionDate-${client.id}" type="date" value="${escapeAttribute(client.phase2AdmissionDate)}" /></td>
+        <td><input id="editDischargeDate-${client.id}" type="date" value="${escapeAttribute(dischargeDate)}" /></td>
+        <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+        <td>${getCompletionBadge(client)}</td>
+        <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
+        <td>
+          ${
+            editingAll
+              ? `<span class="empty">Use Save All above</span>`
+              : `
+                <button type="button" class="success" onclick="saveInlineEdit('${client.id}')">Save</button>
+                <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
+              `
+          }
+        </td>
+      </tr>
+    `;
+  }
+
+  if (phase === "phase1") {
+    return `
+      <tr>
+        <td>${escapeHtml(client.roomNumber)}</td>
+        <td>${escapeHtml(client.firstName)}</td>
+        <td>${escapeHtml(client.lastName)}</td>
+        <td>${escapeHtml(client.clientId)}</td>
+        <td>${escapeHtml(formatDate(client.dob))}</td>
+        <td class="phone-cell">${escapeHtml(client.phone)}</td>
+        <td>${escapeHtml(client.address)}</td>
+        <td>${escapeHtml(client.city)}</td>
+        <td>${escapeHtml(client.contact)}</td>
+        <td class="phone-cell">${escapeHtml(client.contactPhone)}</td>
+        <td>${escapeHtml(formatDate(client.entryDate))}</td>
+        <td>${escapeHtml(formatDate(dischargeDate))}</td>
+        <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+        <td>${getCompletionBadge(client)}</td>
+        <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
+        <td>
+          <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
+            <option value="">Actions</option>
+            <option value="edit">Edit</option>
+            <option value="phase2">Move to Phase 2</option>
+            <option value="archive">Archive / Discharge</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }
+
+  return `
+    <tr>
+      <td>${escapeHtml(client.roomNumber)}</td>
+      <td>${escapeHtml(client.firstName)}</td>
+      <td>${escapeHtml(client.lastName)}</td>
+      <td>${escapeHtml(client.clientId)}</td>
+      <td>${escapeHtml(formatDate(client.dob))}</td>
+      <td class="phone-cell">${escapeHtml(client.phone)}</td>
+      <td>${escapeHtml(formatDate(client.phase2AdmissionDate))}</td>
+      <td>${escapeHtml(formatDate(dischargeDate))}</td>
+      <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+      <td>${getCompletionBadge(client)}</td>
+      <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
+      <td>
+        <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
+          <option value="">Actions</option>
+          <option value="edit">Edit</option>
+          <option value="phase1">Move to Phase 1</option>
+          <option value="archive">Archive / Discharge</option>
+        </select>
+      </td>
+    </tr>
+  `;
+}
+
+function renderArchivedRoster() {
+  const body = document.getElementById("archivedRosterBody");
+  if (!body) return;
+
+  const archived = getArchivedClients();
+
+  body.innerHTML = archived.length
+    ? archived.map(client => {
+        const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
 
         return `
           <tr>
@@ -472,23 +668,23 @@ function renderPhase2Roster() {
             <td>${escapeHtml(client.firstName)}</td>
             <td>${escapeHtml(client.lastName)}</td>
             <td>${escapeHtml(client.clientId)}</td>
-            <td>${escapeHtml(formatDate(client.dob))}</td>
-            <td class="phone-cell">${escapeHtml(client.phone)}</td>
-            <td>${escapeHtml(formatDate(client.phase2AdmissionDate))}</td>
-            <td>${escapeHtml(formatDate(exitDate))}</td>
-            <td>${escapeHtml(daysRemaining)}</td>
+            <td>${escapeHtml(client.phone)}</td>
+            <td>${escapeHtml(formatDate(client.entryDate))}</td>
+            <td>${escapeHtml(formatDate(getDischargeDate(client)))}</td>
+            <td>${escapeHtml(formatDateTime(client.archivedAt))}</td>
+            <td>${escapeHtml(client.archiveReason)}</td>
+            <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
             <td>
-              <a href="#" onclick="openNotes('${client.id}'); return false;">Add/View Notes (${noteCount})</a>
-              <div class="actions" style="margin-top: 8px;">
-                <button type="button" class="secondary" onclick="startInlineEdit('${client.id}')">Edit</button>
-                <button type="button" class="warning" onclick="moveToPhase('${client.id}', 'phase1')">Move to Phase 1</button>
-                <button type="button" class="danger" onclick="removeClient('${client.id}')">Remove</button>
-              </div>
+              <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
+                <option value="">Actions</option>
+                <option value="restore">Restore</option>
+                <option value="delete">Delete Permanently</option>
+              </select>
             </td>
           </tr>
         `;
       }).join("")
-    : `<tr><td colspan="10" class="empty">No Phase 2 clients.</td></tr>`;
+    : `<tr><td colspan="11" class="empty">No archived roster records.</td></tr>`;
 }
 
 function escapeHtml(value) {
@@ -520,6 +716,12 @@ auth.onAuthStateChanged(user => {
       client.phase = client.phase || "phase1";
       client.notes = Array.isArray(client.notes) ? client.notes : [];
       client.phase2AdmissionDate = client.phase2AdmissionDate || "";
+      client.expectedDischargeDate = client.expectedDischargeDate || calculateExitDate(client.entryDate);
+      client.archived = client.archived || false;
+      client.archivedAt = client.archivedAt || "";
+      client.archiveReason = client.archiveReason || "";
+      client.phone = formatPhoneNumber(client.phone);
+      client.contactPhone = formatPhoneNumber(client.contactPhone);
     });
 
     renderRoster();
