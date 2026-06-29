@@ -29,7 +29,6 @@ function defaultAppState() {
 
 function defaultMealSchedule() {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
   return {
     weekSchedule: days.reduce((schedule, day) => {
       schedule[day] = { lunch: "", supper1: "", supper2: "" };
@@ -64,7 +63,6 @@ function getWaitlistCallPriority(item) {
 
   const last = Array.isArray(item.callInHistory) ? item.callInHistory[0] : null;
   if (!last) return "normal";
-
   if (last.result === "Yes") return "normal";
   if (last.reason === "Called late") return "late";
 
@@ -92,9 +90,7 @@ function normalizeAppState(state) {
         id: resident.id || crypto.randomUUID(),
         rosterClientId: resident.rosterClientId || "",
         name: resident.name || `Resident ${index + 1}`,
-        choreIndex: Number.isInteger(Number(resident.choreIndex))
-          ? Number(resident.choreIndex)
-          : 0,
+        choreIndex: Number.isInteger(Number(resident.choreIndex)) ? Number(resident.choreIndex) : 0,
         exceptions: Array.isArray(resident.exceptions) ? resident.exceptions : [],
         lockedChore: resident.lockedChore || "",
         status: resident.status || "active",
@@ -144,6 +140,9 @@ function normalizeAppState(state) {
           expectedDischargeDate: client.expectedDischargeDate || "",
           phase: client.phase || "phase1",
           phase2AdmissionDate: client.phase2AdmissionDate || "",
+          archived: client.archived || false,
+          archivedAt: client.archivedAt || "",
+          archiveReason: client.archiveReason || "",
           notes: normalizeNotes(client.notes)
         }))
     : [];
@@ -199,7 +198,6 @@ async function loadAppState() {
 async function saveAppState(state) {
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
-
   await APP_DOC_REF().set(cleaned, { merge: true });
 }
 
