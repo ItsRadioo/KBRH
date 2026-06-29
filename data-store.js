@@ -29,6 +29,7 @@ function defaultAppState() {
 
 function defaultMealSchedule() {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
   return {
     weekSchedule: days.reduce((schedule, day) => {
       schedule[day] = { lunch: "", supper1: "", supper2: "" };
@@ -63,6 +64,7 @@ function getWaitlistCallPriority(item) {
 
   const last = Array.isArray(item.callInHistory) ? item.callInHistory[0] : null;
   if (!last) return "normal";
+
   if (last.result === "Yes") return "normal";
   if (last.reason === "Called late") return "late";
 
@@ -198,6 +200,7 @@ async function loadAppState() {
 async function saveAppState(state) {
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
+
   await APP_DOC_REF().set(cleaned, { merge: true });
 }
 
