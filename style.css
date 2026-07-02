@@ -38,6 +38,19 @@ nav {
   font-weight: 700;
 }
 
+nav a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #374151;
+  font-weight: 700;
+}
+
+nav a.active {
+  background: #2563eb;
+}
+
 h1,
 h2 {
   margin: 0 0 8px;
@@ -104,6 +117,10 @@ textarea {
   font-size: 15px;
   font-family: Arial, sans-serif;
   box-sizing: border-box;
+}
+
+.phone-input {
+  min-width: 240px;
 }
 
 textarea {
@@ -217,9 +234,8 @@ th {
   white-space: nowrap;
 }
 
-.phone-cell input,
-.phone-input {
-  min-width: 125px;
+.phone-cell input {
+  min-width: 115px;
 }
 
 .opoc-cell {
@@ -325,19 +341,36 @@ th {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.note-item {
-  align-items: flex-start;
+.actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.note-item small {
-  display: block;
-  color: #6b7280;
-  margin-top: 4px;
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 4px 8px;
+  border-radius: 999px;
+  margin: 2px;
+  font-size: 13px;
+}
+
+.badge button {
+  padding: 2px 6px;
+  font-size: 12px;
 }
 
 .empty {
   color: #6b7280;
   font-style: italic;
+}
+
+.file-button input {
+  display: none;
 }
 
 .hidden {
@@ -366,9 +399,29 @@ th {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
+.wide-modal {
+  width: min(760px, 92vw);
+}
+
 .notes-box {
   width: 100%;
   min-height: 180px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.note-item {
+  align-items: flex-start;
+}
+
+.note-item small {
+  display: block;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
 .login-body {
@@ -379,12 +432,23 @@ th {
 
 .login-wrap {
   width: min(460px, calc(100% - 32px));
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 
 .login-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.login-card h1 {
+  margin-bottom: 0;
+}
+
+.login-card label {
+  font-weight: 700;
 }
 
 .error {
@@ -395,6 +459,195 @@ th {
 
 .small {
   font-size: 13px;
+}
+
+.print-main {
+  display: block;
+  max-width: 900px;
+}
+
+.cleaning-template {
+  background: white;
+  padding: 32px;
+  border: 3px solid #111827;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.template-top {
+  text-align: center;
+  border-bottom: 3px solid #111827;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.template-top h1 {
+  font-size: 30px;
+  letter-spacing: 1px;
+}
+
+.date-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.date-row div {
+  border: 2px solid #111827;
+  padding: 10px;
+}
+
+.date-row label {
+  display: block;
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.no-print-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.print-only {
+  display: none;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.template-instruction {
+  text-align: center;
+  font-weight: 800;
+  margin: 8px 0;
+}
+
+.template-chore-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 17px;
+}
+
+.template-chore-table th,
+.template-chore-table td {
+  border: 2px solid #111827;
+  padding: 12px;
+}
+
+.template-chore-table th {
+  background: #e5e7eb;
+  text-align: center;
+}
+
+.template-chore-table td:first-child {
+  font-weight: 800;
+  width: 45%;
+}
+
+.template-note {
+  margin-top: 22px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.meal-week-table th,
+.meal-week-table td {
+  vertical-align: middle;
+}
+
+.meal-week-table td:first-child {
+  width: 18%;
+  background: #f9fafb;
+}
+
+.dish-print-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.dish-print-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.dish-print-template {
+  background: white;
+  color: black;
+  width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dish-print-template h1 {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 28px;
+  margin: 0;
+  color: black;
+}
+
+.dish-print-template h2 {
+  text-align: center;
+  font-size: 16px;
+  margin: 8px 0 18px;
+  font-weight: 700;
+  color: black;
+}
+
+.meal-note {
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 18px;
+  color: black;
+}
+
+.dish-day-block {
+  margin-bottom: 18px;
+}
+
+.dish-day-block h3 {
+  text-decoration: underline;
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: black;
+}
+
+.dish-day-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+}
+
+.dish-day-table th,
+.dish-day-table td {
+  border: 1px solid black;
+  padding: 6px 10px;
+}
+
+.dish-day-table th {
+  width: 110px;
+  text-align: left;
+  font-weight: 700;
+  background: white;
+  color: black;
+}
+
+.dish-day-table td {
+  background: white;
+  color: black;
+  text-transform: uppercase;
+}
+
+.dish-day-table tr {
+  height: 28px;
 }
 
 @media (max-width: 760px) {
@@ -422,8 +675,16 @@ th {
   header,
   nav,
   .logout-btn,
+  .dish-print-controls,
+  .button-row.no-print,
   .modal-backdrop {
     display: none !important;
+  }
+
+  .print-main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
   }
 
   .print-only {
@@ -432,5 +693,47 @@ th {
 
   .no-print-input {
     display: none;
+  }
+
+  .cleaning-template {
+    box-shadow: none;
+    border: 3px solid black;
+    padding: 18px;
+  }
+
+  .template-chore-table th,
+  .template-chore-table td,
+  .date-row div {
+    border-color: black;
+  }
+
+  .dish-print-main {
+    padding: 0;
+    display: block;
+  }
+
+  .dish-print-template {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    background: white !important;
+    color: black !important;
+  }
+
+  .dish-print-template h1,
+  .dish-print-template h2,
+  .dish-day-block h3,
+  .meal-note {
+    color: black !important;
+  }
+
+  .dish-day-table th,
+  .dish-day-table td {
+    border: 1px solid black !important;
+    color: black !important;
+    background: white !important;
   }
 }
