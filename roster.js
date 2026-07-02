@@ -193,7 +193,6 @@ function toggleOPOC(clientId, checked) {
   if (!client) return;
 
   client.opocCompleted = checked;
-
   renderRoster();
   saveRoster();
 }
