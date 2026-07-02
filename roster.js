@@ -55,6 +55,7 @@ function addClient() {
     contactPhone: formatPhoneNumber(getInputValue("contactPhone")),
     entryDate,
     expectedDischargeDate: calculateExitDate(entryDate),
+    opocCompleted: false,
     phase2AdmissionDate: "",
     phase: "phase1",
     archived: false,
@@ -128,6 +129,73 @@ function calculateDaysRemainingForClient(client) {
   if (diffDays === 1) return "1 day";
 
   return `${diffDays} days`;
+}
+
+function getDaysSinceAdmission(client) {
+  if (!client.entryDate) return 0;
+
+  const entry = new Date(client.entryDate + "T00:00:00");
+  const today = new Date();
+
+  entry.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  return Math.floor((today.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getOPOCStatus(client) {
+  const days = getDaysSinceAdmission(client);
+
+  if (client.opocCompleted) {
+    return `
+      <label class="opoc-cell opoc-complete">
+        <input type="checkbox" checked onchange="toggleOPOC('${client.id}', this.checked)" />
+        <span>Complete</span>
+      </label>
+    `;
+  }
+
+  if (!client.entryDate) {
+    return `
+      <label class="opoc-cell">
+        <input type="checkbox" onchange="toggleOPOC('${client.id}', this.checked)" />
+      </label>
+    `;
+  }
+
+  if (days >= 50) {
+    return `
+      <label class="opoc-cell opoc-overdue">
+        <input type="checkbox" onchange="toggleOPOC('${client.id}', this.checked)" />
+        <span>OPOC OVERDUE</span>
+      </label>
+    `;
+  }
+
+  if (days >= 40) {
+    return `
+      <label class="opoc-cell opoc-due">
+        <input type="checkbox" onchange="toggleOPOC('${client.id}', this.checked)" />
+        <span>OPOC Due</span>
+      </label>
+    `;
+  }
+
+  return `
+    <label class="opoc-cell">
+      <input type="checkbox" onchange="toggleOPOC('${client.id}', this.checked)" />
+    </label>
+  `;
+}
+
+function toggleOPOC(clientId, checked) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  client.opocCompleted = checked;
+
+  renderRoster();
+  saveRoster();
 }
 
 function getDischargeClass(client) {
@@ -516,7 +584,7 @@ function renderPhase1Roster() {
 
   body.innerHTML = roster.length
     ? roster.map(client => renderActiveRosterRow(client, "phase1")).join("")
-    : `<tr><td colspan="16" class="empty">No Phase 1 clients.</td></tr>`;
+    : `<tr><td colspan="17" class="empty">No Phase 1 clients.</td></tr>`;
 }
 
 function renderPhase2Roster() {
@@ -554,6 +622,7 @@ function renderActiveRosterRow(client, phase) {
           <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
           <td><input id="editDischargeDate-${client.id}" type="date" value="${escapeAttribute(dischargeDate)}" /></td>
           <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+          <td>${getOPOCStatus(client)}</td>
           <td>${getCompletionBadge(client)}</td>
           <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
           <td>
@@ -613,6 +682,7 @@ function renderActiveRosterRow(client, phase) {
         <td>${escapeHtml(formatDate(client.entryDate))}</td>
         <td>${escapeHtml(formatDate(dischargeDate))}</td>
         <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+        <td>${getOPOCStatus(client)}</td>
         <td>${getCompletionBadge(client)}</td>
         <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
         <td>
@@ -717,6 +787,7 @@ auth.onAuthStateChanged(user => {
       client.notes = Array.isArray(client.notes) ? client.notes : [];
       client.phase2AdmissionDate = client.phase2AdmissionDate || "";
       client.expectedDischargeDate = client.expectedDischargeDate || calculateExitDate(client.entryDate);
+      client.opocCompleted = client.opocCompleted || false;
       client.archived = client.archived || false;
       client.archivedAt = client.archivedAt || "";
       client.archiveReason = client.archiveReason || "";
