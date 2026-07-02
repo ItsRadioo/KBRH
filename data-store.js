@@ -140,6 +140,7 @@ function normalizeAppState(state) {
           contactPhone: client.contactPhone || "",
           entryDate: client.entryDate || "",
           expectedDischargeDate: client.expectedDischargeDate || "",
+          opocCompleted: client.opocCompleted || false,
           phase: client.phase || "phase1",
           phase2AdmissionDate: client.phase2AdmissionDate || "",
           archived: client.archived || false,
