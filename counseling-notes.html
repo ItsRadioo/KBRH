@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Counseling Notes</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="data-store.js"></script>
+  <script>requireLogin();</script>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>Counseling Notes</h1>
+      <p>Document counseling notes for active and archived residents.</p>
+    </div>
+
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <select id="pageSelect" class="page-select">
+        <option value="waitlist.html">Waitlist</option>
+        <option value="roster.html">Current Roster</option>
+        <option value="counseling-notes.html">Counseling Notes</option>
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="verbalwarning.html">Verbal Warning Log</option>
+      </select>
+
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card wide">
+      <h2>Add Counseling Note</h2>
+      <p class="hint">
+        Select a resident, enter your name, and add the counseling note.
+      </p>
+
+      <div class="form-row">
+        <div class="field-group">
+          <label for="residentSelect">Resident</label>
+          <select id="residentSelect">
+            <option value="">Select resident...</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="staffName">Staff Member</label>
+          <input id="staffName" type="text" placeholder="Enter your name" autocomplete="off" />
+        </div>
+
+        <div class="field-group">
+          <label for="showArchivedResidents">Archived Records</label>
+          <select id="showArchivedResidents">
+            <option value="active">Active residents only</option>
+            <option value="archived">Archived residents only</option>
+            <option value="all">Active and archived residents</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <textarea
+          id="counselingNoteText"
+          class="notes-box"
+          placeholder="Enter counseling note..."
+        ></textarea>
+      </div>
+
+      <div class="button-row">
+        <button id="addCounselingNoteBtn" type="button">Add Counseling Note</button>
+        <button id="clearCounselingFormBtn" type="button" class="secondary">Clear</button>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>View Counseling Notes</h2>
+      <p class="hint">
+        Filter notes by resident. Notes remain available even after a resident is archived.
+      </p>
+
+      <div class="form-row">
+        <div class="field-group">
+          <label for="noteFilterResident">Resident Filter</label>
+          <select id="noteFilterResident">
+            <option value="">All residents</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="noteSearch">Search Notes</label>
+          <input id="noteSearch" type="text" placeholder="Search notes, staff, or resident..." />
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Resident</th>
+              <th>Staff</th>
+              <th>Note</th>
+              <th>Record Type</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="counselingNotesBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const pageSelect = document.getElementById("pageSelect");
+    pageSelect.value = window.location.pathname.split("/").pop() || "counseling-notes.html";
+
+    pageSelect.addEventListener("change", () => {
+      window.location.href = pageSelect.value;
+    });
+  </script>
+
+  <script src="counseling-notes.js"></script>
+</body>
+</html>
