@@ -6,7 +6,7 @@
 
   <title>Client Roster</title>
   <link rel="stylesheet" href="style.css" />
-  
+
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -16,7 +16,7 @@
   <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
-  
+
 <body>
   <header>
     <div>
@@ -160,33 +160,15 @@
   </main>
 
   <div id="notesModal" class="modal-backdrop hidden">
-  <div class="modal-card">
-    <h2 id="notesModalTitle">Notes</h2>
+    <div class="modal-card">
+      <h2 id="notesModalTitle">Notes</h2>
 
-    <div class="field-group">
-      <label for="noteAuthor">Staff Member</label>
-      <input
-        id="noteAuthor"
-        type="text"
-        placeholder="Enter your name"
-        autocomplete="off"
-      />
-    </div>
+      <div class="field-group">
+        <label for="noteAuthor">Staff Member</label>
+        <input id="noteAuthor" type="text" placeholder="Enter your name" autocomplete="off" />
+      </div>
 
-    <textarea
-      id="newNoteText"
-      class="notes-box"
-      placeholder="Add a new note..."
-    ></textarea>
-
-    <div class="button-row">
-      <button id="addNoteBtn" type="button" onclick="addClientNote()">Add Note</button>
-      <button id="closeNotesBtn" type="button" class="secondary" onclick="closeNotesModal()">Close</button>
-    </div>
-
-    <ul id="notesList" class="list"></ul>
-  </div>
-</div>
+      <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
 
       <div class="button-row">
         <button id="addNoteBtn" type="button" onclick="addClientNote()">Add Note</button>
