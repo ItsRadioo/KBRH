@@ -66,3 +66,23 @@ function renderNotesModal(client) {
       `).join("")
     : `<li class="empty">No notes yet.</li>`;
 }
+
+function renderNotesModal(client) {
+  const list = document.getElementById("notesList");
+  if (!list) return;
+
+  const notes = Array.isArray(client.notes) ? client.notes : [];
+
+  list.innerHTML = notes.length
+    ? notes.map(note => `
+        <li class="note-item">
+          <div>
+            <div><strong>${escapeHtml(note.author || "Unknown")}</strong></div>
+            <div>• ${escapeHtml(note.text)}</div>
+            <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
+          </div>
+          <button type="button" class="danger" onclick="deleteClientNote('${note.id}')">Delete</button>
+        </li>
+      `).join("")
+    : `<li class="empty">No notes yet.</li>`;
+}
