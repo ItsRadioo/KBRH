@@ -22,6 +22,7 @@ function defaultAppState() {
     mealSchedule: defaultMealSchedule(),
     waitlist: [],
     roster: [],
+    counselingNotes: [],
     verbalWarnings: [],
     updatedAt: new Date().toISOString()
   };
@@ -59,6 +60,22 @@ function normalizeNotes(notes) {
   }
 
   return [];
+}
+
+function normalizeCounselingNotes(notes) {
+  return Array.isArray(notes)
+    ? notes
+        .filter(note => note && note !== "temp")
+        .map(note => ({
+          id: note.id || crypto.randomUUID(),
+          residentId: note.residentId || "",
+          residentName: note.residentName || "Unknown Resident",
+          author: note.author || "Unknown",
+          note: note.note || "",
+          archivedResident: note.archivedResident || false,
+          createdAt: note.createdAt || new Date().toISOString()
+        }))
+    : [];
 }
 
 function getWaitlistCallPriority(item) {
@@ -147,6 +164,8 @@ function normalizeAppState(state) {
         notes: normalizeNotes(client.notes)
       }))
     : [];
+
+  merged.counselingNotes = normalizeCounselingNotes(merged.counselingNotes);
 
   merged.verbalWarnings = Array.isArray(merged.verbalWarnings)
     ? merged.verbalWarnings.filter(warning => warning && warning !== "temp").map(warning => ({
