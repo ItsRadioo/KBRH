@@ -466,12 +466,35 @@ function addClientNote() {
   const client = rosterState.roster.find(item => item.id === notesClientId);
   if (!client) return;
 
+  const author = getInputValue("noteAuthor");
   const text = getInputValue("newNoteText");
+
+  if (!author) {
+    alert("Please enter your name.");
+    return;
+  }
 
   if (!text) {
     alert("Enter a note first.");
     return;
   }
+
+  client.notes = Array.isArray(client.notes) ? client.notes : [];
+
+  client.notes.unshift({
+    id: crypto.randomUUID(),
+    author,
+    text,
+    createdAt: new Date().toISOString()
+  });
+
+  document.getElementById("noteAuthor").value = "";
+  document.getElementById("newNoteText").value = "";
+
+  renderNotesModal(client);
+  renderRoster();
+  saveRoster();
+}
 
   client.notes = Array.isArray(client.notes) ? client.notes : [];
 
