@@ -11,7 +11,7 @@ function getInputValue(id) {
     alert(`Missing input field: ${id}`);
     throw new Error(`Missing input field: ${id}`);
   }
-
+  
   return input.value.trim();
 }
 
