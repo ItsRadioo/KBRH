@@ -43,6 +43,7 @@ function normalizeNotes(notes) {
   if (Array.isArray(notes)) {
     return notes.map(note => ({
       id: note.id || crypto.randomUUID(),
+      author: note.author || "Unknown",
       text: note.text || "",
       createdAt: note.createdAt || new Date().toISOString()
     }));
@@ -51,6 +52,7 @@ function normalizeNotes(notes) {
   if (notes) {
     return [{
       id: crypto.randomUUID(),
+      author: "Unknown",
       text: String(notes),
       createdAt: new Date().toISOString()
     }];
@@ -104,67 +106,61 @@ function normalizeAppState(state) {
   merged.mealSchedule = normalizeMealSchedule(merged.mealSchedule);
 
   merged.waitlist = Array.isArray(merged.waitlist)
-    ? merged.waitlist
-        .filter(item => item && item !== "temp")
-        .map(item => ({
-          id: item.id || crypto.randomUUID(),
-          lastName: item.lastName || "",
-          firstName: item.firstName || "",
-          contact: item.contact || "",
-          status: item.status || "",
-          city: item.city || "",
-          dateApplied: item.dateApplied || "",
-          archived: item.archived || false,
-          archivedAt: item.archivedAt || "",
-          archiveReason: item.archiveReason || "",
-          callPriority: getWaitlistCallPriority(item),
-          notes: normalizeNotes(item.notes),
-          callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
-        }))
+    ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
+        id: item.id || crypto.randomUUID(),
+        lastName: item.lastName || "",
+        firstName: item.firstName || "",
+        contact: item.contact || "",
+        status: item.status || "",
+        city: item.city || "",
+        dateApplied: item.dateApplied || "",
+        archived: item.archived || false,
+        archivedAt: item.archivedAt || "",
+        archiveReason: item.archiveReason || "",
+        callPriority: getWaitlistCallPriority(item),
+        notes: normalizeNotes(item.notes),
+        callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
+      }))
     : [];
 
   merged.roster = Array.isArray(merged.roster)
-    ? merged.roster
-        .filter(client => client && client !== "temp")
-        .map(client => ({
-          id: client.id || crypto.randomUUID(),
-          roomNumber: client.roomNumber || "",
-          clientId: client.clientId || "",
-          firstName: client.firstName || "",
-          lastName: client.lastName || "",
-          dob: client.dob || "",
-          phone: client.phone || "",
-          address: client.address || "",
-          city: client.city || "",
-          contact: client.contact || "",
-          contactPhone: client.contactPhone || "",
-          entryDate: client.entryDate || "",
-          expectedDischargeDate: client.expectedDischargeDate || "",
-          opocCompleted: client.opocCompleted || false,
-          phase: client.phase || "phase1",
-          phase2AdmissionDate: client.phase2AdmissionDate || "",
-          archived: client.archived || false,
-          archivedAt: client.archivedAt || "",
-          archiveReason: client.archiveReason || "",
-          notes: normalizeNotes(client.notes)
-        }))
+    ? merged.roster.filter(client => client && client !== "temp").map(client => ({
+        id: client.id || crypto.randomUUID(),
+        roomNumber: client.roomNumber || "",
+        clientId: client.clientId || "",
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        dob: client.dob || "",
+        phone: client.phone || "",
+        address: client.address || "",
+        city: client.city || "",
+        contact: client.contact || "",
+        contactPhone: client.contactPhone || "",
+        entryDate: client.entryDate || "",
+        expectedDischargeDate: client.expectedDischargeDate || "",
+        opocCompleted: client.opocCompleted || false,
+        phase: client.phase || "phase1",
+        phase2AdmissionDate: client.phase2AdmissionDate || "",
+        archived: client.archived || false,
+        archivedAt: client.archivedAt || "",
+        archiveReason: client.archiveReason || "",
+        notes: normalizeNotes(client.notes)
+      }))
     : [];
 
   merged.verbalWarnings = Array.isArray(merged.verbalWarnings)
-    ? merged.verbalWarnings
-        .filter(warning => warning && warning !== "temp")
-        .map(warning => ({
-          id: warning.id || crypto.randomUUID(),
-          date: warning.date || "",
-          time: warning.time || "",
-          residentId: warning.residentId || "",
-          residentName: warning.residentName || "",
-          incident: warning.incident || "",
-          staffAction: warning.staffAction || "",
-          residentResponse: warning.residentResponse || "",
-          staffUser: warning.staffUser || "",
-          createdAt: warning.createdAt || new Date().toISOString()
-        }))
+    ? merged.verbalWarnings.filter(warning => warning && warning !== "temp").map(warning => ({
+        id: warning.id || crypto.randomUUID(),
+        date: warning.date || "",
+        time: warning.time || "",
+        residentId: warning.residentId || "",
+        residentName: warning.residentName || "",
+        incident: warning.incident || "",
+        staffAction: warning.staffAction || "",
+        residentResponse: warning.residentResponse || "",
+        staffUser: warning.staffUser || "",
+        createdAt: warning.createdAt || new Date().toISOString()
+      }))
     : [];
 
   return merged;
@@ -245,11 +241,7 @@ function migrateLocalStorageToFirestore() {
     .then(current => {
       const next = normalizeAppState({
         ...current,
-        ...parsed,
-        mealSchedule: current.mealSchedule || defaultMealSchedule(),
-        waitlist: current.waitlist || [],
-        roster: current.roster || [],
-        verbalWarnings: current.verbalWarnings || []
+        ...parsed
       });
 
       return saveAppState(next);
