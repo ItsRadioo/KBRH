@@ -287,27 +287,22 @@ th {
 
 .roster-table th:nth-child(14),
 .roster-table td:nth-child(14) {
-  width: 75px;
-}
-
-.roster-table th:nth-child(14),
-.roster-table td:nth-child(14) {
-  width: 120px; /* OPOC */
+  width: 25px;
 }
 
 .roster-table th:nth-child(15),
 .roster-table td:nth-child(15) {
-  width: 120px; /* Admission Status */
+  width: 140px; /* Admission Status */
 }
 
 .roster-table th:nth-child(16),
 .roster-table td:nth-child(16) {
-  width: 80px; /* Notes */
+  width: 90px; /* Notes */
 }
 
 .roster-table th:nth-child(17),
 .roster-table td:nth-child(17) {
-  width: 95px; /* Actions */
+  width: 90px; /* Actions */
 }
 
 .phone-col,
