@@ -536,9 +536,9 @@ function renderNotesModal(client) {
     ? notes.map(note => `
         <li class="note-item">
           <div>
-            <div>• ${escapeHtml(note.text)}</div>
-            <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
-          </div>
+  <div>• ${escapeHtml(note.text)}</div>
+  <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
+</div>
           <button type="button" class="danger" onclick="deleteClientNote('${note.id}')">Delete</button>
         </li>
       `).join("")
