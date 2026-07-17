@@ -1,328 +1,562 @@
 /*
-  KBRH UI Upgrade
-  Load this file AFTER script.js, waitlist.js, or roster.js.
+  KBRH UI Upgrade — compatibility fix
+  Replace the previous kbrh-ui-upgrade.js with this file.
+
+  This version does not attempt to overwrite top-level let/function bindings.
+  It intercepts the existing desktop controls and calls the modal/override
+  behaviour directly, which is compatible with the current project files.
 */
 (() => {
   "use strict";
 
   const MODAL_ID = "kbrhEditModal";
-  const OUTDOOR_CHORE_NAME = "Outside Yardwork";
+  const OUTDOOR = "Outside Yardwork";
+
+  let modalType = "";
+  let recordId = "";
   let waitlistSearchTerm = "";
-  let currentModalType = "";
-  let currentRecordId = "";
 
-  const byId = id => document.getElementById(id);
-  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[c]));
+  const valueOf = id => String($(id)?.value || "").trim();
 
-  function fieldHtml({ id, label, value = "", type = "text", required = false, full = false }) {
-    return `<label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
-      <span>${esc(label)}${required ? '<strong class="kbrh-required-mark"> *</strong>' : ""}</span>
-      <input id="${esc(id)}" type="${esc(type)}" value="${esc(value)}" data-label="${esc(label)}" data-required="${required ? "true" : "false"}" autocomplete="off">
-    </label>`;
+  function inputField(id, label, value = "", type = "text", required = false, full = false) {
+    return `
+      <label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
+        <span>${esc(label)}${required ? ' <strong class="kbrh-required-mark">*</strong>' : ""}</span>
+        <input
+          id="${esc(id)}"
+          type="${esc(type)}"
+          value="${esc(value)}"
+          data-label="${esc(label)}"
+          data-required="${required ? "true" : "false"}"
+          autocomplete="off"
+        >
+      </label>
+    `;
   }
 
-  function checkboxHtml({ id, label, checked = false, full = false }) {
-    return `<label class="kbrh-modal-check ${full ? "kbrh-modal-field-full" : ""}">
-      <input id="${esc(id)}" type="checkbox" ${checked ? "checked" : ""} data-label="${esc(label)}" data-required="false">
-      <span>${esc(label)}</span>
-    </label>`;
+  function checkboxField(id, label, checked = false) {
+    return `
+      <label class="kbrh-modal-check kbrh-modal-field-full">
+        <input id="${esc(id)}" type="checkbox" ${checked ? "checked" : ""}>
+        <span>${esc(label)}</span>
+      </label>
+    `;
   }
 
   function ensureModal() {
-    if (byId(MODAL_ID)) return;
+    if ($(MODAL_ID)) return;
+
     const modal = document.createElement("div");
     modal.id = MODAL_ID;
     modal.className = "kbrh-modal-backdrop hidden";
-    modal.innerHTML = `<section class="kbrh-edit-modal" role="dialog" aria-modal="true" aria-labelledby="kbrhEditModalTitle">
-      <header class="kbrh-edit-modal-header">
-        <div><h2 id="kbrhEditModalTitle">Edit Record</h2><p id="kbrhEditModalSubtitle"></p></div>
-        <button type="button" class="secondary kbrh-modal-close" aria-label="Close">×</button>
-      </header>
-      <div id="kbrhEditModalMessage" class="kbrh-modal-message hidden"></div>
-      <form id="kbrhEditModalForm" novalidate>
-        <div id="kbrhEditModalFields" class="kbrh-modal-grid"></div>
-        <footer class="kbrh-edit-modal-footer">
-          <button type="button" class="secondary" id="kbrhModalCancelBtn">Cancel</button>
-          <button type="submit" class="success" id="kbrhModalSaveBtn">Save Changes</button>
-        </footer>
-      </form>
-    </section>`;
+    modal.innerHTML = `
+      <section class="kbrh-edit-modal" role="dialog" aria-modal="true" aria-labelledby="kbrhModalTitle">
+        <header class="kbrh-edit-modal-header">
+          <div>
+            <h2 id="kbrhModalTitle">Edit Record</h2>
+            <p id="kbrhModalSubtitle"></p>
+          </div>
+          <button type="button" class="secondary kbrh-modal-close" aria-label="Close">×</button>
+        </header>
+
+        <div id="kbrhModalMessage" class="kbrh-modal-message hidden"></div>
+
+        <form id="kbrhModalForm" novalidate>
+          <div id="kbrhModalFields" class="kbrh-modal-grid"></div>
+
+          <footer class="kbrh-edit-modal-footer">
+            <button type="button" class="secondary" id="kbrhModalCancel">Cancel</button>
+            <button type="submit" class="success">Save Changes</button>
+          </footer>
+        </form>
+      </section>
+    `;
+
     document.body.appendChild(modal);
+
     modal.querySelector(".kbrh-modal-close").addEventListener("click", closeModal);
-    byId("kbrhModalCancelBtn").addEventListener("click", closeModal);
-    byId("kbrhEditModalForm").addEventListener("submit", handleModalSubmit);
-    modal.addEventListener("mousedown", e => { if (e.target === modal) closeModal(); });
-    document.addEventListener("keydown", e => { if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal(); });
+    $("kbrhModalCancel").addEventListener("click", closeModal);
+    $("kbrhModalForm").addEventListener("submit", saveModal);
+
+    modal.addEventListener("mousedown", event => {
+      if (event.target === modal) closeModal();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !modal.classList.contains("hidden")) {
+        closeModal();
+      }
+    });
   }
 
-  function openModal(type, recordId, title, subtitle, fieldsHtml) {
+  function openModal(type, id, title, subtitle, fields) {
     ensureModal();
-    currentModalType = type;
-    currentRecordId = recordId;
-    byId("kbrhEditModalTitle").textContent = title;
-    byId("kbrhEditModalSubtitle").textContent = subtitle || "";
-    byId("kbrhEditModalFields").innerHTML = fieldsHtml;
-    byId("kbrhEditModalMessage").className = "kbrh-modal-message hidden";
-    byId("kbrhEditModalMessage").textContent = "";
-    const modal = byId(MODAL_ID);
-    modal.classList.remove("hidden");
+
+    modalType = type;
+    recordId = id;
+
+    $("kbrhModalTitle").textContent = title;
+    $("kbrhModalSubtitle").textContent = subtitle || "";
+    $("kbrhModalFields").innerHTML = fields;
+    $("kbrhModalMessage").className = "kbrh-modal-message hidden";
+    $("kbrhModalMessage").textContent = "";
+
+    $(MODAL_ID).classList.remove("hidden");
     document.body.classList.add("kbrh-modal-open");
-    modal.querySelectorAll("input, select").forEach(input => {
-      input.addEventListener("input", () => {
-        if (String(input.value || "").trim()) input.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
+
+    $(MODAL_ID).querySelectorAll("input, select").forEach(control => {
+      control.addEventListener("input", () => {
+        if (String(control.value || "").trim()) {
+          control.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
+        }
       });
-      input.addEventListener("change", () => input.classList.remove("kbrh-required-missing", "kbrh-optional-missing"));
     });
-    modal.querySelector("input")?.focus();
+
+    $(MODAL_ID).querySelector("input")?.focus();
   }
 
   function closeModal() {
-    byId(MODAL_ID)?.classList.add("hidden");
+    $(MODAL_ID)?.classList.add("hidden");
     document.body.classList.remove("kbrh-modal-open");
-    currentModalType = "";
-    currentRecordId = "";
+    modalType = "";
+    recordId = "";
   }
-
-  function value(id) { return String(byId(id)?.value || "").trim(); }
 
   function validateModal() {
-    const requiredMissing = [];
-    const optionalMissing = [];
-    byId(MODAL_ID)?.querySelectorAll("[data-label]").forEach(input => {
-      input.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
-      if (input.type === "checkbox" || input.disabled || input.dataset.ignoreEmpty === "true") return;
-      if (String(input.value || "").trim()) return;
-      const label = input.dataset.label || "Unnamed field";
-      if (input.dataset.required === "true") {
-        requiredMissing.push(label);
-        input.classList.add("kbrh-required-missing");
+    const required = [];
+    const optional = [];
+
+    $(MODAL_ID).querySelectorAll("[data-label]").forEach(control => {
+      control.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
+
+      if (control.type === "checkbox" || control.disabled) return;
+      if (String(control.value || "").trim()) return;
+
+      const label = control.dataset.label || "Unnamed field";
+
+      if (control.dataset.required === "true") {
+        required.push(label);
+        control.classList.add("kbrh-required-missing");
       } else {
-        optionalMissing.push(label);
-        input.classList.add("kbrh-optional-missing");
+        optional.push(label);
+        control.classList.add("kbrh-optional-missing");
       }
     });
-    return { requiredMissing, optionalMissing };
+
+    return { required, optional };
   }
 
-  function showMessage(message, type) {
-    const box = byId("kbrhEditModalMessage");
-    box.textContent = message;
-    box.className = `kbrh-modal-message kbrh-modal-message-${type}`;
+  function showMessage(text, error = false) {
+    const box = $("kbrhModalMessage");
+    box.textContent = text;
+    box.className = `kbrh-modal-message ${
+      error ? "kbrh-modal-message-error" : "kbrh-modal-message-warning"
+    }`;
   }
 
-  function handleModalSubmit(event) {
+  async function saveModal(event) {
     event.preventDefault();
-    const { requiredMissing, optionalMissing } = validateModal();
-    if (requiredMissing.length) {
-      showMessage(`This record cannot be saved. Complete: ${requiredMissing.join(", ")}.`, "error");
-      byId(MODAL_ID)?.querySelector(".kbrh-required-missing")?.focus();
+
+    const result = validateModal();
+
+    if (result.required.length) {
+      showMessage(
+        `This record cannot be saved. Complete: ${result.required.join(", ")}.`,
+        true
+      );
+      $(MODAL_ID).querySelector(".kbrh-required-missing")?.focus();
       return;
     }
-    if (optionalMissing.length) {
-      showMessage(`Optional information is blank: ${optionalMissing.join(", ")}.`, "warning");
-      if (!confirm(`The following optional fields are blank:\n\n${optionalMissing.join("\n")}\n\nSelect OK to save anyway, or Cancel to return to the form.`)) return;
+
+    if (result.optional.length) {
+      showMessage(`Optional information is blank: ${result.optional.join(", ")}.`);
+
+      const saveAnyway = confirm(
+        `The following optional fields are blank:\n\n` +
+        `${result.optional.join("\n")}\n\n` +
+        `Select OK to save anyway, or Cancel to return to the form.`
+      );
+
+      if (!saveAnyway) return;
     }
-    if (currentModalType === "waitlist") saveWaitlistModal();
-    if (currentModalType === "roster") saveRosterModal();
+
+    if (modalType === "waitlist") await saveWaitlistRecord();
+    if (modalType === "roster") await saveRosterRecord();
+  }
+
+  function openWaitlistEditor(id) {
+    if (typeof waitlistState === "undefined") {
+      alert("The waitlist data has not finished loading. Refresh and try again.");
+      return;
+    }
+
+    const applicant = (waitlistState.waitlist || []).find(item => item?.id === id);
+
+    if (!applicant) {
+      alert("The selected waitlist applicant could not be found.");
+      return;
+    }
+
+    openModal(
+      "waitlist",
+      id,
+      "Edit Waitlist Applicant",
+      `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim(),
+      [
+        inputField("kwFirst", "First Name", applicant.firstName, "text", true),
+        inputField("kwLast", "Last Name", applicant.lastName, "text", true),
+        inputField("kwContact", "Contact", applicant.contact),
+        inputField("kwStatus", "Status", applicant.status),
+        inputField("kwCity", "City", applicant.city),
+        inputField("kwDate", "Date Applied", applicant.dateApplied, "date")
+      ].join("")
+    );
+  }
+
+  async function saveWaitlistRecord() {
+    const applicant = (waitlistState.waitlist || []).find(item => item?.id === recordId);
+    if (!applicant) return;
+
+    applicant.firstName = valueOf("kwFirst");
+    applicant.lastName = valueOf("kwLast");
+    applicant.contact = valueOf("kwContact");
+    applicant.status = valueOf("kwStatus");
+    applicant.city = valueOf("kwCity");
+    applicant.dateApplied = valueOf("kwDate");
+
+    closeModal();
+    renderWaitlist();
+    await saveWaitlist();
+    applyWaitlistSearch();
+  }
+
+  function openRosterEditor(id) {
+    if (typeof rosterState === "undefined") {
+      alert("The roster data has not finished loading. Refresh and try again.");
+      return;
+    }
+
+    const client = (rosterState.roster || []).find(item => item?.id === id);
+
+    if (!client) {
+      alert("The selected resident could not be found.");
+      return;
+    }
+
+    const discharge =
+      client.expectedDischargeDate ||
+      (typeof calculateExitDate === "function"
+        ? calculateExitDate(client.entryDate)
+        : "");
+
+    openModal(
+      "roster",
+      id,
+      "Edit Resident",
+      `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+      [
+        inputField("krRoom", "Room", client.roomNumber),
+        inputField("krClientId", "Client ID", client.clientId, "text", true),
+        inputField("krFirst", "First Name", client.firstName, "text", true),
+        inputField("krLast", "Last Name", client.lastName, "text", true),
+        inputField("krDob", "Date of Birth", client.dob, "date"),
+        inputField("krPhone", "Phone", client.phone),
+        inputField("krAddress", "Address", client.address, "text", false, true),
+        inputField("krCity", "City", client.city),
+        inputField("krContact", "Emergency Contact", client.contact),
+        inputField("krContactPhone", "Emergency Contact Phone", client.contactPhone),
+        inputField("krEntry", "Admission Date", client.entryDate, "date"),
+        inputField("krDischarge", "Expected Discharge", discharge, "date"),
+        `
+          <label class="kbrh-modal-field">
+            <span>Phase</span>
+            <select id="krPhase" data-label="Phase" data-required="false">
+              <option value="phase1" ${(client.phase || "phase1") === "phase1" ? "selected" : ""}>Phase 1</option>
+              <option value="phase2" ${client.phase === "phase2" ? "selected" : ""}>Phase 2</option>
+            </select>
+          </label>
+        `,
+        inputField("krPhase2", "Phase 2 Admission Date", client.phase2AdmissionDate, "date"),
+        checkboxField("krOpoc", "OPOC Completed", Boolean(client.opocCompleted))
+      ].join("")
+    );
+
+    const phase = $("krPhase");
+    const phase2Date = $("krPhase2");
+
+    const updatePhaseField = () => {
+      const enabled = phase.value === "phase2";
+      phase2Date.disabled = !enabled;
+      phase2Date
+        .closest(".kbrh-modal-field")
+        ?.classList.toggle("kbrh-field-disabled", !enabled);
+    };
+
+    phase.addEventListener("change", updatePhaseField);
+    updatePhaseField();
+  }
+
+  async function saveRosterRecord() {
+    const client = (rosterState.roster || []).find(item => item?.id === recordId);
+    if (!client) return;
+
+    const previousPhase = client.phase || "phase1";
+
+    client.roomNumber = valueOf("krRoom");
+    client.clientId = valueOf("krClientId");
+    client.firstName = valueOf("krFirst");
+    client.lastName = valueOf("krLast");
+    client.dob = valueOf("krDob");
+
+    client.phone =
+      typeof formatPhoneNumber === "function"
+        ? formatPhoneNumber(valueOf("krPhone"))
+        : valueOf("krPhone");
+
+    client.address = valueOf("krAddress");
+    client.city = valueOf("krCity");
+    client.contact = valueOf("krContact");
+
+    client.contactPhone =
+      typeof formatPhoneNumber === "function"
+        ? formatPhoneNumber(valueOf("krContactPhone"))
+        : valueOf("krContactPhone");
+
+    client.entryDate = valueOf("krEntry");
+    client.expectedDischargeDate = valueOf("krDischarge");
+    client.phase = valueOf("krPhase") || "phase1";
+    client.phase2AdmissionDate =
+      client.phase === "phase2" ? valueOf("krPhase2") : "";
+    client.opocCompleted = Boolean($("krOpoc")?.checked);
+
+    if (
+      previousPhase !== "phase2" &&
+      client.phase === "phase2" &&
+      !client.phase2AdmissionDate
+    ) {
+      client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
+    }
+
+    closeModal();
+    renderRoster();
+    await saveRoster();
+  }
+
+  function parseFirstQuotedArgument(text) {
+    const match = String(text || "").match(/\(\s*['"]([^'"]+)['"]/);
+    return match ? match[1] : "";
+  }
+
+  function installEditInterception() {
+    document.addEventListener(
+      "change",
+      event => {
+        const select = event.target.closest("select");
+        if (!select || select.value !== "edit") return;
+
+        const inline = select.getAttribute("onchange") || "";
+
+        if (inline.includes("handleApplicantAction")) {
+          const id = parseFirstQuotedArgument(inline);
+          if (!id) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          select.value = "";
+          openWaitlistEditor(id);
+          return;
+        }
+
+        if (
+          inline.includes("handleRosterAction") ||
+          inline.includes("handleClientAction")
+        ) {
+          const id = parseFirstQuotedArgument(inline);
+          if (!id) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          select.value = "";
+          openRosterEditor(id);
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
+      "click",
+      event => {
+        const button = event.target.closest("button");
+        if (!button) return;
+
+        const inline = button.getAttribute("onclick") || "";
+
+        if (inline.includes("startInlineEdit")) {
+          const id = parseFirstQuotedArgument(inline);
+          if (!id) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+
+          if (typeof waitlistState !== "undefined") {
+            openWaitlistEditor(id);
+          } else if (typeof rosterState !== "undefined") {
+            openRosterEditor(id);
+          }
+        }
+      },
+      true
+    );
   }
 
   function installWaitlistSearch() {
-    const body = byId("waitlistBody");
-    if (!body || byId("waitlistSearch")) return;
+    const body = $("waitlistBody");
+    if (!body || $("waitlistSearch")) return;
+
     const table = body.closest("table");
     if (!table) return;
+
     const bar = document.createElement("div");
     bar.className = "kbrh-search-row";
-    bar.innerHTML = `<label class="kbrh-search-field"><span>Search Waitlist</span><input id="waitlistSearch" type="search" placeholder="Search by name, contact, status, city, or date" autocomplete="off"></label><div id="waitlistSearchCount" class="kbrh-search-count"></div>`;
+    bar.innerHTML = `
+      <label class="kbrh-search-field">
+        <span>Search Waitlist</span>
+        <input
+          id="waitlistSearch"
+          type="search"
+          placeholder="Search by name, contact, status, city, or date"
+          autocomplete="off"
+        >
+      </label>
+      <div id="waitlistSearchCount" class="kbrh-search-count"></div>
+    `;
+
     table.parentElement.insertBefore(bar, table);
-    byId("waitlistSearch").addEventListener("input", e => { waitlistSearchTerm = String(e.target.value || "").toLowerCase().trim(); applyWaitlistSearch(); });
+
+    $("waitlistSearch").addEventListener("input", event => {
+      waitlistSearchTerm = String(event.target.value || "").toLowerCase().trim();
+      applyWaitlistSearch();
+    });
+
     applyWaitlistSearch();
   }
 
   function applyWaitlistSearch() {
-    const body = byId("waitlistBody");
+    const body = $("waitlistBody");
     if (!body) return;
-    let visible = 0, total = 0;
+
+    let total = 0;
+    let visible = 0;
+
     body.querySelectorAll("tr").forEach(row => {
-      if (row.querySelector("td.empty") || row.children.length === 0) return;
-      total++;
-      const matches = !waitlistSearchTerm || row.textContent.toLowerCase().includes(waitlistSearchTerm);
+      if (row.querySelector("td.empty")) return;
+
+      total += 1;
+      const matches =
+        !waitlistSearchTerm ||
+        row.textContent.toLowerCase().includes(waitlistSearchTerm);
+
       row.hidden = !matches;
-      if (matches) visible++;
+      if (matches) visible += 1;
     });
-    const count = byId("waitlistSearchCount");
-    if (count) count.textContent = waitlistSearchTerm ? `Showing ${visible} of ${total}` : `${total} active applicant${total === 1 ? "" : "s"}`;
-  }
 
-  function openWaitlistModal(applicantId) {
-    if (typeof waitlistState === "undefined") return;
-    const a = (waitlistState.waitlist || []).find(x => x?.id === applicantId);
-    if (!a) return;
-    const fields = [
-      fieldHtml({ id:"kbrhWaitFirstName", label:"First Name", value:a.firstName, required:true }),
-      fieldHtml({ id:"kbrhWaitLastName", label:"Last Name", value:a.lastName, required:true }),
-      fieldHtml({ id:"kbrhWaitContact", label:"Contact", value:a.contact }),
-      fieldHtml({ id:"kbrhWaitStatus", label:"Status", value:a.status }),
-      fieldHtml({ id:"kbrhWaitCity", label:"City", value:a.city }),
-      fieldHtml({ id:"kbrhWaitDateApplied", label:"Date Applied", value:a.dateApplied, type:"date" })
-    ].join("");
-    openModal("waitlist", applicantId, "Edit Waitlist Applicant", `${a.firstName || ""} ${a.lastName || ""}`.trim(), fields);
-  }
-
-  async function saveWaitlistModal() {
-    const a = (waitlistState.waitlist || []).find(x => x?.id === currentRecordId);
-    if (!a) return;
-    a.firstName = value("kbrhWaitFirstName");
-    a.lastName = value("kbrhWaitLastName");
-    a.contact = value("kbrhWaitContact");
-    a.status = value("kbrhWaitStatus");
-    a.city = value("kbrhWaitCity");
-    a.dateApplied = value("kbrhWaitDateApplied");
-    closeModal();
-    if (typeof renderWaitlist === "function") renderWaitlist();
-    if (typeof saveWaitlist === "function") await saveWaitlist();
-    applyWaitlistSearch();
-  }
-
-  function upgradeWaitlist() {
-    if (typeof window.startInlineEdit === "function" && typeof window.waitlistState !== "undefined") window.startInlineEdit = openWaitlistModal;
-    if (typeof window.renderWaitlist === "function" && !window.__kbrhWaitlistRenderWrapped) {
-      const original = window.renderWaitlist;
-      window.renderWaitlist = function(...args) { const result = original.apply(this, args); installWaitlistSearch(); applyWaitlistSearch(); return result; };
-      window.__kbrhWaitlistRenderWrapped = true;
+    const count = $("waitlistSearchCount");
+    if (count) {
+      count.textContent = waitlistSearchTerm
+        ? `Showing ${visible} of ${total}`
+        : `${total} active applicant${total === 1 ? "" : "s"}`;
     }
   }
 
-  function openRosterModal(clientId) {
-    if (typeof rosterState === "undefined") return;
-    const c = (rosterState.roster || []).find(x => x?.id === clientId);
-    if (!c) return;
-    const fields = [
-      fieldHtml({ id:"kbrhRosterRoom", label:"Room", value:c.roomNumber }),
-      fieldHtml({ id:"kbrhRosterClientId", label:"Client ID", value:c.clientId, required:true }),
-      fieldHtml({ id:"kbrhRosterFirstName", label:"First Name", value:c.firstName, required:true }),
-      fieldHtml({ id:"kbrhRosterLastName", label:"Last Name", value:c.lastName, required:true }),
-      fieldHtml({ id:"kbrhRosterDob", label:"Date of Birth", value:c.dob, type:"date" }),
-      fieldHtml({ id:"kbrhRosterPhone", label:"Phone", value:c.phone }),
-      fieldHtml({ id:"kbrhRosterAddress", label:"Address", value:c.address, full:true }),
-      fieldHtml({ id:"kbrhRosterCity", label:"City", value:c.city }),
-      fieldHtml({ id:"kbrhRosterContact", label:"Emergency Contact", value:c.contact }),
-      fieldHtml({ id:"kbrhRosterContactPhone", label:"Emergency Contact Phone", value:c.contactPhone }),
-      fieldHtml({ id:"kbrhRosterEntryDate", label:"Admission Date", value:c.entryDate, type:"date" }),
-      fieldHtml({ id:"kbrhRosterDischargeDate", label:"Expected Discharge", value:c.expectedDischargeDate || "", type:"date" }),
-      `<label class="kbrh-modal-field"><span>Phase</span><select id="kbrhRosterPhase" data-label="Phase" data-required="false"><option value="phase1" ${(c.phase || "phase1") === "phase1" ? "selected" : ""}>Phase 1</option><option value="phase2" ${c.phase === "phase2" ? "selected" : ""}>Phase 2</option></select></label>`,
-      fieldHtml({ id:"kbrhRosterPhase2Date", label:"Phase 2 Admission Date", value:c.phase2AdmissionDate, type:"date" }),
-      checkboxHtml({ id:"kbrhRosterOpoc", label:"OPOC Completed", checked:Boolean(c.opocCompleted), full:true })
-    ].join("");
-    openModal("roster", clientId, "Edit Resident", `${c.firstName || ""} ${c.lastName || ""}`.trim(), fields);
-    const phase = byId("kbrhRosterPhase");
-    const date = byId("kbrhRosterPhase2Date");
-    const refresh = () => {
-      const enabled = phase.value === "phase2";
-      date.disabled = !enabled;
-      date.dataset.ignoreEmpty = enabled ? "false" : "true";
-      date.closest(".kbrh-modal-field").classList.toggle("kbrh-field-disabled", !enabled);
-      if (!enabled) date.classList.remove("kbrh-optional-missing");
-    };
-    phase.addEventListener("change", refresh);
-    refresh();
-  }
+  function installOutdoorOverride() {
+    const residentSelect = $("exceptionResident");
+    const choreSelect = $("exceptionChore");
+    const lockButton = $("lockChoreBtn");
 
-  async function saveRosterModal() {
-    const c = (rosterState.roster || []).find(x => x?.id === currentRecordId);
-    if (!c) return;
-    const oldPhase = c.phase || "phase1";
-    c.roomNumber = value("kbrhRosterRoom");
-    c.clientId = value("kbrhRosterClientId");
-    c.firstName = value("kbrhRosterFirstName");
-    c.lastName = value("kbrhRosterLastName");
-    c.dob = value("kbrhRosterDob");
-    c.phone = typeof formatPhoneNumber === "function" ? formatPhoneNumber(value("kbrhRosterPhone")) : value("kbrhRosterPhone");
-    c.address = value("kbrhRosterAddress");
-    c.city = value("kbrhRosterCity");
-    c.contact = value("kbrhRosterContact");
-    c.contactPhone = typeof formatPhoneNumber === "function" ? formatPhoneNumber(value("kbrhRosterContactPhone")) : value("kbrhRosterContactPhone");
-    c.entryDate = value("kbrhRosterEntryDate");
-    c.expectedDischargeDate = value("kbrhRosterDischargeDate");
-    c.phase = value("kbrhRosterPhase") || "phase1";
-    c.phase2AdmissionDate = c.phase === "phase2" ? value("kbrhRosterPhase2Date") : "";
-    c.opocCompleted = Boolean(byId("kbrhRosterOpoc")?.checked);
-    if (oldPhase !== "phase2" && c.phase === "phase2" && !c.phase2AdmissionDate) c.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
-    closeModal();
-    if (typeof renderRoster === "function") renderRoster();
-    if (typeof saveRoster === "function") await saveRoster();
-  }
+    if (!residentSelect || !choreSelect || !lockButton) return;
 
-  function upgradeRoster() {
-    if (typeof window.startInlineEdit === "function" && typeof window.rosterState !== "undefined") window.startInlineEdit = openRosterModal;
-  }
+    if (!$("outdoorEligibilityOverride")) {
+      const label = document.createElement("label");
+      label.className = "kbrh-outdoor-override hidden";
+      label.innerHTML = `
+        <input id="outdoorEligibilityOverride" type="checkbox">
+        <span>Override Outside Yardwork eligibility for this forced assignment</span>
+      `;
 
-  function installOutdoorOverrideControl() {
-    const resident = byId("exceptionResident");
-    const chore = byId("exceptionChore");
-    if (!resident || !chore || byId("outdoorEligibilityOverride")) return;
-    const label = document.createElement("label");
-    label.className = "kbrh-outdoor-override";
-    label.innerHTML = `<input id="outdoorEligibilityOverride" type="checkbox"><span>Override Outside Yardwork eligibility for this forced assignment</span>`;
-    (byId("lockChoreBtn")?.parentElement || chore.parentElement)?.appendChild(label);
-    const refresh = () => {
-      const outdoor = chore.value === OUTDOOR_CHORE_NAME;
-      label.classList.toggle("hidden", !outdoor);
-      if (!outdoor) byId("outdoorEligibilityOverride").checked = false;
-    };
-    chore.addEventListener("change", refresh);
-    refresh();
-  }
+      lockButton.parentElement.appendChild(label);
 
-  function upgradeOutdoorLogic() {
-    if (typeof window.isEligibleForOutsideYardwork === "function" && !window.__kbrhOutdoorEligibilityWrapped) {
-      const original = window.isEligibleForOutsideYardwork;
-      window.isEligibleForOutsideYardwork = resident => resident?.outdoorEligibilityOverride ? true : original(resident);
-      window.__kbrhOutdoorEligibilityWrapped = true;
-    }
-    if (typeof window.lockResidentToChore === "function" && !window.__kbrhOutdoorLockWrapped) {
-      const original = window.lockResidentToChore;
-      window.lockResidentToChore = function() {
-        const residentId = byId("exceptionResident")?.value || "";
-        const choreName = byId("exceptionChore")?.value || "";
-        const resident = (window.state?.residents || []).find(x => x.id === residentId);
-        const override = Boolean(byId("outdoorEligibilityOverride")?.checked);
-        if (resident && choreName === OUTDOOR_CHORE_NAME && !resident.outdoorEligibilityOverride && override) {
-          if (!confirm(`${resident.name} has not completed the normal indoor rotation.\n\nSelect OK to force and lock this resident to Outside Yardwork.`)) return;
-          resident.outdoorEligibilityOverride = true;
-        }
-        original();
-        if (byId("outdoorEligibilityOverride")) byId("outdoorEligibilityOverride").checked = false;
-      };
-      window.__kbrhOutdoorLockWrapped = true;
-    }
-    if (typeof window.clearResidentLock === "function" && !window.__kbrhClearOutdoorLockWrapped) {
-      const original = window.clearResidentLock;
-      window.clearResidentLock = function() {
-        const residentId = byId("exceptionResident")?.value || "";
-        const resident = (window.state?.residents || []).find(x => x.id === residentId);
-        original();
-        if (resident) {
-          resident.outdoorEligibilityOverride = false;
-          if (typeof window.saveAndRender === "function") window.saveAndRender();
+      const refresh = () => {
+        const active = choreSelect.value === OUTDOOR;
+        label.classList.toggle("hidden", !active);
+
+        if (!active) {
+          $("outdoorEligibilityOverride").checked = false;
         }
       };
-      window.__kbrhClearOutdoorLockWrapped = true;
+
+      choreSelect.addEventListener("change", refresh);
+      refresh();
     }
+
+    if (lockButton.dataset.kbrhOverrideInstalled === "true") return;
+    lockButton.dataset.kbrhOverrideInstalled = "true";
+
+    lockButton.addEventListener(
+      "click",
+      event => {
+        const residentId = residentSelect.value;
+        const choreName = choreSelect.value;
+        const override = Boolean($("outdoorEligibilityOverride")?.checked);
+
+        if (choreName !== OUTDOOR || !override) return;
+
+        const resident = (state.residents || []).find(item => item.id === residentId);
+        if (!resident) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const confirmed = confirm(
+          `${resident.name} has not completed the normal indoor rotation.\n\n` +
+          `Select OK to force and lock this resident to Outside Yardwork.`
+        );
+
+        if (!confirmed) return;
+
+        resident.outdoorEligibilityOverride = true;
+        resident.lockedChore = OUTDOOR;
+        resident.exceptions = Array.isArray(resident.exceptions)
+          ? resident.exceptions.filter(chore => chore !== OUTDOOR)
+          : [];
+        resident.choreIndex = choreIndexByName(OUTDOOR);
+
+        $("outdoorEligibilityOverride").checked = false;
+
+        saveAndRender();
+      },
+      true
+    );
   }
 
   function install() {
     ensureModal();
-    upgradeWaitlist();
-    upgradeRoster();
+    installEditInterception();
     installWaitlistSearch();
     applyWaitlistSearch();
-    upgradeOutdoorLogic();
-    installOutdoorOverrideControl();
+    installOutdoorOverride();
   }
 
   document.addEventListener("DOMContentLoaded", install);
   window.addEventListener("load", install);
-  let tries = 0;
-  const timer = setInterval(() => { install(); if (++tries >= 20) clearInterval(timer); }, 500);
+
+  let attempts = 0;
+  const timer = setInterval(() => {
+    install();
+    attempts += 1;
+    if (attempts >= 20) clearInterval(timer);
+  }, 500);
 })();
