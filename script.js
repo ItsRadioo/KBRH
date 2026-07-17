@@ -290,16 +290,12 @@ function nextAllowedChoreIndex(
 ) {
   if (!state.chores.length) return -1;
 
-  if (
-    resident.lockedChore &&
-    state.chores.includes(resident.lockedChore)
-  ) {
-    const lockedIndex = choreIndexByName(resident.lockedChore);
-
-    if (canAssign(resident, lockedIndex)) {
-      return lockedIndex;
-    }
-  }
+if (
+  resident.lockedChore &&
+  state.chores.includes(resident.lockedChore)
+) {
+  return choreIndexByName(resident.lockedChore);
+}
 
   for (let offset = 0; offset < state.chores.length; offset++) {
     const candidate = normalizeChoreIndex(startIndex + offset);
