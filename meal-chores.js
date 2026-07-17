@@ -81,6 +81,7 @@ function activeResidents() {
     .filter(client => {
       if (!client || client === "temp") return false;
       if (client.archived) return false;
+      if ((client.phase || "phase1") !== "phase1") return false;
 
       const residentStatus = getRosterStatusRecord(client);
 
