@@ -34,7 +34,8 @@ function getActiveRosterClients() {
         .filter(client =>
           client &&
           client !== "temp" &&
-          !client.archived
+          !client.archived &&
+          (client.phase || "phase1") === "phase1"
         )
         .sort((a, b) => {
           const aDate = a.entryDate || "9999-12-31";
