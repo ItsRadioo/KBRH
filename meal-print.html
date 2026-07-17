@@ -8,6 +8,25 @@
   <link rel="stylesheet" href="style.css" />
 
   <style>
+    :root {
+      /*
+       * Change this one value to move the complete printed
+       * schedule left or right.
+       *
+       * Examples:
+       *   0px    = current position
+       *   25px   = move right
+       *   -25px  = move left
+       */
+      --schedule-left: 0px;
+
+      /*
+       * Shared width for the title area, instructions,
+       * day headings, and tables.
+       */
+      --schedule-width: 50%;
+    }
+
     .dish-print-main {
       max-width: 900px;
       margin: 0 auto;
@@ -21,15 +40,20 @@
       padding: 28px 34px;
     }
 
-.dish-schedule-header {
-    text-align: center;
-    margin-bottom: 16px;
-    position: relative;
-    margin-left: 0px;
-}
+    /*
+     * The header, instruction, day titles, and tables all use
+     * the same width and left margin so they remain aligned.
+     */
+    .dish-schedule-header {
+      width: var(--schedule-width);
+      margin-left: var(--schedule-left);
+      margin-bottom: 16px;
+      text-align: center;
+      box-sizing: border-box;
+    }
 
     .dish-schedule-header h1 {
-      margin-left: 0px;
+      margin: 0;
       font-size: 30px;
       font-weight: 700;
       text-transform: none;
@@ -59,12 +83,16 @@
       margin-top: 6px;
       font-size: 19px;
       font-weight: 700;
+      text-align: center;
     }
 
-.dish-instruction {
-    text-align: center;
-    margin-left: 0px;
-}
+    .dish-instruction {
+      width: var(--schedule-width);
+      margin: 0 0 18px var(--schedule-left);
+      text-align: center;
+      font-weight: 700;
+      box-sizing: border-box;
+    }
 
     .dish-days {
       display: grid;
@@ -77,22 +105,22 @@
       page-break-inside: avoid;
     }
 
- .dish-day-title {
-    text-align: center;
-    width: 50%;
-    margin-left: 0px;   /* match the table */
-    margin-bottom: 3px;
-    text-decoration: underline;
-    font-size: 16px;
-    font-weight: 700;
-}
+    .dish-day-title {
+      width: var(--schedule-width);
+      margin: 0 0 3px var(--schedule-left);
+      text-align: center;
+      text-decoration: underline;
+      font-size: 16px;
+      font-weight: 700;
+      box-sizing: border-box;
+    }
 
-   .dish-day-table {
-    width: 50%;
-    margin-left: 0px;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
+    .dish-day-table {
+      width: var(--schedule-width);
+      margin-left: var(--schedule-left);
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
 
     .dish-day-table td {
       border: 1px solid #000;
@@ -146,6 +174,7 @@
       }
 
       .dish-schedule-header {
+        margin-left: var(--schedule-left);
         margin-bottom: 10px;
       }
 
@@ -158,7 +187,10 @@
       }
 
       .dish-instruction {
-        margin: 7px 0 12px;
+        margin-top: 7px;
+        margin-right: 0;
+        margin-bottom: 12px;
+        margin-left: var(--schedule-left);
         font-size: 12px;
       }
 
@@ -167,8 +199,13 @@
       }
 
       .dish-day-title {
-        font-size: 13px;
+        margin-left: var(--schedule-left);
         margin-bottom: 2px;
+        font-size: 13px;
+      }
+
+      .dish-day-table {
+        margin-left: var(--schedule-left);
       }
 
       .dish-day-table td {
@@ -185,7 +222,10 @@
   <script src="firebase-config.js"></script>
   <script src="auth.js"></script>
   <script src="data-store.js"></script>
-  <script>requireLogin();</script>
+
+  <script>
+    requireLogin();
+  </script>
 </head>
 
 <body>
@@ -196,7 +236,9 @@
     </div>
 
     <nav>
-      <label class="page-nav-label" for="pageSelect">Go to:</label>
+      <label class="page-nav-label" for="pageSelect">
+        Go to:
+      </label>
 
       <select id="pageSelect" class="page-select">
         <option value="waitlist.html">Waitlist</option>
@@ -208,7 +250,9 @@
         <option value="counseling-notes.html">Counseling Notes</option>
       </select>
 
-      <button class="logout-btn" onclick="logout()">Logout</button>
+      <button class="logout-btn" onclick="logout()">
+        Logout
+      </button>
     </nav>
   </header>
 
@@ -225,7 +269,8 @@
         </div>
 
         <div class="dish-week-line">
-          Week of <span id="mealWeekStartPrint"></span>
+          Week of
+          <span id="mealWeekStartPrint"></span>
         </div>
       </div>
 
@@ -237,8 +282,13 @@
     </section>
 
     <div class="dish-button-row no-print">
-      <button type="button" onclick="window.print()">Print Dish Schedule</button>
-      <a class="button-link" href="meal-chores.html">Back to Meal Chores</a>
+      <button type="button" onclick="window.print()">
+        Print Dish Schedule
+      </button>
+
+      <a class="button-link" href="meal-chores.html">
+        Back to Meal Chores
+      </a>
     </div>
   </main>
 
