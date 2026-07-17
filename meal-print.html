@@ -3,8 +3,178 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Printable Meal Schedule</title>
+  <title>Dish Schedule</title>
+
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    .dish-print-main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .dish-schedule-sheet {
+      background: #fff;
+      color: #000;
+      border: 1px solid #d7d7d7;
+      padding: 28px 34px;
+    }
+
+    .dish-schedule-header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .dish-schedule-header h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .dish-date-controls {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin: 16px 0 10px;
+      flex-wrap: wrap;
+    }
+
+    .dish-date-controls label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .dish-date-controls input {
+      min-width: 180px;
+    }
+
+    .dish-week-line {
+      margin-top: 6px;
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .dish-instruction {
+      margin: 10px 0 18px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .dish-days {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .dish-day-block {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .dish-day-title {
+      margin: 0 0 3px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .dish-day-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .dish-day-table td {
+      border: 1px solid #000;
+      padding: 5px 8px;
+      vertical-align: middle;
+      font-size: 14px;
+      line-height: 1.15;
+    }
+
+    .dish-meal-label {
+      width: 24%;
+      font-weight: 700;
+    }
+
+    .dish-resident-name {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .dish-button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    @media print {
+      @page {
+        size: letter portrait;
+        margin: 0.42in;
+      }
+
+      body {
+        background: #fff !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .dish-print-main {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .dish-schedule-sheet {
+        border: 0;
+        padding: 0;
+      }
+
+      .dish-schedule-header {
+        margin-bottom: 10px;
+      }
+
+      .dish-schedule-header h1 {
+        font-size: 24px;
+      }
+
+      .dish-week-line {
+        font-size: 16px;
+      }
+
+      .dish-instruction {
+        margin: 7px 0 12px;
+        font-size: 12px;
+      }
+
+      .dish-days {
+        gap: 6px;
+      }
+
+      .dish-day-title {
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+
+      .dish-day-table td {
+        padding: 3px 6px;
+        font-size: 11px;
+        line-height: 1.05;
+      }
+    }
+  </style>
+
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -13,93 +183,74 @@
   <script src="data-store.js"></script>
   <script>requireLogin();</script>
 </head>
+
 <body>
   <header class="no-print">
     <div>
-      <h1>Printable Meal Schedule</h1>
-      <p>Prints the saved weekly meal schedule using the posting-sheet template.</p>
+      <h1>Dish Schedule</h1>
+      <p>Print the saved weekly lunch and dinner schedule.</p>
     </div>
-       <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="waitlist.html">Waitlist</option>
-    <option value="roster.html">Current Roster</option>
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-    <option value="verbalwarning.html">Verbal Warning Log</option>
-    <option value="counseling-notes.html">Counseling Notes</option>
-  </select>
 
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
-    
-<script>
-  const pageSelect = document.getElementById("pageSelect");
-  pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
+    <nav>
+      <label class="page-nav-label" for="pageSelect">Go to:</label>
 
-  pageSelect.addEventListener("change", () => {
-    window.location.href = pageSelect.value;
-  });
-</script>
+      <select id="pageSelect" class="page-select">
+        <option value="waitlist.html">Waitlist</option>
+        <option value="roster.html">Current Roster</option>
+        <option value="index.html">House Chores</option>
+        <option value="meal-chores.html">Meal Chores</option>
+        <option value="meal-print.html">Dish Schedule</option>
+        <option value="verbalwarning.html">Verbal Warning Log</option>
+        <option value="counseling-notes.html">Counseling Notes</option>
+      </select>
+
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </nav>
   </header>
 
-  <main class="print-main">
-    <section class="cooking-template">
-      <div class="cooking-template-header">
-        <h1>RESIDENT COOKING SCHEDULE</h1>
+  <main class="dish-print-main">
+    <section class="dish-schedule-sheet">
+      <div class="dish-schedule-header">
+        <h1>Dish Schedule</h1>
 
-        <div class="cooking-date-row no-print">
+        <div class="dish-date-controls no-print">
           <label>
             Week Start
             <input id="mealWeekStart" type="date" />
           </label>
-          <label>
-            Week End
-            <input id="mealWeekEnd" type="date" />
-          </label>
         </div>
 
-        <div class="cooking-week-print">
-          <span id="mealWeekStartPrint"></span>
-          <span id="mealWeekDash"> - </span>
-          <span id="mealWeekEndPrint"></span>
+        <div class="dish-week-line">
+          Week of <span id="mealWeekStartPrint"></span>
         </div>
       </div>
 
-      <p class="cooking-template-instruction">
-        COOKING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.
+      <p class="dish-instruction">
+        Tables To Be Set 30 Mins Prior To Meal Times
       </p>
 
-      <p class="cooking-template-instruction">
-        ASSIGNED MEAL DUTIES ARE TO BE COMPLETED ON THE DAY ASSIGNED.
-      </p>
-
-      <table class="cooking-template-table">
-        <thead>
-          <tr>
-            <th>DAY</th>
-            <th>LUNCH</th>
-            <th>SUPPER</th>
-          </tr>
-        </thead>
-        <tbody id="mealPrintBody"></tbody>
-      </table>
-
-      <div class="cooking-template-note">
-        <strong>PLEASE NOTE:</strong>
-        <ul>
-          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete meal duties.</li>
-          <li>Assigned duties vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
-          <li>Supper requires two assigned Residents.</li>
-        </ul>
-      </div>
+      <div id="mealPrintBody" class="dish-days"></div>
     </section>
 
-    <div class="button-row no-print">
-      <button onclick="window.print()">Print Meal Template</button>
+    <div class="dish-button-row no-print">
+      <button type="button" onclick="window.print()">Print Dish Schedule</button>
       <a class="button-link" href="meal-chores.html">Back to Meal Chores</a>
     </div>
   </main>
+
+  <script>
+    const pageSelect = document.getElementById("pageSelect");
+
+    if (pageSelect) {
+      pageSelect.value =
+        window.location.pathname.split("/").pop() ||
+        "meal-print.html";
+
+      pageSelect.addEventListener("change", () => {
+        window.location.href = pageSelect.value;
+      });
+    }
+  </script>
 
   <script src="meal-print.js"></script>
 </body>
