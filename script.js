@@ -527,7 +527,7 @@ function rotateChores() {
   state.residents.forEach(resident => {
     if (resident.status !== "active") return;
 
-    if (
+     if (
       resident.lockedChore &&
       state.chores.includes(resident.lockedChore) &&
       canAssign(
