@@ -1141,3 +1141,34 @@ tbody tr:hover td { background: #f8fbfd; }
     width: 100%;
   }
 }
+
+/* v2.2 modal and section action refinements */
+.section-heading-row,
+.modal-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.section-heading-row { margin-bottom: 14px; }
+.section-heading-row .hint,
+.modal-title-row .hint { margin-bottom: 0; }
+.primary-action-btn { white-space: nowrap; }
+.modal-close-button {
+  min-width: 42px;
+  padding: 8px 12px;
+  font-size: 22px;
+  line-height: 1;
+}
+.inline-time-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr));
+  gap: 8px;
+}
+.modal-actions { justify-content: flex-end; }
+body.kbrh-modal-open { overflow: hidden; }
+@media (max-width: 760px) {
+  .section-heading-row .primary-action-btn { width: 100%; }
+  .inline-time-fields { grid-template-columns: 1fr; }
+}

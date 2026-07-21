@@ -149,6 +149,7 @@ function addCounselingNote() {
 
   renderCounselingNotes();
   saveCounselingNotes();
+  closeCounselingModal();
 }
 
 function clearCounselingForm() {
@@ -239,9 +240,30 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
+function openCounselingModal() {
+  clearCounselingForm();
+  populateResidentDropdowns();
+  document.getElementById("counselingModal")?.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+  setTimeout(() => document.getElementById("residentSelect")?.focus(), 0);
+}
+
+function closeCounselingModal() {
+  document.getElementById("counselingModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("openCounselingModalBtn")?.addEventListener("click", openCounselingModal);
   document.getElementById("addCounselingNoteBtn")?.addEventListener("click", addCounselingNote);
-  document.getElementById("clearCounselingFormBtn")?.addEventListener("click", clearCounselingForm);
+  document.getElementById("cancelCounselingModalBtn")?.addEventListener("click", closeCounselingModal);
+  document.getElementById("closeCounselingModalX")?.addEventListener("click", closeCounselingModal);
+  document.getElementById("counselingModal")?.addEventListener("mousedown", event => {
+    if (event.target === document.getElementById("counselingModal")) closeCounselingModal();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !document.getElementById("counselingModal")?.classList.contains("hidden")) closeCounselingModal();
+  });
 
   document.getElementById("showArchivedResidents")?.addEventListener("change", () => {
     populateResidentDropdowns();

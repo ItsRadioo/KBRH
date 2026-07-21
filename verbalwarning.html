@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -16,71 +15,29 @@
 </head>
 <body class="page-verbalwarning">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
-<h1>Verbal Warning Log</h1>
-<p>Track verbal warnings and resident responses.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a aria-current="page" class="app-nav-link active" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
+<h1>Verbal Warning Log</h1><p>Track verbal warnings and resident responses.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a aria-current="page" class="app-nav-link active" href="verbalwarning.html">Warnings</a></nav></header>
 <main>
 <section class="card wide">
-<h2>Add Verbal Warning</h2>
-<div class="form-row">
-<div class="field-group">
-<label for="warningDate">Date</label>
-<input id="warningDate" type="date"/>
-</div>
-<div class="field-group">
-<label>Time</label>
-<div class="form-row" style="margin-top: 0;">
-<select id="warningHour"></select>
-<select id="warningMinute"></select>
-<select id="warningAmPm"></select>
-</div>
-</div>
-<div class="field-group">
-<label for="warningResident">Resident</label>
-<select id="warningResident" onchange="toggleOtherResidentField()"></select>
-</div>
-<div class="field-group hidden" id="otherResidentWrap">
-<label for="otherResidentName">Other Resident Name</label>
-<input id="otherResidentName" placeholder="Type resident name" type="text"/>
-</div>
-<div class="field-group">
-<label for="warningIncident">Incident</label>
-<textarea class="notes-box" id="warningIncident"></textarea>
-</div>
-<div class="field-group">
-<label for="warningStaffAction">Staff Action</label>
-<textarea class="notes-box" id="warningStaffAction"></textarea>
-</div>
-<div class="field-group">
-<label for="warningResidentResponse">Resident Response</label>
-<textarea class="notes-box" id="warningResidentResponse"></textarea>
-</div>
-</div>
-<div class="button-row">
-<button id="addWarningBtn" type="button">Add Verbal Warning</button>
-</div>
-</section>
-<section class="card wide">
-<h2>Warning Log</h2>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Date</th>
-<th>Time</th>
-<th>Resident</th>
-<th>Incident</th>
-<th>Staff Action</th>
-<th>Resident Response</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody id="warningBody"></tbody>
-</table>
-</div>
+<div class="section-heading-row"><div><h2>Warning Log</h2><p class="hint">Review, add, edit, or remove verbal warning records.</p></div><button id="openWarningModalBtn" class="primary-action-btn" type="button">+ Add Verbal Warning</button></div>
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>Time</th><th>Resident</th><th>Incident</th><th>Staff Action</th><th>Resident Response</th><th>Actions</th></tr></thead><tbody id="warningBody"></tbody></table></div>
 </section>
 </main>
-
+<div class="modal-backdrop hidden" id="warningModal">
+  <div class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="warningModalTitle">
+    <div class="modal-title-row"><div><h2 id="warningModalTitle">Add Verbal Warning</h2><p class="hint" id="warningModalHint">Complete the warning details below.</p></div><button class="secondary modal-close-button" id="closeWarningModalX" type="button" aria-label="Close">×</button></div>
+    <div class="form-row">
+      <div class="field-group"><label for="warningDate">Date</label><input id="warningDate" type="date"/></div>
+      <div class="field-group"><label>Time</label><div class="inline-time-fields"><select id="warningHour"></select><select id="warningMinute"></select><select id="warningAmPm"></select></div></div>
+      <div class="field-group"><label for="warningResident">Resident</label><select id="warningResident"></select></div>
+      <div class="field-group hidden" id="otherResidentWrap"><label for="otherResidentName">Other Resident Name</label><input id="otherResidentName" placeholder="Type resident name" type="text"/></div>
+    </div>
+    <div class="field-group"><label for="warningIncident">Incident <span aria-hidden="true">*</span></label><textarea class="notes-box" id="warningIncident"></textarea></div>
+    <div class="field-group"><label for="warningStaffAction">Staff Action</label><textarea class="notes-box" id="warningStaffAction"></textarea></div>
+    <div class="field-group"><label for="warningResidentResponse">Resident Response</label><textarea class="notes-box" id="warningResidentResponse"></textarea></div>
+    <div class="button-row modal-actions"><button id="saveWarningBtn" class="success" type="button">Add Verbal Warning</button><button class="secondary" id="cancelWarningModalBtn" type="button">Cancel</button></div>
+  </div>
+</div>
 <script src="verbalwarning.js"></script>
 </body>
 </html>

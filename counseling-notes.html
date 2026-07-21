@@ -1,93 +1,16 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Counseling Notes</title>
-<link href="style.css" rel="stylesheet"/>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="auth.js"></script>
-<script src="data-store.js"></script>
-<script>requireLogin();</script>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Counseling Notes</title><link href="style.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="auth.js"></script><script src="data-store.js"></script><script>requireLogin();</script>
 </head>
 <body class="page-counseling-notes">
-<header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
-<h1>Counseling Notes</h1>
-<p>Document counseling notes for active and archived residents.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a aria-current="page" class="app-nav-link active" href="counseling-notes.html">Counselling Notes</a></nav></header>
-<main>
-<section class="card wide">
-<h2>Add Counseling Note</h2>
-<p class="hint">
-        Select a resident, enter your name, and add the counseling note.
-      </p>
-<div class="form-row">
-<div class="field-group">
-<label for="residentSelect">Resident</label>
-<select id="residentSelect">
-<option value="">Select resident...</option>
-</select>
-</div>
-<div class="field-group">
-<label for="staffName">Staff Member</label>
-<input autocomplete="off" id="staffName" placeholder="Enter your name" type="text"/>
-</div>
-<div class="field-group">
-<label for="showArchivedResidents">Archived Records</label>
-<select id="showArchivedResidents">
-<option value="active">Active residents only</option>
-<option value="archived">Archived residents only</option>
-<option value="all">Active and archived residents</option>
-</select>
-</div>
-</div>
-<div class="form-row">
-<textarea class="notes-box" id="counselingNoteText" placeholder="Enter counseling note..."></textarea>
-</div>
-<div class="button-row">
-<button id="addCounselingNoteBtn" type="button">Add Counseling Note</button>
-<button class="secondary" id="clearCounselingFormBtn" type="button">Clear</button>
-</div>
-</section>
-<section class="card wide">
-<h2>View Counseling Notes</h2>
-<p class="hint">
-        Filter notes by resident. Notes remain available even after a resident is archived.
-      </p>
-<div class="form-row">
-<div class="field-group">
-<label for="noteFilterResident">Resident Filter</label>
-<select id="noteFilterResident">
-<option value="">All residents</option>
-</select>
-</div>
-<div class="field-group">
-<label for="noteSearch">Search Notes</label>
-<input id="noteSearch" placeholder="Search notes, staff, or resident..." type="text"/>
-</div>
-</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Date / Time</th>
-<th>Resident</th>
-<th>Staff</th>
-<th>Note</th>
-<th>Record Type</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody id="counselingNotesBody"></tbody>
-</table>
-</div>
-</section>
-</main>
-
-<script src="counseling-notes.js"></script>
-</body>
-</html>
+<header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Counseling Notes</h1><p>Document counseling notes for active and archived residents.</p></div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a></nav></header>
+<main><section class="card wide"><div class="section-heading-row"><div><h2>Counseling Notes</h2><p class="hint">Filter existing notes or add a new record.</p></div><button id="openCounselingModalBtn" class="primary-action-btn" type="button">+ Add Counseling Note</button></div>
+<div class="form-row"><div class="field-group"><label for="noteFilterResident">Resident Filter</label><select id="noteFilterResident"><option value="">All residents</option></select></div><div class="field-group"><label for="noteSearch">Search Notes</label><input id="noteSearch" placeholder="Search notes, staff, or resident..." type="text"/></div></div>
+<div class="table-wrap"><table><thead><tr><th>Date / Time</th><th>Resident</th><th>Staff</th><th>Note</th><th>Record Type</th><th>Actions</th></tr></thead><tbody id="counselingNotesBody"></tbody></table></div></section></main>
+<div class="modal-backdrop hidden" id="counselingModal"><div class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="counselingModalTitle"><div class="modal-title-row"><div><h2 id="counselingModalTitle">Add Counseling Note</h2><p class="hint">Select a resident and document the note.</p></div><button class="secondary modal-close-button" id="closeCounselingModalX" type="button" aria-label="Close">×</button></div>
+<div class="form-row"><div class="field-group"><label for="residentSelect">Resident</label><select id="residentSelect"><option value="">Select resident...</option></select></div><div class="field-group"><label for="staffName">Staff Member</label><input autocomplete="off" id="staffName" placeholder="Enter your name" type="text"/></div><div class="field-group"><label for="showArchivedResidents">Resident Records</label><select id="showArchivedResidents"><option value="active">Active residents only</option><option value="archived">Archived residents only</option><option value="all">Active and archived residents</option></select></div></div>
+<div class="field-group"><label for="counselingNoteText">Counseling Note</label><textarea class="notes-box" id="counselingNoteText" placeholder="Enter counseling note..."></textarea></div><div class="button-row modal-actions"><button id="addCounselingNoteBtn" class="success" type="button">Add Counseling Note</button><button class="secondary" id="cancelCounselingModalBtn" type="button">Cancel</button></div></div></div>
+<script src="counseling-notes.js"></script></body></html>
