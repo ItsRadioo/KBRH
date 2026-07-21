@@ -47,3 +47,8 @@ The House Chores page now includes explicit Expand/Collapse buttons for Current 
 
 
 Version 3.0: Added manual waitlist position changes from the applicant Actions modal. Moving an applicant changes only their active waitlist order and does not change their application date.
+
+
+## v3.5
+- Centred the primary navigation between the page title/emblem and Sign Out on desktop and laptop screens.
+- Preserved the compact mobile navigation layout.
