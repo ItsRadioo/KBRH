@@ -38,6 +38,59 @@
     `;
   }
 
+  function selectField(id, label, value = "", options = [], required = false, full = false) {
+    const optionHtml = options.map(option => {
+      const optionValue = typeof option === "string" ? option : option.value;
+      const optionLabel = typeof option === "string" ? option : option.label;
+      return `<option value="${esc(optionValue)}" ${String(optionValue) === String(value) ? "selected" : ""}>${esc(optionLabel)}</option>`;
+    }).join("");
+
+    return `
+      <label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
+        <span>${esc(label)}${required ? ' <strong class="kbrh-required-mark">*</strong>' : ""}</span>
+        <select
+          id="${esc(id)}"
+          data-label="${esc(label)}"
+          data-required="${required ? "true" : "false"}"
+        >${optionHtml}</select>
+      </label>
+    `;
+  }
+
+  function offerNoteField(id) {
+    return `
+      <label id="${esc(id)}Wrap" class="kbrh-modal-field kbrh-modal-field-full hidden">
+        <span>Offer Note <strong class="kbrh-required-mark">*</strong></span>
+        <textarea
+          id="${esc(id)}"
+          data-label="Offer Note"
+          data-required="false"
+          placeholder="Enter the offer details..."
+        ></textarea>
+      </label>
+    `;
+  }
+
+  function configureOfferNote(statusId, noteId) {
+    const status = $(statusId);
+    const note = $(noteId);
+    const wrap = $(`${noteId}Wrap`);
+    if (!status || !note || !wrap) return;
+
+    const update = () => {
+      const offerGiven = status.value === "Offer Given";
+      wrap.classList.toggle("hidden", !offerGiven);
+      note.dataset.required = offerGiven ? "true" : "false";
+      if (!offerGiven) {
+        note.value = "";
+        note.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
+      }
+    };
+
+    status.addEventListener("change", update);
+    update();
+  }
+
   function textareaField(id, label, value = "", required = false, full = true) {
     return `
       <label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
@@ -215,13 +268,15 @@
         inputField("kwaFirst", "First Name", "", "text", true),
         inputField("kwaLast", "Last Name", "", "text", true),
         inputField("kwaContact", "Contact / Phone Number"),
-        inputField("kwaStatus", "Status"),
+        selectField("kwaStatus", "Status", "N/A", ["N/A", "Incarcerated", "Offer Given"], true),
         inputField("kwaCity", "City"),
         inputField("kwaDate", "Date Applied", new Date().toISOString().slice(0, 10), "date"),
-        textareaField("kwaNotes", "Initial Note")
+        textareaField("kwaNotes", "Initial Note"),
+        offerNoteField("kwaOfferNote")
       ].join(""),
       "Add Applicant"
     );
+    configureOfferNote("kwaStatus", "kwaOfferNote");
   }
 
   async function addWaitlistRecord() {
@@ -230,6 +285,15 @@
       : [];
 
     const initialNote = valueOf("kwaNotes");
+    const offerNote = valueOf("kwaOfferNote");
+    const status = valueOf("kwaStatus") || "N/A";
+    const createdAt = new Date().toISOString();
+    const notes = [];
+    if (initialNote) notes.push({ id: crypto.randomUUID(), text: initialNote, createdAt });
+    if (status === "Offer Given" && offerNote) {
+      notes.push({ id: crypto.randomUUID(), text: `Offer Given: ${offerNote}`, createdAt });
+    }
+
     const applicant = {
       id: crypto.randomUUID(),
       firstName: valueOf("kwaFirst"),
@@ -237,18 +301,14 @@
       contact: typeof formatPhoneNumber === "function"
         ? formatPhoneNumber(valueOf("kwaContact"))
         : valueOf("kwaContact"),
-      status: valueOf("kwaStatus"),
+      status,
       city: valueOf("kwaCity"),
       dateApplied: valueOf("kwaDate"),
       archived: false,
       archivedAt: "",
       archiveReason: "",
       callPriority: "normal",
-      notes: initialNote ? [{
-        id: crypto.randomUUID(),
-        text: initialNote,
-        createdAt: new Date().toISOString()
-      }] : [],
+      notes,
       callInHistory: []
     };
 
@@ -281,11 +341,13 @@
         inputField("kwFirst", "First Name", applicant.firstName, "text", true),
         inputField("kwLast", "Last Name", applicant.lastName, "text", true),
         inputField("kwContact", "Contact", applicant.contact),
-        inputField("kwStatus", "Status", applicant.status),
+        selectField("kwStatus", "Status", applicant.status || "N/A", ["N/A", "Incarcerated", "Offer Given"], true),
         inputField("kwCity", "City", applicant.city),
-        inputField("kwDate", "Date Applied", applicant.dateApplied, "date")
+        inputField("kwDate", "Date Applied", applicant.dateApplied, "date"),
+        offerNoteField("kwOfferNote")
       ].join("")
     );
+    configureOfferNote("kwStatus", "kwOfferNote");
   }
 
   async function saveWaitlistRecord() {
@@ -295,9 +357,21 @@
     applicant.firstName = valueOf("kwFirst");
     applicant.lastName = valueOf("kwLast");
     applicant.contact = valueOf("kwContact");
-    applicant.status = valueOf("kwStatus");
+    applicant.status = valueOf("kwStatus") || "N/A";
     applicant.city = valueOf("kwCity");
     applicant.dateApplied = valueOf("kwDate");
+
+    const offerNote = valueOf("kwOfferNote");
+    if (applicant.status === "Offer Given" && offerNote) {
+      applicant.notes = typeof normalizeWaitlistNotes === "function"
+        ? normalizeWaitlistNotes(applicant.notes)
+        : (Array.isArray(applicant.notes) ? applicant.notes : []);
+      applicant.notes.unshift({
+        id: crypto.randomUUID(),
+        text: `Offer Given: ${offerNote}`,
+        createdAt: new Date().toISOString()
+      });
+    }
 
     closeModal();
     renderWaitlist();

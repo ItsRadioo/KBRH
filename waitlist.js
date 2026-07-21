@@ -158,7 +158,7 @@ function addWaitlistApplicant() {
     lastName: getInputValue("lastName"),
     firstName: getInputValue("firstName"),
     contact: formatPhoneNumber(getInputValue("contact")),
-    status: getInputValue("status"),
+    status: getInputValue("status") || "N/A",
     city: getInputValue("city"),
     dateApplied: getInputValue("dateApplied"),
     archived: false,
@@ -189,7 +189,7 @@ function addWaitlistApplicant() {
 function clearWaitlistForm() {
   ["lastName", "firstName", "contact", "status", "city", "dateApplied", "notes"].forEach(id => {
     const input = document.getElementById(id);
-    if (input) input.value = "";
+    if (input) input.value = id === "status" ? "N/A" : "";
   });
 }
 
@@ -210,9 +210,27 @@ function saveInlineEdit(applicantId) {
   applicant.lastName = getInputValue(`editLastName-${applicantId}`);
   applicant.firstName = getInputValue(`editFirstName-${applicantId}`);
   applicant.contact = formatPhoneNumber(getInputValue(`editContact-${applicantId}`));
-  applicant.status = getInputValue(`editStatus-${applicantId}`);
+  const previousStatus = applicant.status || "N/A";
+  const newStatus = getInputValue(`editStatus-${applicantId}`) || "N/A";
+  applicant.status = newStatus;
   applicant.city = getInputValue(`editCity-${applicantId}`);
   applicant.dateApplied = getInputValue(`editDateApplied-${applicantId}`);
+
+  if (newStatus === "Offer Given" && previousStatus !== "Offer Given") {
+    const offerNote = prompt("Enter a note about the offer given:");
+    if (offerNote === null || !offerNote.trim()) {
+      alert("A note is required when Offer Given is selected.");
+      applicant.status = previousStatus;
+      renderWaitlist();
+      return;
+    }
+    applicant.notes = normalizeWaitlistNotes(applicant.notes);
+    applicant.notes.unshift({
+      id: crypto.randomUUID(),
+      text: `Offer Given: ${offerNote.trim()}`,
+      createdAt: new Date().toISOString()
+    });
+  }
 
   editingApplicantId = null;
   renderWaitlist();
@@ -567,7 +585,13 @@ function renderActiveWaitlist() {
               <td><input id="editLastName-${item.id}" value="${escapeAttribute(item.lastName)}" /></td>
               <td><input id="editFirstName-${item.id}" value="${escapeAttribute(item.firstName)}" /></td>
               <td class="phone-cell"><input id="editContact-${item.id}" value="${escapeAttribute(item.contact)}" /></td>
-              <td><input id="editStatus-${item.id}" value="${escapeAttribute(item.status)}" /></td>
+              <td>
+                <select id="editStatus-${item.id}">
+                  <option value="N/A" ${(item.status || "N/A") === "N/A" ? "selected" : ""}>N/A</option>
+                  <option value="Incarcerated" ${item.status === "Incarcerated" ? "selected" : ""}>Incarcerated</option>
+                  <option value="Offer Given" ${item.status === "Offer Given" ? "selected" : ""}>Offer Given</option>
+                </select>
+              </td>
               <td><input id="editCity-${item.id}" value="${escapeAttribute(item.city)}" /></td>
               <td><input id="editDateApplied-${item.id}" type="date" value="${escapeAttribute(item.dateApplied)}" /></td>
               <td><span class="empty">Save or cancel edit first</span></td>
@@ -583,8 +607,16 @@ function renderActiveWaitlist() {
 
         const noCallCount = getConsecutiveNoCallCount(item);
 
+        const statusClass = item.status === "Offer Given"
+          ? "waitlist-offer-row"
+          : item.status === "Incarcerated"
+            ? "waitlist-incarcerated-row"
+            : noCallCount >= 2
+              ? "waitlist-follow-up-row"
+              : "";
+
         return `
-          <tr class="${noCallCount >= 2 ? "waitlist-follow-up-row" : ""}">
+          <tr class="${statusClass}">
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
@@ -623,8 +655,16 @@ function renderArchivedWaitlist() {
 
         const noCallCount = getConsecutiveNoCallCount(item);
 
+        const statusClass = item.status === "Offer Given"
+          ? "waitlist-offer-row"
+          : item.status === "Incarcerated"
+            ? "waitlist-incarcerated-row"
+            : noCallCount >= 2
+              ? "waitlist-follow-up-row"
+              : "";
+
         return `
-          <tr class="${noCallCount >= 2 ? "waitlist-follow-up-row" : ""}">
+          <tr class="${statusClass}">
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>

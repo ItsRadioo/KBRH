@@ -1401,3 +1401,31 @@ body.kbrh-modal-open { overflow: hidden; }
 .call-in-choice-danger:focus-visible {
   background: #a92f2f;
 }
+
+
+/* v2.9 waitlist status controls and row highlighting */
+#waitlistBody tr.waitlist-incarcerated-row > td,
+#archivedWaitlistBody tr.waitlist-incarcerated-row > td {
+  background: #fff3bf;
+  border-color: #e2c85b;
+}
+
+#waitlistBody tr.waitlist-incarcerated-row:hover > td,
+#archivedWaitlistBody tr.waitlist-incarcerated-row:hover > td {
+  background: #ffe99a;
+}
+
+#waitlistBody tr.waitlist-offer-row > td,
+#archivedWaitlistBody tr.waitlist-offer-row > td {
+  background: #d7f3df;
+  border-color: #70bd86;
+}
+
+#waitlistBody tr.waitlist-offer-row:hover > td,
+#archivedWaitlistBody tr.waitlist-offer-row:hover > td {
+  background: #c2ebce;
+}
+
+.kbrh-modal-field select {
+  width: 100%;
+}
