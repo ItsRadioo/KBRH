@@ -344,11 +344,6 @@ function openCallInModal(applicantId) {
   document.getElementById("callInApplicantName").textContent =
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
-  document.querySelectorAll('input[name="callInStatus"]').forEach(input => {
-    input.checked = false;
-  });
-
-  document.getElementById("callInModalMessage")?.classList.add("hidden");
   document.getElementById("callInModal")?.classList.remove("hidden");
   document.body.classList.add("kbrh-modal-open");
 }
@@ -359,17 +354,11 @@ function closeCallInModal() {
   document.body.classList.remove("kbrh-modal-open");
 }
 
-function saveCallInStatus() {
+function saveCallInStatus(selected) {
   const applicant = waitlistState.waitlist.find(item => item.id === callInApplicantId);
   if (!applicant) return;
 
-  const selected = document.querySelector('input[name="callInStatus"]:checked')?.value;
-  const message = document.getElementById("callInModalMessage");
-
-  if (!selected) {
-    message?.classList.remove("hidden");
-    return;
-  }
+  if (!selected) return;
 
   const previousActiveOrder = getActiveOrderSnapshot();
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
@@ -693,7 +682,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWaitlistBtn")?.addEventListener("click", addWaitlistApplicant);
   document.getElementById("addWaitlistNoteBtn")?.addEventListener("click", addWaitlistNote);
   document.getElementById("closeWaitlistNotesBtn")?.addEventListener("click", closeNotesModal);
-  document.getElementById("saveCallInStatusBtn")?.addEventListener("click", saveCallInStatus);
+  document.querySelectorAll("[data-call-in-status]").forEach(button => {
+    button.addEventListener("click", () => saveCallInStatus(button.dataset.callInStatus));
+  });
   document.getElementById("cancelCallInModalBtn")?.addEventListener("click", closeCallInModal);
   document.getElementById("closeCallInModalBtn")?.addEventListener("click", closeCallInModal);
   document.getElementById("cancelApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);

@@ -100,27 +100,16 @@
       <button class="secondary modal-close-button" id="closeCallInModalBtn" type="button" aria-label="Close">×</button>
     </div>
 
-    <fieldset class="call-in-options">
-      <legend>Select the applicant's call-in status</legend>
-      <label class="call-in-option">
-        <input type="radio" name="callInStatus" value="Call In">
-        <span><strong>Call In</strong></span>
-      </label>
-      <label class="call-in-option">
-        <input type="radio" name="callInStatus" value="Late Call">
-        <span><strong>Late Call</strong></span>
-      </label>
-      <label class="call-in-option">
-        <input type="radio" name="callInStatus" value="No Call">
-        <span><strong>No Call</strong></span>
-      </label>
-    </fieldset>
+    <p class="call-in-instruction">Select the applicant's call-in status</p>
 
-    <p class="form-message hidden" id="callInModalMessage">Select a call-in status.</p>
+    <div class="call-in-action-list" aria-label="Available call-in statuses">
+      <button class="call-in-choice call-in-choice-success" type="button" data-call-in-status="Call In">Call In</button>
+      <button class="call-in-choice call-in-choice-warning" type="button" data-call-in-status="Late Call">Late Call</button>
+      <button class="call-in-choice call-in-choice-danger" type="button" data-call-in-status="No Call">No Call</button>
+    </div>
 
     <div class="button-row modal-actions">
       <button class="secondary" id="cancelCallInModalBtn" type="button">Cancel</button>
-      <button class="success" id="saveCallInStatusBtn" type="button">Save Call-In</button>
     </div>
   </div>
 </div>

@@ -1345,3 +1345,59 @@ body.kbrh-modal-open { overflow: hidden; }
 .applicant-action-list button.danger {
   margin-top: 6px;
 }
+
+/* v2.8 call-in modal action buttons */
+.call-in-instruction {
+  margin: 20px 0 12px;
+  color: var(--navy-900, #102a43);
+  font-weight: 700;
+}
+
+.call-in-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.call-in-action-list .call-in-choice {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 16px;
+  border-width: 1px;
+  border-style: solid;
+  font-weight: 700;
+}
+
+.call-in-choice-success {
+  background: #23864f;
+  border-color: #1c6d41;
+  color: #fff;
+}
+
+.call-in-choice-success:hover,
+.call-in-choice-success:focus-visible {
+  background: #1c6d41;
+}
+
+.call-in-choice-warning {
+  background: #f2c94c;
+  border-color: #d5aa24;
+  color: #2f2600;
+}
+
+.call-in-choice-warning:hover,
+.call-in-choice-warning:focus-visible {
+  background: #dfb52f;
+}
+
+.call-in-choice-danger {
+  background: #c73d3d;
+  border-color: #a92f2f;
+  color: #fff;
+}
+
+.call-in-choice-danger:hover,
+.call-in-choice-danger:focus-visible {
+  background: #a92f2f;
+}
