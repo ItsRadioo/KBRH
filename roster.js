@@ -907,3 +907,82 @@ auth.onAuthStateChanged(user => {
     renderRoster();
   });
 });
+
+
+/* v3.3 roster viewport and column visibility controls */
+(function initializeRosterDisplayControls() {
+  const STORAGE_KEY = "kbrhRosterVisibleColumnsV33";
+  const defaultVisibility = {
+    dob: true,
+    phone: true,
+    address: true,
+    city: true,
+    contact: true,
+    contactPhone: true,
+    entryDate: true,
+    dischargeDate: true,
+    daysRemaining: true,
+    opoc: true,
+    admissionStatus: true,
+    notes: true
+  };
+
+  function readVisibility() {
+    try {
+      return { ...defaultVisibility, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+    } catch (error) {
+      return { ...defaultVisibility };
+    }
+  }
+
+  function saveVisibility(visibility) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(visibility));
+  }
+
+  function applyVisibility(visibility) {
+    Object.keys(defaultVisibility).forEach(column => {
+      document.body.classList.toggle(`hide-roster-${column}`, visibility[column] === false);
+    });
+
+    document.querySelectorAll("[data-roster-column]").forEach(input => {
+      input.checked = visibility[input.dataset.rosterColumn] !== false;
+    });
+  }
+
+  function setup() {
+    const panel = document.getElementById("rosterColumnPanel");
+    const toggleButton = document.getElementById("toggleRosterColumnsBtn");
+    const showAllButton = document.getElementById("showAllRosterColumnsBtn");
+    if (!panel || !toggleButton) return;
+
+    let visibility = readVisibility();
+    applyVisibility(visibility);
+
+    toggleButton.addEventListener("click", () => {
+      const opening = panel.classList.contains("hidden");
+      panel.classList.toggle("hidden", !opening);
+      toggleButton.setAttribute("aria-expanded", String(opening));
+      toggleButton.textContent = opening ? "Close Columns" : "Choose Columns";
+    });
+
+    document.querySelectorAll("[data-roster-column]").forEach(input => {
+      input.addEventListener("change", () => {
+        visibility[input.dataset.rosterColumn] = input.checked;
+        saveVisibility(visibility);
+        applyVisibility(visibility);
+      });
+    });
+
+    showAllButton?.addEventListener("click", () => {
+      visibility = { ...defaultVisibility };
+      saveVisibility(visibility);
+      applyVisibility(visibility);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setup, { once: true });
+  } else {
+    setup();
+  }
+})();
