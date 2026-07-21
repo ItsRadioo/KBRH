@@ -1482,3 +1482,93 @@ body.kbrh-modal-open { overflow: hidden; }
   text-align: center;
   width: 112px;
 }
+
+
+/* v3.2: compact, content-aware tables */
+.table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.table-wrap table,
+table.roster-table,
+.page-waitlist table,
+.page-roster table,
+.page-chores table,
+.page-meal-chores table,
+.page-verbalwarning table,
+.page-counseling-notes table {
+  width: 100%;
+  min-width: 0 !important;
+  table-layout: auto !important;
+}
+
+.table-wrap th,
+.table-wrap td {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none;
+  padding: clamp(6px, .55vw, 10px) clamp(6px, .65vw, 11px);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.table-wrap th {
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.table-wrap td {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.table-wrap .phone-col,
+.table-wrap .phone-cell,
+.table-wrap .opoc-col,
+.table-wrap .roster-table th,
+.table-wrap .roster-table td {
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.table-wrap .phone-cell,
+.table-wrap .last-call-cell {
+  white-space: normal;
+}
+
+.table-wrap input,
+.table-wrap select,
+.table-wrap textarea {
+  width: 100%;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.table-wrap button,
+.table-wrap .button-link {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.page-waitlist .call-in-update-btn,
+.page-waitlist .actions-button,
+.page-roster .actions-button {
+  min-width: 0 !important;
+  width: 100%;
+}
+
+@media (min-width: 1100px) {
+  .table-wrap table { font-size: clamp(10px, .72vw, 13px); }
+  .table-wrap th { font-size: clamp(9px, .62vw, 11px); }
+  .roster-table th,
+  .roster-table td { font-size: clamp(9px, .67vw, 12px); }
+  .table-wrap button,
+  .table-wrap .button-link { padding: 7px 8px; font-size: inherit; }
+}
+
+@media (max-width: 900px) {
+  .table-wrap table { min-width: 760px !important; }
+}

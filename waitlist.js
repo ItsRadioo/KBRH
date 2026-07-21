@@ -293,6 +293,13 @@ function openApplicantActionsModal(applicantId) {
   actionsApplicantId = applicantId;
   document.getElementById("applicantActionsName").textContent =
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
+
+  const undoButton = document.getElementById("undoLastCallInActionBtn");
+  if (undoButton) {
+    const canUndo = Array.isArray(applicant.callInHistory) && applicant.callInHistory.length > 0;
+    undoButton.hidden = !canUndo;
+  }
+
   document.getElementById("applicantActionsModal")?.classList.remove("hidden");
   document.body.classList.add("kbrh-modal-open");
 }
@@ -372,6 +379,7 @@ function handleApplicantAction(applicantId, action) {
   if (action === "changePosition") openPositionModal(applicantId);
   if (action === "archive") archiveApplicant(applicantId);
   if (action === "moveToRoster") moveToRoster(applicantId);
+  if (action === "undoCallIn") undoLastCallIn(applicantId);
   if (action === "delete") deleteApplicant(applicantId);
 }
 
@@ -681,10 +689,7 @@ function renderActiveWaitlist() {
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
             <td>
-              <div class="call-in-action-stack">
-                <button type="button" class="call-in-update-btn" onclick="openCallInModal('${item.id}')">Update Call-In</button>
-                <button type="button" class="secondary compact-button" onclick="undoLastCallIn('${item.id}')" ${item.callInHistory?.length ? "" : "disabled"}>Undo</button>
-              </div>
+              <button type="button" class="call-in-update-btn" onclick="openCallInModal('${item.id}')">Update Call-In</button>
             </td>
             <td class="last-call-cell">${escapeHtml(lastCall)}</td>
             <td>
