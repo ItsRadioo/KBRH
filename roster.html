@@ -135,6 +135,24 @@
 </div>
 </div>
 
+<div class="modal-backdrop hidden" id="rosterActionsModal">
+  <div class="modal-card applicant-actions-modal" role="dialog" aria-modal="true" aria-labelledby="rosterActionsModalTitle">
+    <div class="modal-title-row">
+      <div>
+        <h2 id="rosterActionsModalTitle">Client Actions</h2>
+        <p class="hint" id="rosterActionsName"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closeRosterActionsModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="applicant-action-list" id="rosterActionList" aria-label="Available client actions"></div>
+
+    <div class="button-row modal-actions">
+      <button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="roster.js"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 </body>

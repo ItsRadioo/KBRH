@@ -1457,3 +1457,28 @@ body.kbrh-modal-open { overflow: hidden; }
 .position-field small {
   color: #4b5563;
 }
+
+
+/* v3.1 roster alignment with waitlist */
+.page-roster .actions-button {
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+.page-roster .card > h2 {
+  margin-bottom: 6px;
+}
+
+.page-roster .table-wrap {
+  margin-top: 12px;
+}
+
+.page-roster .roster-table tbody tr:hover > td {
+  background: #f6f9fc;
+}
+
+.page-roster .roster-table th:last-child,
+.page-roster .roster-table td:last-child {
+  text-align: center;
+  width: 112px;
+}

@@ -342,6 +342,51 @@ function handleRosterAction(clientId, action) {
   if (action === "delete") deleteArchivedClient(clientId);
 }
 
+let selectedRosterActionClientId = null;
+
+function openRosterActionsModal(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  selectedRosterActionClientId = clientId;
+  const name = `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Selected client";
+  const nameElement = document.getElementById("rosterActionsName");
+  const actionList = document.getElementById("rosterActionList");
+
+  if (nameElement) nameElement.textContent = name;
+  if (actionList) {
+    const isArchived = Boolean(client.archived);
+    const phase = client.phase || "phase1";
+
+    actionList.innerHTML = isArchived
+      ? `
+        <button type="button" data-roster-action="restore">Restore</button>
+        <button type="button" class="danger" data-roster-action="delete">Delete Permanently</button>
+      `
+      : `
+        <button type="button" data-roster-action="edit">Edit</button>
+        <button type="button" data-roster-action="${phase === "phase1" ? "phase2" : "phase1"}">Move to ${phase === "phase1" ? "Phase 2" : "Phase 1"}</button>
+        <button type="button" data-roster-action="waitlist">Move back to Waitlist</button>
+        <button type="button" data-roster-action="archive">Archive / Discharge</button>
+      `;
+
+    actionList.querySelectorAll("[data-roster-action]").forEach(button => {
+      button.addEventListener("click", () => {
+        const action = button.dataset.rosterAction;
+        closeRosterActionsModal();
+        handleRosterAction(clientId, action);
+      });
+    });
+  }
+
+  document.getElementById("rosterActionsModal")?.classList.remove("hidden");
+}
+
+function closeRosterActionsModal() {
+  document.getElementById("rosterActionsModal")?.classList.add("hidden");
+  selectedRosterActionClientId = null;
+}
+
 
 function moveBackToWaitlist(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
@@ -750,13 +795,7 @@ function renderActiveRosterRow(client, phase) {
         <td>${getCompletionBadge(client)}</td>
         <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
         <td>
-          <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
-            <option value="">Actions</option>
-            <option value="edit">Edit</option>
-            <option value="phase2">Move to Phase 2</option>
-            <option value="waitlist">Move back to Waitlist</option>
-            <option value="archive">Archive / Discharge</option>
-          </select>
+          <button type="button" class="actions-button" onclick="openRosterActionsModal('${client.id}')">Actions</button>
         </td>
       </tr>
     `;
@@ -776,13 +815,7 @@ function renderActiveRosterRow(client, phase) {
       <td>${getCompletionBadge(client)}</td>
       <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
       <td>
-        <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
-          <option value="">Actions</option>
-          <option value="edit">Edit</option>
-          <option value="phase1">Move to Phase 1</option>
-          <option value="waitlist">Move back to Waitlist</option>
-          <option value="archive">Archive / Discharge</option>
-        </select>
+        <button type="button" class="actions-button" onclick="openRosterActionsModal('${client.id}')">Actions</button>
       </td>
     </tr>
   `;
@@ -811,11 +844,7 @@ function renderArchivedRoster() {
             <td>${escapeHtml(client.archiveReason)}</td>
             <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
             <td>
-              <select onchange="handleRosterAction('${client.id}', this.value); this.value='';">
-                <option value="">Actions</option>
-                <option value="restore">Restore</option>
-                <option value="delete">Delete Permanently</option>
-              </select>
+              <button type="button" class="actions-button" onclick="openRosterActionsModal('${client.id}')">Actions</button>
             </td>
           </tr>
         `;
@@ -836,6 +865,20 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("closeRosterActionsModalBtn")?.addEventListener("click", closeRosterActionsModal);
+  document.getElementById("cancelRosterActionsModalBtn")?.addEventListener("click", closeRosterActionsModal);
+  document.getElementById("rosterActionsModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "rosterActionsModal") closeRosterActionsModal();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !document.getElementById("rosterActionsModal")?.classList.contains("hidden")) {
+      closeRosterActionsModal();
+    }
+  });
+});
 
 auth.onAuthStateChanged(user => {
   if (!user) return;
