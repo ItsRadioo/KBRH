@@ -52,3 +52,9 @@ Version 3.0: Added manual waitlist position changes from the applicant Actions m
 ## v3.5
 - Centred the primary navigation between the page title/emblem and Sign Out on desktop and laptop screens.
 - Preserved the compact mobile navigation layout.
+
+## v3.6 interface update
+- Replaced the boxed navigation buttons with a cleaner application-toolbar style.
+- Increased header contrast with a deeper navy background, white brand mark, teal accent border, and gold active-page indicator.
+- Navigation remains centred, with the page title on the left and Sign Out on the right.
+- Responsive spacing preserves readability on laptops and smaller screens.

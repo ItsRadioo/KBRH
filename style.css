@@ -1958,3 +1958,124 @@ table.roster-table,
     font-size: 10.5px;
   }
 }
+
+/* v3.6: high-contrast application toolbar navigation */
+@media screen {
+  body > header {
+    background: #0b2239;
+    border-bottom: 3px solid #2f8f83;
+    box-shadow: 0 3px 12px rgba(11, 34, 57, .22);
+  }
+
+  body > header .brand-mark {
+    background: #ffffff;
+    color: #0b2239;
+    border: 2px solid #8fd3c7;
+    box-shadow: none;
+  }
+
+  body > header .page-heading h1 {
+    color: #ffffff;
+    font-weight: 750;
+    letter-spacing: -.02em;
+  }
+
+  body > header .app-nav {
+    gap: clamp(10px, 1.25vw, 22px);
+  }
+
+  body > header .app-nav-link {
+    position: relative;
+    min-height: 42px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #dbe8f3;
+    font-weight: 700;
+    letter-spacing: .01em;
+    opacity: 1;
+  }
+
+  body > header .app-nav-link:hover {
+    background: transparent;
+    color: #ffffff;
+  }
+
+  body > header .app-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 3px;
+    height: 3px;
+    border-radius: 3px;
+    background: #8fd3c7;
+    transition: left .16s ease, right .16s ease, background-color .16s ease;
+  }
+
+  body > header .app-nav-link:hover::after {
+    left: 0;
+    right: 0;
+  }
+
+  body > header .app-nav-link.active {
+    background: transparent;
+    color: #ffffff;
+  }
+
+  body > header .app-nav-link.active::after {
+    left: 0;
+    right: 0;
+    bottom: 3px;
+    height: 4px;
+    background: #f2c14e;
+  }
+
+  body > header .logout-btn {
+    background: #ffffff;
+    color: #0b2239;
+    border: 1px solid #ffffff;
+    box-shadow: none;
+    font-weight: 750;
+  }
+
+  body > header .logout-btn:hover {
+    background: #eaf5f3;
+    color: #071827;
+    border-color: #8fd3c7;
+  }
+}
+
+@media screen and (min-width: 761px) {
+  body > header {
+    grid-template-columns: minmax(210px, 1fr) auto minmax(110px, 1fr);
+  }
+}
+
+@media screen and (min-width: 761px) and (max-width: 1180px) {
+  body > header .app-nav {
+    gap: clamp(6px, .8vw, 12px);
+  }
+
+  body > header .app-nav-link {
+    padding-inline: 1px;
+    font-size: clamp(10.5px, 1vw, 12px);
+  }
+}
+
+@media screen and (max-width: 760px) {
+  body > header {
+    border-bottom-width: 2px;
+  }
+
+  body > header .app-nav {
+    gap: 14px;
+  }
+
+  body > header .app-nav-link {
+    min-height: 38px;
+    padding-inline: 1px;
+    font-size: 12px;
+  }
+}
