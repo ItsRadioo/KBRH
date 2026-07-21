@@ -3,6 +3,7 @@ let editingApplicantId = null;
 let notesApplicantId = null;
 let callInApplicantId = null;
 let actionsApplicantId = null;
+let positionApplicantId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -310,10 +311,65 @@ function selectApplicantAction(action) {
   handleApplicantAction(applicantId, action);
 }
 
+function openPositionModal(applicantId) {
+  const active = getActiveWaitlist();
+  const currentIndex = active.findIndex(item => item.id === applicantId);
+  if (currentIndex === -1) return;
+
+  const applicant = active[currentIndex];
+  positionApplicantId = applicantId;
+
+  document.getElementById("positionApplicantName").textContent =
+    `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
+
+  const input = document.getElementById("positionNumberInput");
+  input.min = "1";
+  input.max = String(active.length);
+  input.value = String(currentIndex + 1);
+
+  document.getElementById("positionRangeHint").textContent =
+    `Enter a position from 1 to ${active.length}.`;
+
+  document.getElementById("positionModal")?.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+  setTimeout(() => { input.focus(); input.select(); }, 0);
+}
+
+function closePositionModal() {
+  positionApplicantId = null;
+  document.getElementById("positionModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
+
+function savePositionChange() {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+  const currentIndex = active.findIndex(item => item.id === positionApplicantId);
+  if (currentIndex === -1) return;
+
+  const input = document.getElementById("positionNumberInput");
+  const requestedPosition = Number.parseInt(input.value, 10);
+
+  if (!Number.isInteger(requestedPosition) || requestedPosition < 1 || requestedPosition > active.length) {
+    alert(`Enter a position from 1 to ${active.length}.`);
+    input.focus();
+    return;
+  }
+
+  const [applicant] = active.splice(currentIndex, 1);
+  active.splice(requestedPosition - 1, 0, applicant);
+  rebuildWaitlist(active, archived);
+
+  closePositionModal();
+  renderWaitlist();
+  saveWaitlist();
+}
+
 function handleApplicantAction(applicantId, action) {
   if (!action) return;
 
   if (action === "edit") startInlineEdit(applicantId);
+  if (action === "changePosition") openPositionModal(applicantId);
   if (action === "archive") archiveApplicant(applicantId);
   if (action === "moveToRoster") moveToRoster(applicantId);
   if (action === "delete") deleteApplicant(applicantId);
@@ -729,6 +785,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("closeCallInModalBtn")?.addEventListener("click", closeCallInModal);
   document.getElementById("cancelApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);
   document.getElementById("closeApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);
+  document.getElementById("cancelPositionModalBtn")?.addEventListener("click", closePositionModal);
+  document.getElementById("closePositionModalBtn")?.addEventListener("click", closePositionModal);
+  document.getElementById("savePositionBtn")?.addEventListener("click", savePositionChange);
+  document.getElementById("positionNumberInput")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") savePositionChange();
+  });
   document.querySelectorAll("[data-applicant-action]").forEach(button => {
     button.addEventListener("click", () => selectApplicantAction(button.dataset.applicantAction));
   });
@@ -741,6 +803,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.target.id === "applicantActionsModal") closeApplicantActionsModal();
   });
 
+  document.getElementById("positionModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "positionModal") closePositionModal();
+  });
+
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
 
@@ -750,6 +816,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!document.getElementById("applicantActionsModal")?.classList.contains("hidden")) {
       closeApplicantActionsModal();
+    }
+
+    if (!document.getElementById("positionModal")?.classList.contains("hidden")) {
+      closePositionModal();
     }
   });
 });

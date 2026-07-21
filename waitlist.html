@@ -126,6 +126,7 @@
 
     <div class="applicant-action-list" aria-label="Available applicant actions">
       <button type="button" data-applicant-action="edit">Edit</button>
+      <button type="button" data-applicant-action="changePosition">Change Position</button>
       <button type="button" data-applicant-action="moveToRoster">Move to Roster</button>
       <button type="button" data-applicant-action="archive">Archive</button>
       <button type="button" class="danger" data-applicant-action="delete">Delete</button>
@@ -133,6 +134,29 @@
 
     <div class="button-row modal-actions">
       <button class="secondary" id="cancelApplicantActionsModalBtn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="positionModal">
+  <div class="modal-card position-modal" role="dialog" aria-modal="true" aria-labelledby="positionModalTitle">
+    <div class="modal-title-row">
+      <div>
+        <h2 id="positionModalTitle">Change Waitlist Position</h2>
+        <p class="hint" id="positionApplicantName"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closePositionModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+
+    <label class="position-field" for="positionNumberInput">
+      <span>New position</span>
+      <input id="positionNumberInput" type="number" min="1" step="1" inputmode="numeric" />
+      <small id="positionRangeHint"></small>
+    </label>
+
+    <div class="button-row modal-actions">
+      <button class="secondary" id="cancelPositionModalBtn" type="button">Cancel</button>
+      <button id="savePositionBtn" type="button">Save Position</button>
     </div>
   </div>
 </div>

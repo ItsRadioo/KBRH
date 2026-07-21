@@ -1429,3 +1429,31 @@ body.kbrh-modal-open { overflow: hidden; }
 .kbrh-modal-field select {
   width: 100%;
 }
+
+
+/* Waitlist manual position modal */
+.position-modal {
+  width: min(520px, 100%);
+}
+
+.position-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 22px 0 8px;
+}
+
+.position-field > span {
+  font-weight: 700;
+}
+
+.position-field input {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+.position-field small {
+  color: #4b5563;
+}
