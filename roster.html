@@ -1,196 +1,151 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Client Roster</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="kbrh-ui-upgrade.css">
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
-  <script src="firebase-config.js"></script>
-  <script src="auth.js"></script>
-  <script src="data-store.js"></script>
-  <script>requireLogin();</script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Client Roster</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>requireLogin();</script>
 </head>
+<body class="page-roster">
+<header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
+<h1>Client Roster</h1>
+<p>Current clients attending the home.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a aria-current="page" class="app-nav-link active" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
+<main>
+<section class="card wide">
+<h2>Add Client</h2>
+<div class="form-row">
+<div class="field-group"><label for="roomNumber">Room Number</label><input id="roomNumber" type="text"/></div>
+<div class="field-group"><label for="firstName">First Name</label><input id="firstName" type="text"/></div>
+<div class="field-group"><label for="lastName">Last Name</label><input id="lastName" type="text"/></div>
+<div class="field-group"><label for="clientId">Client ID</label><input id="clientId" type="text"/></div>
+<div class="field-group"><label for="dob">Date of Birth</label><input id="dob" type="date"/></div>
+<div class="field-group phone-field"><label for="phone">Phone Number</label><input id="phone" type="text"/></div>
+<div class="field-group"><label for="address">Address</label><input id="address" type="text"/></div>
+<div class="field-group"><label for="city">City</label><input id="city" type="text"/></div>
+<div class="field-group"><label for="contact">Emergency Contact</label><input id="contact" type="text"/></div>
+<div class="field-group phone-field"><label for="contactPhone">Emergency Contact Phone</label><input id="contactPhone" type="text"/></div>
+<div class="field-group"><label for="entryDate">Entry Date</label><input id="entryDate" type="date"/></div>
+</div>
+<div class="button-row">
+<button id="addClientBtn" onclick="addClient()" type="button">Add Client</button>
+</div>
+</section>
+<section class="card wide">
+<h2>Roster Controls</h2>
+<p class="hint">Search by name, room, client ID, phone, or city. Use Edit All to update multiple residents at once.</p>
+<div class="form-row">
+<input id="rosterSearch" oninput="handleRosterSearch(this.value)" placeholder="Search roster..." type="text"/>
+</div>
+<div class="button-row">
+<button id="editAllBtn" onclick="startEditAll()" type="button">Edit All Residents</button>
+<button class="success hidden" id="saveAllBtn" onclick="saveAllEdits()" type="button">Save All Changes</button>
+<button class="secondary hidden" id="cancelAllBtn" onclick="cancelEditAll()" type="button">Cancel Edit All</button>
+</div>
+</section>
+<section class="card wide">
+<h2>Phase 1 Clients</h2>
+<div class="table-wrap">
+<table class="roster-table">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th>DOB</th>
+<th class="phone-col">Phone</th>
+<th>Address</th>
+<th>City</th>
+<th>Contact</th>
+<th class="phone-col">Contact #</th>
+<th>Entry Date</th>
+<th>Discharge Date</th>
+<th>Days Remaining</th>
+<th class="opoc-col">OPOC</th>
+<th>Admission Status</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="rosterBody"></tbody>
+</table>
+</div>
+</section>
+<section class="card wide">
+<h2>Phase 2 Clients</h2>
+<div class="table-wrap">
+<table class="roster-table">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th>DOB</th>
+<th class="phone-col">Phone</th>
+<th>Phase 2 Entry Date</th>
+<th>Discharge Date</th>
+<th>Days Remaining</th>
+<th>Admission Status</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="phase2RosterBody"></tbody>
+</table>
+</div>
+</section>
+<section class="card wide">
+<h2>Archived Roster Records</h2>
+<div class="table-wrap">
+<table class="roster-table">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th class="phone-col">Phone</th>
+<th>Entry Date</th>
+<th>Discharge Date</th>
+<th>Archived</th>
+<th>Reason</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="archivedRosterBody"></tbody>
+</table>
+</div>
+</section>
+</main>
+<div class="modal-backdrop hidden" id="notesModal">
+<div class="modal-card">
+<h2 id="notesModalTitle">Notes</h2>
+<div class="field-group">
+<label for="noteAuthor">Staff Member</label>
+<input autocomplete="off" id="noteAuthor" placeholder="Enter your name" type="text"/>
+</div>
+<textarea class="notes-box" id="newNoteText" placeholder="Add a new note..."></textarea>
+<div class="button-row">
+<button id="addNoteBtn" onclick="addClientNote()" type="button">Add Note</button>
+<button class="secondary" id="closeNotesBtn" onclick="closeNotesModal()" type="button">Close</button>
+</div>
+<ul class="list" id="notesList"></ul>
+</div>
+</div>
 
-<body>
-  <header>
-    <div>
-      <h1>Client Roster</h1>
-      <p>Current clients attending the home.</p>
-    </div>
-
-    <nav>
-      <label class="page-nav-label" for="pageSelect">Go to:</label>
-      <select id="pageSelect" class="page-select">
-        <option value="waitlist.html">Waitlist</option>
-        <option value="roster.html">Current Roster</option>
-        <option value="index.html">House Chores</option>
-        <option value="meal-chores.html">Meal Chores</option>
-        <option value="verbalwarning.html">Verbal Warning Log</option>
-        <option value="counseling-notes.html">Counseling Notes</option>
-      </select>
-
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </nav>
-  </header>
-
-  <main>
-    <section class="card wide">
-      <h2>Add Client</h2>
-
-      <div class="form-row">
-        <div class="field-group"><label for="roomNumber">Room Number</label><input id="roomNumber" type="text" /></div>
-        <div class="field-group"><label for="firstName">First Name</label><input id="firstName" type="text" /></div>
-        <div class="field-group"><label for="lastName">Last Name</label><input id="lastName" type="text" /></div>
-        <div class="field-group"><label for="clientId">Client ID</label><input id="clientId" type="text" /></div>
-        <div class="field-group"><label for="dob">Date of Birth</label><input id="dob" type="date" /></div>
-        <div class="field-group phone-field"><label for="phone">Phone Number</label><input id="phone" type="text" /></div>
-        <div class="field-group"><label for="address">Address</label><input id="address" type="text" /></div>
-        <div class="field-group"><label for="city">City</label><input id="city" type="text" /></div>
-        <div class="field-group"><label for="contact">Emergency Contact</label><input id="contact" type="text" /></div>
-        <div class="field-group phone-field"><label for="contactPhone">Emergency Contact Phone</label><input id="contactPhone" type="text" /></div>
-        <div class="field-group"><label for="entryDate">Entry Date</label><input id="entryDate" type="date" /></div>
-      </div>
-
-      <div class="button-row">
-        <button id="addClientBtn" type="button" onclick="addClient()">Add Client</button>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Roster Controls</h2>
-      <p class="hint">Search by name, room, client ID, phone, or city. Use Edit All to update multiple residents at once.</p>
-
-      <div class="form-row">
-        <input id="rosterSearch" type="text" placeholder="Search roster..." oninput="handleRosterSearch(this.value)" />
-      </div>
-
-      <div class="button-row">
-        <button id="editAllBtn" type="button" onclick="startEditAll()">Edit All Residents</button>
-        <button id="saveAllBtn" type="button" class="success hidden" onclick="saveAllEdits()">Save All Changes</button>
-        <button id="cancelAllBtn" type="button" class="secondary hidden" onclick="cancelEditAll()">Cancel Edit All</button>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Phase 1 Clients</h2>
-
-      <div class="table-wrap">
-        <table class="roster-table">
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Client ID</th>
-              <th>DOB</th>
-              <th class="phone-col">Phone</th>
-              <th>Address</th>
-              <th>City</th>
-              <th>Contact</th>
-              <th class="phone-col">Contact #</th>
-              <th>Entry Date</th>
-              <th>Discharge Date</th>
-              <th>Days Remaining</th>
-              <th class="opoc-col">OPOC</th>
-              <th>Admission Status</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="rosterBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Phase 2 Clients</h2>
-
-      <div class="table-wrap">
-        <table class="roster-table">
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Client ID</th>
-              <th>DOB</th>
-              <th class="phone-col">Phone</th>
-              <th>Phase 2 Entry Date</th>
-              <th>Discharge Date</th>
-              <th>Days Remaining</th>
-              <th>Admission Status</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="phase2RosterBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Archived Roster Records</h2>
-
-      <div class="table-wrap">
-        <table class="roster-table">
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Client ID</th>
-              <th class="phone-col">Phone</th>
-              <th>Entry Date</th>
-              <th>Discharge Date</th>
-              <th>Archived</th>
-              <th>Reason</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="archivedRosterBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <div id="notesModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <h2 id="notesModalTitle">Notes</h2>
-
-      <div class="field-group">
-        <label for="noteAuthor">Staff Member</label>
-        <input id="noteAuthor" type="text" placeholder="Enter your name" autocomplete="off" />
-      </div>
-
-      <textarea id="newNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
-
-      <div class="button-row">
-        <button id="addNoteBtn" type="button" onclick="addClientNote()">Add Note</button>
-        <button id="closeNotesBtn" type="button" class="secondary" onclick="closeNotesModal()">Close</button>
-      </div>
-
-      <ul id="notesList" class="list"></ul>
-    </div>
-  </div>
-
-  <script>
-    const pageSelect = document.getElementById("pageSelect");
-    pageSelect.value = window.location.pathname.split("/").pop() || "roster.html";
-
-    pageSelect.addEventListener("change", () => {
-      window.location.href = pageSelect.value;
-    });
-  </script>
-
-  <script src="roster.js"></script>
-  <script src="kbrh-ui-upgrade.js"></script>
+<script src="roster.js"></script>
+<script src="kbrh-ui-upgrade.js"></script>
 </body>
 </html>

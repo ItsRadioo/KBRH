@@ -1,97 +1,68 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resident Cleaning Schedule</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="auth.js"></script>
-  <script src="data-store.js"></script>
-  <script>requireLogin();</script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Resident Cleaning Schedule</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>requireLogin();</script>
 </head>
-<body>
-  <header class="no-print">
-    <div>
-      <h1>Resident Cleaning Schedule</h1>
-      <p>Generates into the standard cleaning schedule order.</p>
-    </div>
-         <nav>
-  <label class="page-nav-label" for="pageSelect">Go to:</label>
-  <select id="pageSelect" class="page-select">
-    <option value="waitlist.html">Waitlist</option>
-    <option value="roster.html">Current Roster</option>
-    <option value="index.html">House Chores</option>
-    <option value="meal-chores.html">Meal Chores</option>
-    <option value="verbalwarning.html">Verbal Warning Log</option>
-    <option value="counseling-notes.html">Counseling Notes</option>
-  </select>
-           
-  <button class="logout-btn" onclick="logout()">Logout</button>
-</nav>
-
-<script>
-  const pageSelect = document.getElementById("pageSelect");
-  pageSelect.value = window.location.pathname.split("/").pop() || "index.html";
-
-  pageSelect.addEventListener("change", () => {
-    window.location.href = pageSelect.value;
-  });
-</script>
-  </header>
-
-  <main class="print-main">
-    <section class="cleaning-template">
-      <div class="template-top">
-        <h1>RESIDENT CLEANING SCHEDULE</h1>
-        <div class="date-row two-col">
-          <div>
-            <label>START DATE</label>
-            <input id="startDate" type="date" class="no-print-input" />
-            <span id="startDatePrint" class="print-only"></span>
-          </div>
-          <div>
-            <label>END DATE</label>
-            <input id="endDate" type="date" class="no-print-input" readonly />
-            <span id="endDatePrint" class="print-only"></span>
-          </div>
-        </div>
-      </div>
-
-      <p class="template-instruction">CLEANING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.</p>
-      <p class="template-instruction">ASSIGNED CHORES TO BE COMPLETED BY 4:00 PM ON THE DAY ASSIGNED.</p>
-
-      <table class="template-chore-table">
-        <thead>
-          <tr>
-            <th>CHORE</th>
-            <th>ASSIGNED RESIDENT</th>
-          </tr>
-        </thead>
-        <tbody id="templateChoreBody"></tbody>
-      </table>
-
-      <div class="template-note">
-        <strong>PLEASE NOTE:</strong>
-        <ul>
-          <li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete chores and not interfere with Lunch / Dinner Preparation or Setup.</li>
-          <li>Assigned Chores vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
-        </ul>
-      </div>
-    </section>
-
-    <div class="button-row no-print">
-      <button onclick="window.print()">Print Cleaning Schedule</button>
-      <button id="downloadFilledTemplateBtn" type="button">Download Filled Excel Template</button>
-      <a class="button-link" href="index.html">Back to Chores</a>
-    </div>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-  <script src="template-export.js"></script>
-  <script src="print.js"></script>
+<body class="page-print">
+<header class="no-print"><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
+<h1>Resident Cleaning Schedule</h1>
+<p>Generates into the standard cleaning schedule order.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
+<main class="print-main">
+<section class="cleaning-template">
+<div class="template-top">
+<h1>RESIDENT CLEANING SCHEDULE</h1>
+<div class="date-row two-col">
+<div>
+<label>START DATE</label>
+<input class="no-print-input" id="startDate" type="date"/>
+<span class="print-only" id="startDatePrint"></span>
+</div>
+<div>
+<label>END DATE</label>
+<input class="no-print-input" id="endDate" readonly="" type="date"/>
+<span class="print-only" id="endDatePrint"></span>
+</div>
+</div>
+</div>
+<p class="template-instruction">CLEANING DUTIES WILL BE POSTED ON THE KITCHEN FRIDGE.</p>
+<p class="template-instruction">ASSIGNED CHORES TO BE COMPLETED BY 4:00 PM ON THE DAY ASSIGNED.</p>
+<table class="template-chore-table">
+<thead>
+<tr>
+<th>CHORE</th>
+<th>ASSIGNED RESIDENT</th>
+</tr>
+</thead>
+<tbody id="templateChoreBody"></tbody>
+</table>
+<div class="template-note">
+<strong>PLEASE NOTE:</strong>
+<ul>
+<li>It is the assigned Resident’s responsibility to be in the home to allow adequate time to complete chores and not interfere with Lunch / Dinner Preparation or Setup.</li>
+<li>Assigned Chores vary every week and the Resident is responsible for checking which duties need to be completed on those specific days.</li>
+</ul>
+</div>
+</section>
+<div class="button-row no-print">
+<button onclick="window.print()">Print Cleaning Schedule</button>
+<button id="downloadFilledTemplateBtn" type="button">Download Filled Excel Template</button>
+<a class="button-link" href="index.html">Back to Chores</a>
+</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="template-export.js"></script>
+<script src="print.js"></script>
 </body>
 </html>

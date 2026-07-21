@@ -1,34 +1,30 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Login | Resident Chore Rotator</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Staff Login | Resident Chore Rotator</title>
+<link href="style.css" rel="stylesheet"/>
 </head>
-<body class="login-body">
-  <main class="login-wrap">
-    <section class="card login-card">
-      <h1>Staff Login</h1>
-      <p class="hint">Sign in with your staff account.</p>
-
-      <label for="email">Email</label>
-      <input id="email" type="email" placeholder="staff@example.com" autocomplete="username" />
-
-      <label for="password">Password</label>
-      <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-
-      <button id="loginBtn" type="button">Login</button>
-      <p id="errorMessage" class="error"></p>
-    </section>
-  </main>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-
-  <script>
+<body class="login-body page-login">
+<main class="login-wrap">
+<section class="card login-card"><div class="login-brand"><div class="login-brand-mark">KB</div><div><strong>Ken Brown Recovery Home</strong><span>Staff Administration</span></div></div>
+<h1>Staff Login</h1>
+<p class="hint">Sign in with your staff account.</p>
+<label for="email">Email</label>
+<input autocomplete="username" id="email" placeholder="staff@example.com" type="email"/>
+<label for="password">Password</label>
+<input autocomplete="current-password" id="password" placeholder="Password" type="password"/>
+<button id="loginBtn" type="button">Login</button>
+<p class="error" id="errorMessage"></p>
+</section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
     auth.onAuthStateChanged(user => {
       if (user) {
         window.location.href = "index.html";

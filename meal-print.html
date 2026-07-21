@@ -1,13 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dish Schedule</title>
-
-  <link rel="stylesheet" href="style.css" />
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dish Schedule</title>
+<link href="style.css" rel="stylesheet"/>
+<style>
     :root {
       /*
        * Change this one value to move the complete printed
@@ -215,97 +214,51 @@
       }
     }
   </style>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="auth.js"></script>
-  <script src="data-store.js"></script>
-
-  <script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>
     requireLogin();
   </script>
 </head>
-
-<body>
-  <header class="no-print">
-    <div>
-      <h1>Dish Schedule</h1>
-      <p>Print the saved weekly lunch and dinner schedule.</p>
-    </div>
-
-    <nav>
-      <label class="page-nav-label" for="pageSelect">
-        Go to:
-      </label>
-
-      <select id="pageSelect" class="page-select">
-        <option value="waitlist.html">Waitlist</option>
-        <option value="roster.html">Current Roster</option>
-        <option value="index.html">House Chores</option>
-        <option value="meal-chores.html">Meal Chores</option>
-        <option value="meal-print.html">Dish Schedule</option>
-        <option value="verbalwarning.html">Verbal Warning Log</option>
-        <option value="counseling-notes.html">Counseling Notes</option>
-      </select>
-
-      <button class="logout-btn" onclick="logout()">
-        Logout
-      </button>
-    </nav>
-  </header>
-
-  <main class="dish-print-main">
-    <section class="dish-schedule-sheet">
-      <div class="dish-schedule-header">
-        <h1>Dish Schedule</h1>
-
-        <div class="dish-date-controls no-print">
-          <label>
+<body class="page-meal-print">
+<header class="no-print"><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
+<h1>Dish Schedule</h1>
+<p>Print the saved weekly lunch and dinner schedule.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
+<main class="dish-print-main">
+<section class="dish-schedule-sheet">
+<div class="dish-schedule-header">
+<h1>Dish Schedule</h1>
+<div class="dish-date-controls no-print">
+<label>
             Week Start
-            <input id="mealWeekStart" type="date" />
-          </label>
-        </div>
-
-        <div class="dish-week-line">
+            <input id="mealWeekStart" type="date"/>
+</label>
+</div>
+<div class="dish-week-line">
           Week of
           <span id="mealWeekStartPrint"></span>
-        </div>
-      </div>
-
-      <p class="dish-instruction">
+</div>
+</div>
+<p class="dish-instruction">
         Tables To Be Set 30 Mins Prior To Meal Times
       </p>
-
-      <div id="mealPrintBody" class="dish-days"></div>
-    </section>
-
-    <div class="dish-button-row no-print">
-      <button type="button" onclick="window.print()">
+<div class="dish-days" id="mealPrintBody"></div>
+</section>
+<div class="dish-button-row no-print">
+<button onclick="window.print()" type="button">
         Print Dish Schedule
       </button>
-
-      <a class="button-link" href="meal-chores.html">
+<a class="button-link" href="meal-chores.html">
         Back to Meal Chores
       </a>
-    </div>
-  </main>
+</div>
+</main>
 
-  <script>
-    const pageSelect = document.getElementById("pageSelect");
-
-    if (pageSelect) {
-      pageSelect.value =
-        window.location.pathname.split("/").pop() ||
-        "meal-print.html";
-
-      pageSelect.addEventListener("change", () => {
-        window.location.href = pageSelect.value;
-      });
-    }
-  </script>
-
-  <script src="meal-print.js"></script>
+<script src="meal-print.js"></script>
 </body>
 </html>

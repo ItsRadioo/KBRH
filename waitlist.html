@@ -1,141 +1,102 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Waitlist</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="kbrh-ui-upgrade.css">
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
-  <script src="firebase-config.js"></script>
-  <script src="auth.js"></script>
-  <script src="data-store.js"></script>
-  <script>requireLogin();</script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Waitlist</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>requireLogin();</script>
 </head>
+<body class="page-waitlist">
+<header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
+<h1>Waitlist</h1>
+<p>Manage applicants, call-in status, notes, and archived applicants.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
+<main>
+<section class="card wide">
+<h2>Add Waitlist Applicant</h2>
+<div class="form-row">
+<input id="lastName" placeholder="Last Name"/>
+<input id="firstName" placeholder="First Name"/>
+<input class="phone-input" id="contact" placeholder="Contact / Phone Number"/>
+<input id="status" placeholder="Status"/>
+<input id="city" placeholder="City"/>
+<input id="dateApplied" type="date"/>
+</div>
+<div class="form-row">
+<input id="notes" placeholder="Initial note optional"/>
+<button id="addWaitlistBtn" type="button">Add to Waitlist</button>
+</div>
+</section>
+<section class="card wide">
+<h2>Current Waitlist</h2>
+<p class="hint">Use the Call In dropdown to record Yes, Late, No Call, or other call-in outcomes.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Last Name</th>
+<th>First Name</th>
+<th class="phone-col">Contact</th>
+<th>Status</th>
+<th>City</th>
+<th>Date Applied</th>
+<th>Call In</th>
+<th>Last Call-In</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="waitlistBody"></tbody>
+</table>
+</div>
+</section>
+<section class="card wide">
+<h2>Archived Waitlist Applicants</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Last Name</th>
+<th>First Name</th>
+<th class="phone-col">Contact</th>
+<th>Status</th>
+<th>City</th>
+<th>Date Applied</th>
+<th>Archived</th>
+<th>Reason</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="archivedWaitlistBody"></tbody>
+</table>
+</div>
+</section>
+</main>
+<div class="modal-backdrop hidden" id="notesModal">
+<div class="modal-card">
+<h2 id="notesModalTitle">Notes</h2>
+<textarea class="notes-box" id="newWaitlistNoteText" placeholder="Add a new note..."></textarea>
+<div class="button-row">
+<button id="addWaitlistNoteBtn" type="button">Add Note</button>
+<button class="secondary" id="closeWaitlistNotesBtn" type="button">Close</button>
+</div>
+<ul class="list" id="waitlistNotesList"></ul>
+</div>
+</div>
 
-<body>
-  <header>
-    <div>
-      <h1>Waitlist</h1>
-      <p>Manage applicants, call-in status, notes, and archived applicants.</p>
-    </div>
-
-    <nav>
-      <label class="page-nav-label" for="pageSelect">Go to:</label>
-      <select id="pageSelect" class="page-select">
-        <option value="waitlist.html">Waitlist</option>
-        <option value="roster.html">Current Roster</option>
-        <option value="index.html">House Chores</option>
-        <option value="meal-chores.html">Meal Chores</option>
-        <option value="verbalwarning.html">Verbal Warning Log</option>
-        <option value="counseling-notes.html">Counseling Notes</option>
-      </select>
-
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </nav>
-  </header>
-
-  <main>
-    <section class="card wide">
-      <h2>Add Waitlist Applicant</h2>
-
-      <div class="form-row">
-        <input id="lastName" placeholder="Last Name" />
-        <input id="firstName" placeholder="First Name" />
-        <input id="contact" class="phone-input" placeholder="Contact / Phone Number" />
-        <input id="status" placeholder="Status" />
-        <input id="city" placeholder="City" />
-        <input id="dateApplied" type="date" />
-      </div>
-
-      <div class="form-row">
-        <input id="notes" placeholder="Initial note optional" />
-        <button id="addWaitlistBtn" type="button">Add to Waitlist</button>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Current Waitlist</h2>
-      <p class="hint">Use the Call In dropdown to record Yes, Late, No Call, or other call-in outcomes.</p>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Last Name</th>
-              <th>First Name</th>
-              <th class="phone-col">Contact</th>
-              <th>Status</th>
-              <th>City</th>
-              <th>Date Applied</th>
-              <th>Call In</th>
-              <th>Last Call-In</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="waitlistBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card wide">
-      <h2>Archived Waitlist Applicants</h2>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Last Name</th>
-              <th>First Name</th>
-              <th class="phone-col">Contact</th>
-              <th>Status</th>
-              <th>City</th>
-              <th>Date Applied</th>
-              <th>Archived</th>
-              <th>Reason</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="archivedWaitlistBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <div id="notesModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <h2 id="notesModalTitle">Notes</h2>
-
-      <textarea id="newWaitlistNoteText" class="notes-box" placeholder="Add a new note..."></textarea>
-
-      <div class="button-row">
-        <button id="addWaitlistNoteBtn" type="button">Add Note</button>
-        <button id="closeWaitlistNotesBtn" type="button" class="secondary">Close</button>
-      </div>
-
-      <ul id="waitlistNotesList" class="list"></ul>
-    </div>
-  </div>
-
-  <script>
-    const pageSelect = document.getElementById("pageSelect");
-    pageSelect.value = window.location.pathname.split("/").pop() || "waitlist.html";
-
-    pageSelect.addEventListener("change", () => {
-      window.location.href = pageSelect.value;
-    });
-  </script>
-
-  <script src="waitlist.js"></script>
-  <script src="kbrh-ui-upgrade.js"></script>
+<script src="waitlist.js"></script>
+<script src="kbrh-ui-upgrade.js"></script>
 </body>
 </html>

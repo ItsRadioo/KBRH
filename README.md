@@ -25,3 +25,7 @@ The cleaning schedule export:
 - Automatically sets the end date to 7 days after the selected start date
 - Centers Column A text
 - Left-aligns Column B text
+
+## Professional UI v2
+
+This package includes a visual redesign with a shared top navigation bar, updated typography, cleaner cards, modern forms, improved tables, refined modal styling, and a redesigned login screen. Existing Firebase configuration, IDs, JavaScript behaviour, and data structures were retained.
