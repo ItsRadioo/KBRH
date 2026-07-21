@@ -336,9 +336,88 @@ function handleRosterAction(clientId, action) {
   if (action === "edit") startInlineEdit(clientId);
   if (action === "phase2") moveToPhase(clientId, "phase2");
   if (action === "phase1") moveToPhase(clientId, "phase1");
+  if (action === "waitlist") moveBackToWaitlist(clientId);
   if (action === "archive") archiveClient(clientId);
   if (action === "restore") restoreClient(clientId);
   if (action === "delete") deleteArchivedClient(clientId);
+}
+
+
+function moveBackToWaitlist(clientId) {
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
+
+  if (!confirm(`Move ${client.firstName} ${client.lastName} back to the waitlist?`)) return;
+
+  rosterState.waitlist = Array.isArray(rosterState.waitlist)
+    ? rosterState.waitlist.filter(item => item && item !== "temp")
+    : [];
+
+  const priorWaitlistRecord = rosterState.waitlist.find(item => {
+    if (!item || !item.dateApplied) return false;
+    if (client.waitlistSourceId && item.id === client.waitlistSourceId) return true;
+
+    const sameName = String(item.firstName || "").trim().toLowerCase() === String(client.firstName || "").trim().toLowerCase()
+      && String(item.lastName || "").trim().toLowerCase() === String(client.lastName || "").trim().toLowerCase();
+    const itemPhone = String(item.contact || "").replace(/\D/g, "");
+    const clientPhone = String(client.phone || "").replace(/\D/g, "");
+    const samePhone = itemPhone && clientPhone && itemPhone === clientPhone;
+
+    return sameName && (samePhone || !itemPhone || !clientPhone);
+  });
+
+  const originalApplicationDate = client.originalApplicationDate
+    || priorWaitlistRecord?.originalApplicationDate
+    || priorWaitlistRecord?.dateApplied
+    || "";
+
+  const transferNote = {
+    id: crypto.randomUUID(),
+    text: `Moved back to the waitlist from the current roster on ${new Date().toLocaleDateString("en-CA")}.`,
+    createdAt: new Date().toISOString()
+  };
+
+  const existingNotes = Array.isArray(client.notes)
+    ? client.notes.map(note => ({
+        id: note.id || crypto.randomUUID(),
+        text: note.text || "",
+        createdAt: note.createdAt || new Date().toISOString()
+      })).filter(note => note.text)
+    : [];
+
+  rosterState.waitlist.push({
+    id: crypto.randomUUID(),
+    lastName: client.lastName || "",
+    firstName: client.firstName || "",
+    contact: formatPhoneNumber(client.phone || ""),
+    status: "Returned from Roster",
+    city: client.city || "",
+    dateApplied: originalApplicationDate,
+    originalApplicationDate,
+    archived: false,
+    archivedAt: "",
+    archiveReason: "",
+    callPriority: "normal",
+    notes: [transferNote, ...existingNotes],
+    callInHistory: []
+  });
+
+  client.archived = true;
+  client.archivedAt = new Date().toISOString();
+  client.archiveReason = "Moved back to Waitlist";
+  client.notes = Array.isArray(client.notes) ? client.notes : [];
+  client.notes.unshift({
+    id: crypto.randomUUID(),
+    author: "System",
+    text: `Moved back to the waitlist on ${new Date().toLocaleDateString("en-CA")}.`,
+    createdAt: new Date().toISOString()
+  });
+
+  editingClientId = null;
+  editingAll = false;
+  updateEditAllButtons();
+  renderRoster();
+  saveRoster();
 }
 
 function moveToPhase(clientId, phase) {
@@ -675,6 +754,7 @@ function renderActiveRosterRow(client, phase) {
             <option value="">Actions</option>
             <option value="edit">Edit</option>
             <option value="phase2">Move to Phase 2</option>
+            <option value="waitlist">Move back to Waitlist</option>
             <option value="archive">Archive / Discharge</option>
           </select>
         </td>
@@ -700,6 +780,7 @@ function renderActiveRosterRow(client, phase) {
           <option value="">Actions</option>
           <option value="edit">Edit</option>
           <option value="phase1">Move to Phase 1</option>
+          <option value="waitlist">Move back to Waitlist</option>
           <option value="archive">Archive / Discharge</option>
         </select>
       </td>

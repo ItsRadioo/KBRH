@@ -1229,3 +1229,119 @@ body.kbrh-modal-open { overflow: hidden; }
     flex-wrap: wrap;
   }
 }
+
+/* v2.4 waitlist call-in workflow */
+.call-in-modal {
+  width: min(520px, 92vw);
+}
+
+.call-in-options {
+  border: 0;
+  padding: 0;
+  margin: 20px 0 8px;
+}
+
+.call-in-options legend {
+  margin-bottom: 10px;
+  color: var(--navy-900, #102a43);
+  font-weight: 700;
+}
+
+.call-in-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 8px 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border, #d8e0e8);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.call-in-option:hover,
+.call-in-option:has(input:checked) {
+  border-color: var(--blue-500, #2f7eb6);
+  background: #eef7fd;
+}
+
+.call-in-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.form-message {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #e5b35d;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #7a4b00;
+  font-weight: 700;
+}
+
+.call-in-action-stack {
+  display: grid;
+  gap: 7px;
+  min-width: 132px;
+}
+
+.call-in-update-btn {
+  white-space: nowrap;
+}
+
+.compact-button {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.compact-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.last-call-cell {
+  min-width: 175px;
+  line-height: 1.35;
+}
+
+#waitlistBody tr.waitlist-follow-up-row > td {
+  background: #ffe0b2;
+  border-color: #efb66a;
+}
+
+#waitlistBody tr.waitlist-follow-up-row:hover > td {
+  background: #ffd494;
+}
+
+
+/* Waitlist applicant actions modal */
+.actions-button {
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+.applicant-actions-modal {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.applicant-action-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.applicant-action-list button {
+  width: 100%;
+  min-height: 46px;
+  text-align: left;
+  justify-content: flex-start;
+  padding-inline: 16px;
+}
+
+.applicant-action-list button.danger {
+  margin-top: 6px;
+}

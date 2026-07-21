@@ -1,6 +1,8 @@
 let waitlistState = defaultAppState();
 let editingApplicantId = null;
 let notesApplicantId = null;
+let callInApplicantId = null;
+let actionsApplicantId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -247,6 +249,8 @@ function moveToRoster(applicantId) {
     contactPhone: "",
     entryDate: "",
     expectedDischargeDate: "",
+    originalApplicationDate: applicant.originalApplicationDate || applicant.dateApplied || "",
+    waitlistSourceId: applicant.id,
     phase: "phase1",
     phase2AdmissionDate: "",
     archived: false,
@@ -261,6 +265,31 @@ function moveToRoster(applicantId) {
 
   renderWaitlist();
   saveWaitlist();
+}
+
+function openApplicantActionsModal(applicantId) {
+  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
+  if (!applicant) return;
+
+  actionsApplicantId = applicantId;
+  document.getElementById("applicantActionsName").textContent =
+    `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
+  document.getElementById("applicantActionsModal")?.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+}
+
+function closeApplicantActionsModal() {
+  actionsApplicantId = null;
+  document.getElementById("applicantActionsModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
+
+function selectApplicantAction(action) {
+  const applicantId = actionsApplicantId;
+  if (!applicantId || !action) return;
+
+  closeApplicantActionsModal();
+  handleApplicantAction(applicantId, action);
 }
 
 function handleApplicantAction(applicantId, action) {
@@ -279,57 +308,92 @@ function handleArchivedApplicantAction(applicantId, action) {
   if (action === "delete") deleteApplicant(applicantId);
 }
 
-function handleCallInAction(applicantId, action) {
-  if (!action) return;
+function normalizeCallInStatus(record) {
+  if (!record) return "";
 
-  if (action === "yes") {
-    callInYes(applicantId);
-    return;
-  }
+  const result = String(record.result || "").trim().toLowerCase();
+  const reason = String(record.reason || "").trim().toLowerCase();
 
-  recordNoLateCallIn(applicantId, action);
+  if (result === "call in" || result === "yes") return "Call In";
+  if (result === "late call" || reason === "called late" || reason === "late call") return "Late Call";
+  if (result === "no call" || reason === "no call") return "No Call";
+
+  return record.result || record.reason || "";
 }
 
-function recordNoLateCallIn(applicantId, reason) {
+function getConsecutiveNoCallCount(item) {
+  const history = Array.isArray(item.callInHistory) ? item.callInHistory : [];
+  let count = 0;
+
+  for (const record of history) {
+    if (normalizeCallInStatus(record) === "No Call") {
+      count += 1;
+    } else {
+      break;
+    }
+  }
+
+  return count;
+}
+
+function openCallInModal(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
-  const previousActiveOrder = getActiveOrderSnapshot();
-  let details = "";
+  callInApplicantId = applicantId;
+  document.getElementById("callInApplicantName").textContent =
+    `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
-  if (reason === "Other") {
-    const customReason = prompt("Enter reason:", "");
-    if (customReason === null) return;
+  document.querySelectorAll('input[name="callInStatus"]').forEach(input => {
+    input.checked = false;
+  });
 
-    reason = customReason.trim() || "Other";
-  } else {
-    const optionalDetails = prompt("Optional details:", "");
-    if (optionalDetails === null) return;
+  document.getElementById("callInModalMessage")?.classList.add("hidden");
+  document.getElementById("callInModal")?.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+}
 
-    details = optionalDetails.trim();
+function closeCallInModal() {
+  callInApplicantId = null;
+  document.getElementById("callInModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
+
+function saveCallInStatus() {
+  const applicant = waitlistState.waitlist.find(item => item.id === callInApplicantId);
+  if (!applicant) return;
+
+  const selected = document.querySelector('input[name="callInStatus"]:checked')?.value;
+  const message = document.getElementById("callInModalMessage");
+
+  if (!selected) {
+    message?.classList.remove("hidden");
+    return;
   }
 
-  if (!confirm(`Record "${reason}" for ${applicant.firstName} ${applicant.lastName}?`)) return;
-
-  applicant.callPriority = reason === "Called late" ? "late" : "nocall";
+  const previousActiveOrder = getActiveOrderSnapshot();
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
-
   applicant.callInHistory.unshift({
     id: crypto.randomUUID(),
-    result: "No/Late",
-    reason,
-    details,
+    result: selected,
+    reason: "",
+    details: "",
     previousActiveOrder,
     timestamp: new Date().toLocaleString(),
     createdAt: new Date().toISOString()
   });
 
-  if (reason === "Called late") {
+  if (selected === "Call In") {
+    applicant.callPriority = "normal";
+  } else if (selected === "Late Call") {
+    applicant.callPriority = "late";
     moveLateApplicantAboveNoCalls(applicant.id);
   } else {
+    applicant.callPriority = "nocall";
     moveNoCallApplicantToBottom(applicant.id);
   }
 
+  closeCallInModal();
   renderWaitlist();
   saveWaitlist();
 }
@@ -413,31 +477,6 @@ function renderNotesModal(applicant) {
     : `<li class="empty">No notes yet.</li>`;
 }
 
-function callInYes(applicantId) {
-  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
-  if (!applicant) return;
-
-  const previousActiveOrder = getActiveOrderSnapshot();
-
-  if (!confirm(`Record YES call-in for ${applicant.firstName} ${applicant.lastName}?`)) return;
-
-  applicant.callPriority = "normal";
-  applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
-
-  applicant.callInHistory.unshift({
-    id: crypto.randomUUID(),
-    result: "Yes",
-    reason: "",
-    details: "",
-    previousActiveOrder,
-    timestamp: new Date().toLocaleString(),
-    createdAt: new Date().toISOString()
-  });
-
-  renderWaitlist();
-  saveWaitlist();
-}
-
 function undoLastCallIn(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant || !Array.isArray(applicant.callInHistory) || !applicant.callInHistory.length) return;
@@ -508,13 +547,11 @@ function deleteApplicant(applicantId) {
 
 function getLastCallText(item) {
   const last = item.callInHistory?.[0];
-
   if (!last) return "No call-in recorded.";
 
-  const reasonText = last.reason ? ` — ${last.reason}` : "";
-  const detailsText = last.details ? ` (${last.details})` : "";
-
-  return `${last.result}${reasonText}${detailsText} — ${last.timestamp}`;
+  const status = normalizeCallInStatus(last) || "Call-In Updated";
+  const dateText = last.createdAt ? formatDateTime(last.createdAt) : String(last.timestamp || "");
+  return dateText ? `${status} — ${dateText}` : status;
 }
 
 function renderWaitlist() {
@@ -555,8 +592,10 @@ function renderActiveWaitlist() {
           `;
         }
 
+        const noCallCount = getConsecutiveNoCallCount(item);
+
         return `
-          <tr>
+          <tr class="${noCallCount >= 2 ? "waitlist-follow-up-row" : ""}">
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
@@ -565,30 +604,17 @@ function renderActiveWaitlist() {
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
             <td>
-              <select onchange="handleCallInAction('${item.id}', this.value); this.value='';">
-                <option value="">Call In</option>
-                <option value="yes">Yes</option>
-                <option value="Called late">Called Late</option>
-                <option value="No call">No Call</option>
-                <option value="Unable to reach">Unable to Reach</option>
-                <option value="Wrong number / disconnected">Wrong Number / Disconnected</option>
-                <option value="Declined bed/placement">Declined Bed / Placement</option>
-                <option value="Other">Other</option>
-              </select>
-              <button type="button" class="secondary" onclick="undoLastCallIn('${item.id}')">Undo</button>
+              <div class="call-in-action-stack">
+                <button type="button" class="call-in-update-btn" onclick="openCallInModal('${item.id}')">Update Call-In</button>
+                <button type="button" class="secondary compact-button" onclick="undoLastCallIn('${item.id}')" ${item.callInHistory?.length ? "" : "disabled"}>Undo</button>
+              </div>
             </td>
-            <td>${escapeHtml(lastCall)}</td>
+            <td class="last-call-cell">${escapeHtml(lastCall)}</td>
             <td>
               <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
             </td>
             <td>
-              <select onchange="handleApplicantAction('${item.id}', this.value); this.value='';">
-                <option value="">Actions</option>
-                <option value="edit">Edit</option>
-                <option value="moveToRoster">Move to Roster</option>
-                <option value="archive">Archive</option>
-                <option value="delete">Delete</option>
-              </select>
+              <button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button>
             </td>
           </tr>
         `;
@@ -606,8 +632,10 @@ function renderArchivedWaitlist() {
     ? archived.map((item, index) => {
         const noteCount = normalizeWaitlistNotes(item.notes).length;
 
+        const noCallCount = getConsecutiveNoCallCount(item);
+
         return `
-          <tr>
+          <tr class="${noCallCount >= 2 ? "waitlist-follow-up-row" : ""}">
             <td>${index + 1}</td>
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
@@ -665,6 +693,34 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWaitlistBtn")?.addEventListener("click", addWaitlistApplicant);
   document.getElementById("addWaitlistNoteBtn")?.addEventListener("click", addWaitlistNote);
   document.getElementById("closeWaitlistNotesBtn")?.addEventListener("click", closeNotesModal);
+  document.getElementById("saveCallInStatusBtn")?.addEventListener("click", saveCallInStatus);
+  document.getElementById("cancelCallInModalBtn")?.addEventListener("click", closeCallInModal);
+  document.getElementById("closeCallInModalBtn")?.addEventListener("click", closeCallInModal);
+  document.getElementById("cancelApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);
+  document.getElementById("closeApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);
+  document.querySelectorAll("[data-applicant-action]").forEach(button => {
+    button.addEventListener("click", () => selectApplicantAction(button.dataset.applicantAction));
+  });
+
+  document.getElementById("callInModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "callInModal") closeCallInModal();
+  });
+
+  document.getElementById("applicantActionsModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "applicantActionsModal") closeApplicantActionsModal();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+
+    if (!document.getElementById("callInModal")?.classList.contains("hidden")) {
+      closeCallInModal();
+    }
+
+    if (!document.getElementById("applicantActionsModal")?.classList.contains("hidden")) {
+      closeApplicantActionsModal();
+    }
+  });
 });
 
 auth.onAuthStateChanged(user => {

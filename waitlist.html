@@ -32,7 +32,7 @@
 </section>
 <section class="card wide">
 <h2>Current Waitlist</h2>
-<p class="hint">Use the Call In dropdown to record Yes, Late, No Call, or other call-in outcomes.</p>
+<p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. Two consecutive No Calls highlight the applicant for follow-up.</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -88,6 +88,64 @@
 </div>
 <ul class="list" id="waitlistNotesList"></ul>
 </div>
+</div>
+
+<div class="modal-backdrop hidden" id="callInModal">
+  <div class="modal-card call-in-modal" role="dialog" aria-modal="true" aria-labelledby="callInModalTitle">
+    <div class="modal-title-row">
+      <div>
+        <h2 id="callInModalTitle">Update Call-In Status</h2>
+        <p class="hint" id="callInApplicantName"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closeCallInModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+
+    <fieldset class="call-in-options">
+      <legend>Select the applicant's call-in status</legend>
+      <label class="call-in-option">
+        <input type="radio" name="callInStatus" value="Call In">
+        <span><strong>Call In</strong></span>
+      </label>
+      <label class="call-in-option">
+        <input type="radio" name="callInStatus" value="Late Call">
+        <span><strong>Late Call</strong></span>
+      </label>
+      <label class="call-in-option">
+        <input type="radio" name="callInStatus" value="No Call">
+        <span><strong>No Call</strong></span>
+      </label>
+    </fieldset>
+
+    <p class="form-message hidden" id="callInModalMessage">Select a call-in status.</p>
+
+    <div class="button-row modal-actions">
+      <button class="secondary" id="cancelCallInModalBtn" type="button">Cancel</button>
+      <button class="success" id="saveCallInStatusBtn" type="button">Save Call-In</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="applicantActionsModal">
+  <div class="modal-card applicant-actions-modal" role="dialog" aria-modal="true" aria-labelledby="applicantActionsModalTitle">
+    <div class="modal-title-row">
+      <div>
+        <h2 id="applicantActionsModalTitle">Applicant Actions</h2>
+        <p class="hint" id="applicantActionsName"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closeApplicantActionsModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="applicant-action-list" aria-label="Available applicant actions">
+      <button type="button" data-applicant-action="edit">Edit</button>
+      <button type="button" data-applicant-action="moveToRoster">Move to Roster</button>
+      <button type="button" data-applicant-action="archive">Archive</button>
+      <button type="button" class="danger" data-applicant-action="delete">Delete</button>
+    </div>
+
+    <div class="button-row modal-actions">
+      <button class="secondary" id="cancelApplicantActionsModalBtn" type="button">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <script src="waitlist.js"></script>
