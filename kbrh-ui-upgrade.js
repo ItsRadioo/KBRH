@@ -38,6 +38,20 @@
     `;
   }
 
+  function textareaField(id, label, value = "", required = false, full = true) {
+    return `
+      <label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
+        <span>${esc(label)}${required ? ' <strong class="kbrh-required-mark">*</strong>' : ""}</span>
+        <textarea
+          id="${esc(id)}"
+          data-label="${esc(label)}"
+          data-required="${required ? "true" : "false"}"
+          autocomplete="off"
+        >${esc(value)}</textarea>
+      </label>
+    `;
+  }
+
   function checkboxField(id, label, checked = false) {
     return `
       <label class="kbrh-modal-check kbrh-modal-field-full">
@@ -70,7 +84,7 @@
 
           <footer class="kbrh-edit-modal-footer">
             <button type="button" class="secondary" id="kbrhModalCancel">Cancel</button>
-            <button type="submit" class="success">Save Changes</button>
+            <button type="submit" class="success" id="kbrhModalSave">Save Changes</button>
           </footer>
         </form>
       </section>
@@ -93,7 +107,7 @@
     });
   }
 
-  function openModal(type, id, title, subtitle, fields) {
+  function openModal(type, id, title, subtitle, fields, saveLabel = "Save Changes") {
     ensureModal();
 
     modalType = type;
@@ -102,13 +116,14 @@
     $("kbrhModalTitle").textContent = title;
     $("kbrhModalSubtitle").textContent = subtitle || "";
     $("kbrhModalFields").innerHTML = fields;
+    $("kbrhModalSave").textContent = saveLabel;
     $("kbrhModalMessage").className = "kbrh-modal-message hidden";
     $("kbrhModalMessage").textContent = "";
 
     $(MODAL_ID).classList.remove("hidden");
     document.body.classList.add("kbrh-modal-open");
 
-    $(MODAL_ID).querySelectorAll("input, select").forEach(control => {
+    $(MODAL_ID).querySelectorAll("input, select, textarea").forEach(control => {
       control.addEventListener("input", () => {
         if (String(control.value || "").trim()) {
           control.classList.remove("kbrh-required-missing", "kbrh-optional-missing");
@@ -185,7 +200,63 @@
     }
 
     if (modalType === "waitlist") await saveWaitlistRecord();
+    if (modalType === "waitlist-add") await addWaitlistRecord();
     if (modalType === "roster") await saveRosterRecord();
+    if (modalType === "roster-add") await addRosterRecord();
+  }
+
+  function openAddWaitlistModal() {
+    openModal(
+      "waitlist-add",
+      "",
+      "Add Waitlist Applicant",
+      "Enter the applicant information below.",
+      [
+        inputField("kwaFirst", "First Name", "", "text", true),
+        inputField("kwaLast", "Last Name", "", "text", true),
+        inputField("kwaContact", "Contact / Phone Number"),
+        inputField("kwaStatus", "Status"),
+        inputField("kwaCity", "City"),
+        inputField("kwaDate", "Date Applied", new Date().toISOString().slice(0, 10), "date"),
+        textareaField("kwaNotes", "Initial Note")
+      ].join(""),
+      "Add Applicant"
+    );
+  }
+
+  async function addWaitlistRecord() {
+    waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
+      ? waitlistState.waitlist.filter(item => item && item !== "temp")
+      : [];
+
+    const initialNote = valueOf("kwaNotes");
+    const applicant = {
+      id: crypto.randomUUID(),
+      firstName: valueOf("kwaFirst"),
+      lastName: valueOf("kwaLast"),
+      contact: typeof formatPhoneNumber === "function"
+        ? formatPhoneNumber(valueOf("kwaContact"))
+        : valueOf("kwaContact"),
+      status: valueOf("kwaStatus"),
+      city: valueOf("kwaCity"),
+      dateApplied: valueOf("kwaDate"),
+      archived: false,
+      archivedAt: "",
+      archiveReason: "",
+      callPriority: "normal",
+      notes: initialNote ? [{
+        id: crypto.randomUUID(),
+        text: initialNote,
+        createdAt: new Date().toISOString()
+      }] : [],
+      callInHistory: []
+    };
+
+    waitlistState.waitlist.push(applicant);
+    closeModal();
+    renderWaitlist();
+    await saveWaitlist();
+    applyWaitlistSearch();
   }
 
   function openWaitlistEditor(id) {
@@ -232,6 +303,70 @@
     renderWaitlist();
     await saveWaitlist();
     applyWaitlistSearch();
+  }
+
+  function openAddRosterModal() {
+    openModal(
+      "roster-add",
+      "",
+      "Add Client",
+      "Enter the new resident information below.",
+      [
+        inputField("kraRoom", "Room Number"),
+        inputField("kraClientId", "Client ID", "", "text", true),
+        inputField("kraFirst", "First Name", "", "text", true),
+        inputField("kraLast", "Last Name", "", "text", true),
+        inputField("kraDob", "Date of Birth", "", "date"),
+        inputField("kraPhone", "Phone Number"),
+        inputField("kraAddress", "Address", "", "text", false, true),
+        inputField("kraCity", "City"),
+        inputField("kraContact", "Emergency Contact"),
+        inputField("kraContactPhone", "Emergency Contact Phone"),
+        inputField("kraEntry", "Entry Date", new Date().toISOString().slice(0, 10), "date")
+      ].join(""),
+      "Add Client"
+    );
+  }
+
+  async function addRosterRecord() {
+    rosterState.roster = Array.isArray(rosterState.roster)
+      ? rosterState.roster.filter(client => client && client !== "temp")
+      : [];
+
+    const entryDate = valueOf("kraEntry");
+    const client = {
+      id: crypto.randomUUID(),
+      roomNumber: valueOf("kraRoom"),
+      clientId: valueOf("kraClientId"),
+      firstName: valueOf("kraFirst"),
+      lastName: valueOf("kraLast"),
+      dob: valueOf("kraDob"),
+      phone: typeof formatPhoneNumber === "function"
+        ? formatPhoneNumber(valueOf("kraPhone"))
+        : valueOf("kraPhone"),
+      address: valueOf("kraAddress"),
+      city: valueOf("kraCity"),
+      contact: valueOf("kraContact"),
+      contactPhone: typeof formatPhoneNumber === "function"
+        ? formatPhoneNumber(valueOf("kraContactPhone"))
+        : valueOf("kraContactPhone"),
+      entryDate,
+      expectedDischargeDate: typeof calculateExitDate === "function"
+        ? calculateExitDate(entryDate)
+        : "",
+      opocCompleted: false,
+      phase2AdmissionDate: "",
+      phase: "phase1",
+      archived: false,
+      archivedAt: "",
+      archiveReason: "",
+      notes: []
+    };
+
+    rosterState.roster.push(client);
+    closeModal();
+    renderRoster();
+    await saveRoster();
   }
 
   function openRosterEditor(id) {
@@ -349,6 +484,20 @@
   function parseFirstQuotedArgument(text) {
     const match = String(text || "").match(/\(\s*['"]([^'"]+)['"]/);
     return match ? match[1] : "";
+  }
+
+  function installAddModalButtons() {
+    const rosterButton = $("openAddClientModalBtn");
+    if (rosterButton && rosterButton.dataset.kbrhInstalled !== "true") {
+      rosterButton.dataset.kbrhInstalled = "true";
+      rosterButton.addEventListener("click", openAddRosterModal);
+    }
+
+    const waitlistButton = $("openAddWaitlistModalBtn");
+    if (waitlistButton && waitlistButton.dataset.kbrhInstalled !== "true") {
+      waitlistButton.dataset.kbrhInstalled = "true";
+      waitlistButton.addEventListener("click", openAddWaitlistModal);
+    }
   }
 
   function installEditInterception() {
@@ -544,6 +693,7 @@
 
   function install() {
     ensureModal();
+    installAddModalButtons();
     installEditInterception();
     installWaitlistSearch();
     applyWaitlistSearch();

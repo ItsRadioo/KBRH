@@ -1100,3 +1100,44 @@ tbody tr:hover td { background: #f8fbfd; }
   main { width: 100%; max-width: none; margin: 0; }
   .card { border: 0; box-shadow: none; }
 }
+
+/* Page-level primary actions */
+.page-action-card {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.card-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.card-heading-row .hint {
+  margin-bottom: 0;
+}
+
+.primary-action-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 42px;
+  padding-inline: 18px;
+}
+
+.kbrh-modal-field textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+}
+
+@media (max-width: 760px) {
+  .card-heading-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primary-action-btn {
+    width: 100%;
+  }
+}

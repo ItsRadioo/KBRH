@@ -29,3 +29,8 @@ The cleaning schedule export:
 ## Professional UI v2
 
 This package includes a visual redesign with a shared top navigation bar, updated typography, cleaner cards, modern forms, improved tables, refined modal styling, and a redesigned login screen. Existing Firebase configuration, IDs, JavaScript behaviour, and data structures were retained.
+
+## v2.1 update
+- The Roster "Add Client" form now opens in a modal window.
+- The Waitlist "Add Applicant" form now opens in a modal window.
+- Existing edit, validation, Firebase storage, and table behaviour are preserved.

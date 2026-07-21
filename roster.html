@@ -21,23 +21,13 @@
 <p>Current clients attending the home.</p>
 </div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a aria-current="page" class="app-nav-link active" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="counseling-notes.html">Counselling Notes</a></nav></header>
 <main>
-<section class="card wide">
-<h2>Add Client</h2>
-<div class="form-row">
-<div class="field-group"><label for="roomNumber">Room Number</label><input id="roomNumber" type="text"/></div>
-<div class="field-group"><label for="firstName">First Name</label><input id="firstName" type="text"/></div>
-<div class="field-group"><label for="lastName">Last Name</label><input id="lastName" type="text"/></div>
-<div class="field-group"><label for="clientId">Client ID</label><input id="clientId" type="text"/></div>
-<div class="field-group"><label for="dob">Date of Birth</label><input id="dob" type="date"/></div>
-<div class="field-group phone-field"><label for="phone">Phone Number</label><input id="phone" type="text"/></div>
-<div class="field-group"><label for="address">Address</label><input id="address" type="text"/></div>
-<div class="field-group"><label for="city">City</label><input id="city" type="text"/></div>
-<div class="field-group"><label for="contact">Emergency Contact</label><input id="contact" type="text"/></div>
-<div class="field-group phone-field"><label for="contactPhone">Emergency Contact Phone</label><input id="contactPhone" type="text"/></div>
-<div class="field-group"><label for="entryDate">Entry Date</label><input id="entryDate" type="date"/></div>
+<section class="card wide page-action-card">
+<div class="card-heading-row">
+<div>
+<h2>Client Management</h2>
+<p class="hint">Add a new resident or search and manage the current roster.</p>
 </div>
-<div class="button-row">
-<button id="addClientBtn" onclick="addClient()" type="button">Add Client</button>
+<button id="openAddClientModalBtn" class="primary-action-btn" type="button">+ Add Client</button>
 </div>
 </section>
 <section class="card wide">
