@@ -21,8 +21,24 @@
 <p>Residents are pulled from the Current Roster. Manage clients there first.</p>
 </div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a aria-current="page" class="app-nav-link active" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a></nav></header>
 <main>
-<section class="card wide">
+<section class="card wide chore-view-controls" aria-label="Chore page display controls">
+<div class="section-title-row">
+<div>
+<h2>Page Display</h2>
+<p class="hint">Expand or collapse the main information sections to reduce the amount of information shown at once.</p>
+</div>
+<div class="button-row compact-button-row">
+<button class="secondary" id="expandAllChoreSections" type="button">Expand All</button>
+<button class="secondary" id="collapseAllChoreSections" type="button">Collapse All</button>
+</div>
+</div>
+</section>
+<section class="card wide collapsible-card" data-collapse-key="residents" data-default-expanded="true">
+<div class="section-title-row">
 <h2>Current Residents</h2>
+<button class="secondary section-toggle-btn" type="button" aria-expanded="true">Collapse</button>
+</div>
+<div class="collapsible-content">
 <p class="hint">
         This list is generated from the Current Roster page. Add, edit, or remove clients from the roster page.
       </p>
@@ -30,15 +46,21 @@
 <a class="button-link" href="roster.html">Open Current Roster</a>
 </div>
 <ul class="list" id="residentList"></ul>
+</div>
 </section>
-<section class="card">
+<section class="card collapsible-card" data-collapse-key="chores" data-default-expanded="true">
+<div class="section-title-row">
 <h2>Chores</h2>
+<button class="secondary section-toggle-btn" type="button" aria-expanded="true">Collapse</button>
+</div>
+<div class="collapsible-content">
 <div class="form-row">
 <input id="choreName" placeholder="Chore name" type="text"/>
 <button id="addChoreBtn">Add Chore</button>
 <button class="secondary" id="resetChoresBtn">Reset Standard Chores</button>
 </div>
 <ul class="list" id="choreList"></ul>
+</div>
 </section>
 <section class="card wide">
 <h2>Manual First Assignment</h2>
@@ -61,8 +83,12 @@
 <a class="button-link" href="print.html">Open Printable Cleaning Schedule</a>
 </div>
 </section>
-<section class="card wide">
+<section class="card wide collapsible-card" data-collapse-key="generated" data-default-expanded="true">
+<div class="section-title-row">
 <h2>Generated Chore Table</h2>
+<button class="secondary section-toggle-btn" type="button" aria-expanded="true">Collapse</button>
+</div>
+<div class="collapsible-content">
 <div class="table-wrap">
 <table>
 <thead>
@@ -76,6 +102,7 @@
 </thead>
 <tbody id="rotationBody"></tbody>
 </table>
+</div>
 </div>
 </section>
 <section class="card wide">
@@ -98,8 +125,12 @@
 <button id="setAwayUntilBtn">Mark Away Until</button>
 </div>
 </section>
-<section class="card wide">
+<section class="card wide collapsible-card" data-collapse-key="history" data-default-expanded="false">
+<div class="section-title-row">
 <h2>Rotation History Log</h2>
+<button class="secondary section-toggle-btn" type="button" aria-expanded="false">Expand</button>
+</div>
+<div class="collapsible-content" hidden>
 <p class="hint">Every Rotate action is saved here for accountability.</p>
 <div class="button-row">
 <button class="danger" id="clearHistoryBtn">Clear History</button>
@@ -116,6 +147,7 @@
 </thead>
 <tbody id="historyBody"></tbody>
 </table>
+</div>
 </div>
 </section>
 <section class="card wide">

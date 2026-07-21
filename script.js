@@ -1240,3 +1240,71 @@ auth.onAuthStateChanged(user => {
     }
   });
 });
+
+/* House Chores collapsible dashboard sections */
+(function initializeChoreSectionToggles() {
+  const STORAGE_PREFIX = "kbrh.choreSection.";
+
+  function setSectionState(card, expanded, saveState = true) {
+    const content = card.querySelector(".collapsible-content");
+    const button = card.querySelector(".section-toggle-btn");
+    const key = card.dataset.collapseKey;
+
+    if (!content || !button || !key) return;
+
+    content.hidden = !expanded;
+    button.textContent = expanded ? "Collapse" : "Expand";
+    button.setAttribute("aria-expanded", String(expanded));
+    card.classList.toggle("is-collapsed", !expanded);
+
+    if (saveState) {
+      try {
+        localStorage.setItem(`${STORAGE_PREFIX}${key}`, expanded ? "expanded" : "collapsed");
+      } catch (error) {
+        console.warn("Could not save chore section display preference:", error);
+      }
+    }
+  }
+
+  function getInitialState(card) {
+    const key = card.dataset.collapseKey;
+    const defaultExpanded = card.dataset.defaultExpanded !== "false";
+
+    try {
+      const stored = localStorage.getItem(`${STORAGE_PREFIX}${key}`);
+      if (stored === "expanded") return true;
+      if (stored === "collapsed") return false;
+    } catch (error) {
+      console.warn("Could not read chore section display preference:", error);
+    }
+
+    return defaultExpanded;
+  }
+
+  function start() {
+    const cards = Array.from(document.querySelectorAll(".collapsible-card"));
+    if (!cards.length) return;
+
+    cards.forEach(card => {
+      setSectionState(card, getInitialState(card), false);
+      const button = card.querySelector(".section-toggle-btn");
+      button?.addEventListener("click", () => {
+        setSectionState(card, button.getAttribute("aria-expanded") !== "true");
+      });
+    });
+
+    document.getElementById("expandAllChoreSections")?.addEventListener("click", () => {
+      cards.forEach(card => setSectionState(card, true));
+    });
+
+    document.getElementById("collapseAllChoreSections")?.addEventListener("click", () => {
+      cards.forEach(card => setSectionState(card, false));
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
+})();

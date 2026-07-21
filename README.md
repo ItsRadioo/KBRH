@@ -34,3 +34,6 @@ This package includes a visual redesign with a shared top navigation bar, update
 - The Roster "Add Client" form now opens in a modal window.
 - The Waitlist "Add Applicant" form now opens in a modal window.
 - Existing edit, validation, Firebase storage, and table behaviour are preserved.
+
+## Version 2.3 display update
+The House Chores page now includes explicit Expand/Collapse buttons for Current Residents, Chores, Generated Chore Table, and Rotation History Log. Expand All and Collapse All controls are included, and each section's display preference is remembered in the browser.

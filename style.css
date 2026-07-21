@@ -1172,3 +1172,60 @@ body.kbrh-modal-open { overflow: hidden; }
   .section-heading-row .primary-action-btn { width: 100%; }
   .inline-time-fields { grid-template-columns: 1fr; }
 }
+
+/* House Chores collapsible dashboard sections */
+.page-index .section-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-index .section-title-row > h2,
+.page-index .section-title-row > div > h2 {
+  margin-bottom: 0;
+}
+
+.page-index .section-toggle-btn {
+  min-width: 7.25rem;
+  flex: 0 0 auto;
+}
+
+.page-index .collapsible-content[hidden] {
+  display: none !important;
+}
+
+.page-index .collapsible-content:not([hidden]) {
+  margin-top: 1rem;
+}
+
+.page-index .collapsible-card.is-collapsed {
+  padding-bottom: 1rem;
+}
+
+.page-index .chore-view-controls .section-title-row {
+  align-items: center;
+}
+
+.page-index .compact-button-row {
+  margin-top: 0;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 700px) {
+  .page-index .section-title-row,
+  .page-index .chore-view-controls .section-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-index .section-toggle-btn,
+  .page-index .compact-button-row button {
+    width: 100%;
+  }
+
+  .page-index .compact-button-row {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
