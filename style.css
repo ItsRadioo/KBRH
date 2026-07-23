@@ -1308,13 +1308,19 @@ body.kbrh-modal-open { overflow: hidden; }
   line-height: 1.35;
 }
 
-#waitlistBody tr.waitlist-follow-up-row > td {
-  background: #ffe0b2;
-  border-color: #efb66a;
+#waitlistBody tr.waitlist-follow-up-row > td,
+#archivedWaitlistBody tr.waitlist-follow-up-row > td,
+#compactWaitlistBody tr.waitlist-follow-up-row > td,
+#compactArchivedWaitlistBody tr.waitlist-follow-up-row > td {
+  background: #f8d7da;
+  border-color: #e39aa1;
 }
 
-#waitlistBody tr.waitlist-follow-up-row:hover > td {
-  background: #ffd494;
+#waitlistBody tr.waitlist-follow-up-row:hover > td,
+#archivedWaitlistBody tr.waitlist-follow-up-row:hover > td,
+#compactWaitlistBody tr.waitlist-follow-up-row:hover > td,
+#compactArchivedWaitlistBody tr.waitlist-follow-up-row:hover > td {
+  background: #f1bfc4;
 }
 
 
@@ -1405,24 +1411,32 @@ body.kbrh-modal-open { overflow: hidden; }
 
 /* v2.9 waitlist status controls and row highlighting */
 #waitlistBody tr.waitlist-incarcerated-row > td,
-#archivedWaitlistBody tr.waitlist-incarcerated-row > td {
+#archivedWaitlistBody tr.waitlist-incarcerated-row > td,
+#compactWaitlistBody tr.waitlist-incarcerated-row > td,
+#compactArchivedWaitlistBody tr.waitlist-incarcerated-row > td {
   background: #fff3bf;
   border-color: #e2c85b;
 }
 
 #waitlistBody tr.waitlist-incarcerated-row:hover > td,
-#archivedWaitlistBody tr.waitlist-incarcerated-row:hover > td {
+#archivedWaitlistBody tr.waitlist-incarcerated-row:hover > td,
+#compactWaitlistBody tr.waitlist-incarcerated-row:hover > td,
+#compactArchivedWaitlistBody tr.waitlist-incarcerated-row:hover > td {
   background: #ffe99a;
 }
 
 #waitlistBody tr.waitlist-offer-row > td,
-#archivedWaitlistBody tr.waitlist-offer-row > td {
+#archivedWaitlistBody tr.waitlist-offer-row > td,
+#compactWaitlistBody tr.waitlist-offer-row > td,
+#compactArchivedWaitlistBody tr.waitlist-offer-row > td {
   background: #d7f3df;
   border-color: #70bd86;
 }
 
 #waitlistBody tr.waitlist-offer-row:hover > td,
-#archivedWaitlistBody tr.waitlist-offer-row:hover > td {
+#archivedWaitlistBody tr.waitlist-offer-row:hover > td,
+#compactWaitlistBody tr.waitlist-offer-row:hover > td,
+#compactArchivedWaitlistBody tr.waitlist-offer-row:hover > td {
   background: #c2ebce;
 }
 
