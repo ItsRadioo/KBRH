@@ -12,18 +12,15 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 
 .roster-stat-card {
   display: flex;
-  width: 360px;
-  min-width: 360px;
-  max-width: 360px;
-  min-height: 170px;
+  width: min(320px, 100%);
+  min-height: 150px;
   box-sizing: border-box;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 24px;
+  padding: 20px 24px;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .roster-stat-label {
@@ -315,4 +312,52 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
   .page-roster:not(.roster-edit-all-active) .roster-table-compact th:nth-child(2){width:42%}
   .page-roster:not(.roster-edit-all-active) .roster-table-compact th:nth-child(5){width:30%}
   .page-roster:not(.roster-edit-all-active) .roster-table-compact th:nth-child(6){width:28%}
+}
+
+/* v3.9 — compact waitlist with read-only applicant information modal */
+.waitlist-table-compact-wrap,.archived-waitlist-table-compact-wrap{display:none}
+.applicant-info-modal{width:min(820px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;overflow:hidden}
+.applicant-info-header{padding:22px 24px 16px;border-bottom:1px solid #dbe4ee;background:#f8fafc}
+.applicant-info-body{max-height:calc(100dvh - 190px);padding:20px 24px;overflow-y:auto}
+.applicant-info-footer{justify-content:flex-end;margin:0;padding:16px 24px;border-top:1px solid #dbe4ee;background:#fff}
+.applicant-info-section+.applicant-info-section{margin-top:20px}
+.applicant-info-section h3{margin:0 0 10px;padding-bottom:8px;border-bottom:2px solid #0f766e;color:#0f172a;font-size:1rem}
+.applicant-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.applicant-info-item{min-width:0;padding:11px 12px;border:1px solid #dbe4ee;border-radius:8px;background:#f8fafc}
+.applicant-info-item span{display:block;margin-bottom:3px;color:#64748b;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
+.applicant-info-item strong{display:block;color:#0f172a;font-size:.95rem;overflow-wrap:anywhere}
+.applicant-info-item-full{grid-column:1/-1}
+
+@media (max-width:1350px){
+  .page-waitlist:not(.waitlist-editing-active) .waitlist-table-full-wrap,
+  .page-waitlist:not(.waitlist-editing-active) .archived-waitlist-table-full-wrap{display:none!important}
+  .page-waitlist:not(.waitlist-editing-active) .waitlist-table-compact-wrap,
+  .page-waitlist:not(.waitlist-editing-active) .archived-waitlist-table-compact-wrap{display:block!important}
+  .waitlist-table-compact{display:table!important;width:100%;table-layout:fixed}
+  .waitlist-table-compact th,.waitlist-table-compact td{padding:10px 8px;font-size:.86rem;line-height:1.25;vertical-align:middle;white-space:normal;overflow:visible}
+  .waitlist-table-compact th:nth-child(1){width:8%}
+  .waitlist-table-compact th:nth-child(2){width:31%}
+  .waitlist-table-compact th:nth-child(3){width:19%}
+  .waitlist-table-compact th:nth-child(4){width:22%}
+  .waitlist-table-compact th:nth-child(5){width:20%}
+  .compact-applicant-cell strong,.compact-applicant-cell span{display:block}
+  .compact-applicant-cell span{margin-top:3px;color:#64748b;font-size:.76rem;overflow-wrap:anywhere}
+  .waitlist-table-compact .compact-info-button,.waitlist-table-compact .actions-button,.waitlist-table-compact select{width:100%;min-width:0;padding:8px 6px;white-space:normal}
+}
+
+.page-waitlist.waitlist-editing-active .waitlist-table-compact-wrap,
+.page-waitlist.waitlist-editing-active .archived-waitlist-table-compact-wrap{display:none!important}
+.page-waitlist.waitlist-editing-active .waitlist-table-full-wrap,
+.page-waitlist.waitlist-editing-active .archived-waitlist-table-full-wrap{display:block!important}
+
+@media (max-width:700px){
+  .applicant-info-modal{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+  .applicant-info-grid{grid-template-columns:1fr}
+  .applicant-info-item-full{grid-column:1}
+  .applicant-info-header,.applicant-info-body,.applicant-info-footer{padding-left:16px;padding-right:16px}
+  .waitlist-table-compact th:nth-child(1),.waitlist-table-compact td:nth-child(1){display:none!important}
+  .waitlist-table-compact th:nth-child(2){width:36%}
+  .waitlist-table-compact th:nth-child(3){width:20%}
+  .waitlist-table-compact th:nth-child(4){width:24%}
+  .waitlist-table-compact th:nth-child(5){width:20%}
 }

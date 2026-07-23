@@ -64,3 +64,10 @@ Version 3.0: Added manual waitlist position changes from the applicant Actions m
 - Added live Phase 1 resident count and 18-bed capacity status.
 - Individual resident editing now uses a grouped, two-column modal with a sticky footer.
 - Edit All Residents remains unchanged for bulk table edits.
+
+
+## v3.9
+- Added compact responsive tables for active and archived waitlists at widths up to 1350px.
+- Added a read-only Applicant Information modal.
+- Preserved row status colours and existing Actions workflows.
+- Full waitlist table remains available while inline editing.

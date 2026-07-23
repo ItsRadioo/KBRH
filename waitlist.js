@@ -626,8 +626,118 @@ function getLastCallText(item) {
 }
 
 function renderWaitlist() {
+  document.body.classList.toggle("waitlist-editing-active", Boolean(editingApplicantId));
   renderActiveWaitlist();
+  renderCompactActiveWaitlist();
   renderArchivedWaitlist();
+  renderCompactArchivedWaitlist();
+}
+
+function getWaitlistStatusClass(item) {
+  const noCallCount = getConsecutiveNoCallCount(item);
+  return item.status === "Offer Given"
+    ? "waitlist-offer-row"
+    : item.status === "Incarcerated"
+      ? "waitlist-incarcerated-row"
+      : noCallCount >= 2
+        ? "waitlist-follow-up-row"
+        : "";
+}
+
+function applicantDisplayStatus(item) {
+  const noCallCount = getConsecutiveNoCallCount(item);
+  if (noCallCount >= 2) return `No Call (${noCallCount})`;
+  return item.status || "N/A";
+}
+
+function renderCompactActiveWaitlist() {
+  const body = document.getElementById("compactWaitlistBody");
+  if (!body) return;
+  const waitlist = getActiveWaitlist();
+  body.innerHTML = waitlist.length ? waitlist.map((item, index) => {
+    const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
+    return `
+      <tr class="${getWaitlistStatusClass(item)}">
+        <td>${index + 1}</td>
+        <td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.contact || item.city || "No contact listed")}</span></td>
+        <td>${escapeHtml(applicantDisplayStatus(item))}</td>
+        <td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>
+        <td><button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button></td>
+      </tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">No active applicants on the waitlist.</td></tr>`;
+}
+
+function renderCompactArchivedWaitlist() {
+  const body = document.getElementById("compactArchivedWaitlistBody");
+  if (!body) return;
+  const archived = getArchivedWaitlist();
+  body.innerHTML = archived.length ? archived.map((item, index) => {
+    const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
+    return `
+      <tr class="${getWaitlistStatusClass(item)}">
+        <td>${index + 1}</td>
+        <td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.archiveReason || "Archived applicant")}</span></td>
+        <td>${escapeHtml(applicantDisplayStatus(item))}</td>
+        <td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>
+        <td>
+          <select aria-label="Archived applicant actions" onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">
+            <option value="">Actions</option><option value="reinstate">Reinstate</option><option value="delete">Delete</option>
+          </select>
+        </td>
+      </tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">No archived applicants.</td></tr>`;
+}
+
+function applicantInfoItem(label, value, full = false) {
+  const displayValue = value === undefined || value === null || value === "" ? "—" : value;
+  return `<div class="applicant-info-item ${full ? "applicant-info-item-full" : ""}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue)}</strong></div>`;
+}
+
+function openApplicantInfoModal(applicantId) {
+  const item = waitlistState.waitlist.find(applicant => applicant.id === applicantId);
+  const modal = document.getElementById("applicantInfoModal");
+  const body = document.getElementById("applicantInfoBody");
+  if (!item || !modal || !body) return;
+
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
+  const position = item.archived ? archived.findIndex(entry => entry.id === item.id) + 1 : active.findIndex(entry => entry.id === item.id) + 1;
+  const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
+  const noteCount = normalizeWaitlistNotes(item.notes).length;
+  const noCallCount = getConsecutiveNoCallCount(item);
+
+  document.getElementById("applicantInfoModalSubtitle").textContent = fullName;
+  let html = `<section class="applicant-info-section"><h3>Applicant</h3><div class="applicant-info-grid">`;
+  html += applicantInfoItem(item.archived ? "Archived Position" : "Waitlist Position", position || "—");
+  html += applicantInfoItem("First Name", item.firstName);
+  html += applicantInfoItem("Last Name", item.lastName);
+  html += applicantInfoItem("Contact", item.contact);
+  html += applicantInfoItem("City", item.city);
+  html += applicantInfoItem("Status", item.status || "N/A");
+  html += `</div></section>`;
+
+  html += `<section class="applicant-info-section"><h3>Waitlist</h3><div class="applicant-info-grid">`;
+  html += applicantInfoItem("Date Applied", item.dateApplied);
+  html += applicantInfoItem("Original Application Date", item.originalApplicationDate || item.dateApplied);
+  html += applicantInfoItem("Last Call-In", getLastCallText(item), true);
+  html += applicantInfoItem("Consecutive No Calls", noCallCount);
+  html += applicantInfoItem("Call-In Priority", item.callPriority || getCallPriority(item));
+  html += applicantInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
+  if (item.archived) {
+    html += applicantInfoItem("Archived", formatDateTime(item.archivedAt));
+    html += applicantInfoItem("Archive Reason", item.archiveReason, true);
+  }
+  html += `</div></section>`;
+
+  body.innerHTML = html;
+  modal.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+  requestAnimationFrame(() => document.getElementById("closeApplicantInfoModalBtn")?.focus());
+}
+
+function closeApplicantInfoModal() {
+  document.getElementById("applicantInfoModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
 }
 
 function renderActiveWaitlist() {
@@ -669,15 +779,7 @@ function renderActiveWaitlist() {
           `;
         }
 
-        const noCallCount = getConsecutiveNoCallCount(item);
-
-        const statusClass = item.status === "Offer Given"
-          ? "waitlist-offer-row"
-          : item.status === "Incarcerated"
-            ? "waitlist-incarcerated-row"
-            : noCallCount >= 2
-              ? "waitlist-follow-up-row"
-              : "";
+        const statusClass = getWaitlistStatusClass(item);
 
         return `
           <tr class="${statusClass}">
@@ -714,15 +816,7 @@ function renderArchivedWaitlist() {
     ? archived.map((item, index) => {
         const noteCount = normalizeWaitlistNotes(item.notes).length;
 
-        const noCallCount = getConsecutiveNoCallCount(item);
-
-        const statusClass = item.status === "Offer Given"
-          ? "waitlist-offer-row"
-          : item.status === "Incarcerated"
-            ? "waitlist-incarcerated-row"
-            : noCallCount >= 2
-              ? "waitlist-follow-up-row"
-              : "";
+        const statusClass = getWaitlistStatusClass(item);
 
         return `
           <tr class="${statusClass}">
@@ -780,6 +874,11 @@ function escapeAttribute(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("closeApplicantInfoModalBtn")?.addEventListener("click", closeApplicantInfoModal);
+  document.getElementById("closeApplicantInfoModalFooterBtn")?.addEventListener("click", closeApplicantInfoModal);
+  document.getElementById("applicantInfoModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "applicantInfoModal") closeApplicantInfoModal();
+  });
   document.getElementById("addWaitlistBtn")?.addEventListener("click", addWaitlistApplicant);
   document.getElementById("addWaitlistNoteBtn")?.addEventListener("click", addWaitlistNote);
   document.getElementById("closeWaitlistNotesBtn")?.addEventListener("click", closeNotesModal);
@@ -815,8 +914,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
 
+    if (!document.getElementById("applicantInfoModal")?.classList.contains("hidden")) {
+      closeApplicantInfoModal();
+      return;
+    }
+
     if (!document.getElementById("callInModal")?.classList.contains("hidden")) {
       closeCallInModal();
+      return;
     }
 
     if (!document.getElementById("applicantActionsModal")?.classList.contains("hidden")) {

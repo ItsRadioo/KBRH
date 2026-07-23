@@ -33,8 +33,8 @@
 <section class="card wide">
 <h2>Current Waitlist</h2>
 <p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. Two consecutive No Calls highlight the applicant for follow-up.</p>
-<div class="table-wrap">
-<table>
+<div class="table-wrap waitlist-table-full-wrap">
+<table class="waitlist-table-full">
 <thead>
 <tr>
 <th>#</th>
@@ -53,11 +53,17 @@
 <tbody id="waitlistBody"></tbody>
 </table>
 </div>
+<div class="table-wrap waitlist-table-compact-wrap">
+<table class="waitlist-table-compact">
+<thead><tr><th>#</th><th>Applicant</th><th>Status</th><th>Info</th><th>Actions</th></tr></thead>
+<tbody id="compactWaitlistBody"></tbody>
+</table>
+</div>
 </section>
 <section class="card wide">
 <h2>Archived Waitlist Applicants</h2>
-<div class="table-wrap">
-<table>
+<div class="table-wrap archived-waitlist-table-full-wrap">
+<table class="archived-waitlist-table-full">
 <thead>
 <tr>
 <th>#</th>
@@ -76,8 +82,30 @@
 <tbody id="archivedWaitlistBody"></tbody>
 </table>
 </div>
+<div class="table-wrap archived-waitlist-table-compact-wrap">
+<table class="waitlist-table-compact archived-waitlist-table-compact">
+<thead><tr><th>#</th><th>Applicant</th><th>Status</th><th>Info</th><th>Actions</th></tr></thead>
+<tbody id="compactArchivedWaitlistBody"></tbody>
+</table>
+</div>
 </section>
 </main>
+<div class="modal-backdrop hidden" id="applicantInfoModal">
+  <div class="modal-card applicant-info-modal" role="dialog" aria-modal="true" aria-labelledby="applicantInfoModalTitle">
+    <div class="applicant-info-header modal-title-row">
+      <div>
+        <h2 id="applicantInfoModalTitle">Applicant Information</h2>
+        <p class="hint" id="applicantInfoModalSubtitle"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closeApplicantInfoModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="applicant-info-body" id="applicantInfoBody"></div>
+    <div class="button-row applicant-info-footer">
+      <button class="secondary" id="closeApplicantInfoModalFooterBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop hidden" id="notesModal">
 <div class="modal-card">
 <h2 id="notesModalTitle">Notes</h2>

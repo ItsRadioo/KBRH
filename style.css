@@ -1309,12 +1309,12 @@ body.kbrh-modal-open { overflow: hidden; }
 }
 
 #waitlistBody tr.waitlist-follow-up-row > td {
-  background: #e3525e;
+  background: #ffe0b2;
   border-color: #efb66a;
 }
 
 #waitlistBody tr.waitlist-follow-up-row:hover > td {
-  background: #e3525e;
+  background: #ffd494;
 }
 
 
