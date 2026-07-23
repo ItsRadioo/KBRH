@@ -32,7 +32,7 @@
 </section>
 <section class="roster-summary" aria-label="Phase 1 roster summary">
   <article class="roster-stat-card" id="phase1ResidentCard">
-    <p class="roster-stat-label">Current Status</p>
+    <p class="roster-stat-label">Current Phase 1 Residents</p>
     <p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
     <p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
   </article>
@@ -66,7 +66,7 @@
     <label><input type="checkbox" data-roster-column="contactPhone" checked> Contact #</label>
     <label><input type="checkbox" data-roster-column="entryDate" checked> Entry Date</label>
     <label><input type="checkbox" data-roster-column="dischargeDate" checked> Discharge Date</label>
-    <label><input type="checkbox" data-roster-column="daysRemaining" checked> Days Left</label>
+    <label><input type="checkbox" data-roster-column="daysRemaining" checked> Days Remaining</label>
     <label><input type="checkbox" data-roster-column="opoc" checked> OPOC</label>
     <label><input type="checkbox" data-roster-column="admissionStatus" checked> Admission Status</label>
     <label><input type="checkbox" data-roster-column="notes" checked> Notes</label>
@@ -76,7 +76,7 @@
 <section class="card wide phase1-roster-section">
 <h2>Phase 1 Clients</h2>
 <div class="table-wrap">
-<table class="roster-table">
+<table class="roster-table roster-table-full">
 <thead>
 <tr>
 <th>Room #</th>
@@ -91,7 +91,7 @@
 <th class="phone-col">Contact #</th>
 <th>Entry Date</th>
 <th>Discharge Date</th>
-<th>Days Left</th>
+<th>Days Remaining</th>
 <th class="opoc-col">OPOC</th>
 <th>Admission Status</th>
 <th>Notes</th>
@@ -100,12 +100,16 @@
 </thead>
 <tbody id="rosterBody"></tbody>
 </table>
+<table class="roster-table roster-table-compact" aria-label="Compact Phase 1 client roster">
+<thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
+<tbody id="compactRosterBody"></tbody>
+</table>
 </div>
 </section>
 <section class="card wide phase2-roster-section">
 <h2>Phase 2 Clients</h2>
 <div class="table-wrap">
-<table class="roster-table">
+<table class="roster-table roster-table-full">
 <thead>
 <tr>
 <th>Room #</th>
@@ -116,13 +120,17 @@
 <th class="phone-col">Phone</th>
 <th>Phase 2 Entry Date</th>
 <th>Discharge Date</th>
-<th>Days Left</th>
+<th>Days Remaining</th>
 <th>Admission Status</th>
 <th>Notes</th>
 <th>Actions</th>
 </tr>
 </thead>
 <tbody id="phase2RosterBody"></tbody>
+</table>
+<table class="roster-table roster-table-compact" aria-label="Compact Phase 2 client roster">
+<thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
+<tbody id="compactPhase2RosterBody"></tbody>
 </table>
 </div>
 </section>
@@ -180,6 +188,22 @@
 
     <div class="button-row modal-actions">
       <button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="residentInfoModal">
+  <div class="modal-card resident-info-modal" role="dialog" aria-modal="true" aria-labelledby="residentInfoModalTitle">
+    <div class="modal-title-row resident-info-header">
+      <div>
+        <h2 id="residentInfoModalTitle">Resident Information</h2>
+        <p class="hint" id="residentInfoModalSubtitle"></p>
+      </div>
+      <button class="secondary modal-close-button" id="closeResidentInfoModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="resident-info-body" id="residentInfoBody"></div>
+    <div class="button-row modal-actions resident-info-footer">
+      <button class="secondary" id="closeResidentInfoModalFooterBtn" type="button">Close</button>
     </div>
   </div>
 </div>

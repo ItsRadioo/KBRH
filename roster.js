@@ -823,6 +823,7 @@ function getArchivedClients() {
 
 function renderPhase1Roster() {
   const body = document.getElementById("rosterBody");
+  const compactBody = document.getElementById("compactRosterBody");
   if (!body) return;
 
   const roster = getPhaseClients("phase1");
@@ -830,10 +831,17 @@ function renderPhase1Roster() {
   body.innerHTML = roster.length
     ? roster.map(client => renderActiveRosterRow(client, "phase1")).join("")
     : `<tr><td colspan="17" class="empty">No Phase 1 clients.</td></tr>`;
+
+  if (compactBody) {
+    compactBody.innerHTML = roster.length
+      ? roster.map(client => renderCompactRosterRow(client)).join("")
+      : `<tr><td colspan="6" class="empty">No Phase 1 clients.</td></tr>`;
+  }
 }
 
 function renderPhase2Roster() {
   const body = document.getElementById("phase2RosterBody");
+  const compactBody = document.getElementById("compactPhase2RosterBody");
   if (!body) return;
 
   const roster = getPhaseClients("phase2");
@@ -841,6 +849,89 @@ function renderPhase2Roster() {
   body.innerHTML = roster.length
     ? roster.map(client => renderActiveRosterRow(client, "phase2")).join("")
     : `<tr><td colspan="12" class="empty">No Phase 2 clients.</td></tr>`;
+
+  if (compactBody) {
+    compactBody.innerHTML = roster.length
+      ? roster.map(client => renderCompactRosterRow(client)).join("")
+      : `<tr><td colspan="6" class="empty">No Phase 2 clients.</td></tr>`;
+  }
+}
+
+function renderCompactRosterRow(client) {
+  const daysRemaining = calculateDaysRemainingForClient(client);
+  const dischargeClass = getDischargeClass(client);
+  const fullName = `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Unnamed resident";
+
+  return `
+    <tr>
+      <td class="compact-room-cell">${escapeHtml(client.roomNumber || "—")}</td>
+      <td class="compact-name-cell"><strong>${escapeHtml(fullName)}</strong><span>Client ID: ${escapeHtml(client.clientId || "—")}</span></td>
+      <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
+      <td>${getCompletionBadge(client)}</td>
+      <td><button type="button" class="secondary compact-info-button" onclick="openResidentInfoModal('${client.id}')">Display Info</button></td>
+      <td><button type="button" class="actions-button" onclick="openRosterActionsModal('${client.id}')">Actions</button></td>
+    </tr>
+  `;
+}
+
+function residentInfoItem(label, value, full = false) {
+  return `
+    <div class="resident-info-item ${full ? "resident-info-item-full" : ""}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || "—")}</strong>
+    </div>
+  `;
+}
+
+function openResidentInfoModal(clientId) {
+  const client = rosterState.roster.find(item => item && item.id === clientId);
+  const modal = document.getElementById("residentInfoModal");
+  const body = document.getElementById("residentInfoBody");
+  if (!client || !modal || !body) return;
+
+  const phase = client.phase || "phase1";
+  const fullName = `${client.firstName || ""} ${client.lastName || ""}`.trim() || "Resident";
+  const dischargeDate = getDischargeDate(client);
+  const daysRemaining = calculateDaysRemainingForClient(client);
+  const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+  document.getElementById("residentInfoModalSubtitle").textContent = fullName;
+
+  let html = `<section class="resident-info-section"><h3>Resident</h3><div class="resident-info-grid">`;
+  html += residentInfoItem("Room #", client.roomNumber);
+  html += residentInfoItem("Client ID", client.clientId);
+  html += residentInfoItem("First Name", client.firstName);
+  html += residentInfoItem("Last Name", client.lastName);
+  html += residentInfoItem("Date of Birth", formatDate(client.dob));
+  html += residentInfoItem("Phone", client.phone);
+  html += `</div></section>`;
+
+  if (phase === "phase1") {
+    html += `<section class="resident-info-section"><h3>Contact and Address</h3><div class="resident-info-grid">`;
+    html += residentInfoItem("Address", client.address, true);
+    html += residentInfoItem("City", client.city);
+    html += residentInfoItem("Emergency Contact", client.contact);
+    html += residentInfoItem("Contact Phone", client.contactPhone);
+    html += `</div></section>`;
+  }
+
+  html += `<section class="resident-info-section"><h3>Admission</h3><div class="resident-info-grid">`;
+  html += residentInfoItem(phase === "phase1" ? "Entry Date" : "Phase 2 Entry Date", formatDate(phase === "phase1" ? client.entryDate : client.phase2AdmissionDate));
+  html += residentInfoItem("Expected Discharge", formatDate(dischargeDate));
+  html += residentInfoItem("Days Remaining", daysRemaining);
+  html += residentInfoItem("OPOC", client.opocCompleted ? "Complete" : "Incomplete");
+  html += residentInfoItem("Admission Status", client.admissionCompleted ? "Complete" : "Incomplete");
+  html += residentInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
+  html += `</div></section>`;
+
+  body.innerHTML = html;
+  modal.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+  requestAnimationFrame(() => document.getElementById("closeResidentInfoModalBtn")?.focus());
+}
+
+function closeResidentInfoModal() {
+  document.getElementById("residentInfoModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
 }
 
 function renderActiveRosterRow(client, phase) {
@@ -1003,6 +1094,12 @@ function escapeAttribute(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("closeResidentInfoModalBtn")?.addEventListener("click", closeResidentInfoModal);
+  document.getElementById("closeResidentInfoModalFooterBtn")?.addEventListener("click", closeResidentInfoModal);
+  document.getElementById("residentInfoModal")?.addEventListener("mousedown", event => {
+    if (event.target.id === "residentInfoModal") closeResidentInfoModal();
+  });
+
   document.getElementById("closeRosterActionsModalBtn")?.addEventListener("click", closeRosterActionsModal);
   document.getElementById("cancelRosterActionsModalBtn")?.addEventListener("click", closeRosterActionsModal);
   document.getElementById("rosterActionsModal")?.addEventListener("mousedown", event => {
@@ -1010,7 +1107,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !document.getElementById("rosterActionsModal")?.classList.contains("hidden")) {
+    if (event.key !== "Escape") return;
+    if (!document.getElementById("residentInfoModal")?.classList.contains("hidden")) {
+      closeResidentInfoModal();
+      return;
+    }
+    if (!document.getElementById("rosterActionsModal")?.classList.contains("hidden")) {
       closeRosterActionsModal();
     }
   });
