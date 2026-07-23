@@ -242,10 +242,8 @@ function formatDateTime(value) {
 }
 
 function startInlineEdit(clientId) {
-  editingClientId = clientId;
-  editingAll = false;
-  updateEditAllButtons();
-  renderRoster();
+  if (editingAll) return;
+  openEditResidentModal(clientId);
 }
 
 function cancelInlineEdit() {
@@ -329,6 +327,114 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
 
 function saveInlineEdit(clientId) {
   saveClientFromEditInputs(clientId, true);
+}
+
+
+function residentModalField(label, id, value, type = "text", full = false) {
+  return `
+    <label class="kbrh-modal-field ${full ? "kbrh-modal-field-full" : ""}">
+      <span>${escapeHtml(label)}</span>
+      <input id="${id}" type="${type}" value="${escapeAttribute(value || "")}" />
+    </label>
+  `;
+}
+
+function residentModalSection(title, description = "") {
+  return `
+    <div class="kbrh-modal-section-heading kbrh-modal-field-full">
+      <h3>${escapeHtml(title)}</h3>
+      ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+    </div>
+  `;
+}
+
+function openEditResidentModal(clientId) {
+  const client = rosterState.roster.find(item => item && item.id === clientId);
+  const modal = document.getElementById("editResidentModal");
+  const fields = document.getElementById("editResidentFields");
+  if (!client || !modal || !fields) return;
+
+  editingClientId = clientId;
+  const phase = client.phase || "phase1";
+  const fullName = `${client.firstName || ""} ${client.lastName || ""}`.trim();
+  document.getElementById("editResidentModalSubtitle").textContent = fullName || "Update this resident's information.";
+
+  let html = residentModalSection("Resident Information");
+  html += residentModalField("Room #", "modalEditRoomNumber", client.roomNumber);
+  html += residentModalField("Client ID", "modalEditClientId", client.clientId);
+  html += residentModalField("First Name", "modalEditFirstName", client.firstName);
+  html += residentModalField("Last Name", "modalEditLastName", client.lastName);
+  html += residentModalField("Date of Birth", "modalEditDob", client.dob, "date");
+  html += residentModalField("Phone", "modalEditPhone", client.phone);
+
+  if (phase === "phase1") {
+    html += residentModalSection("Contact and Address");
+    html += residentModalField("Address", "modalEditAddress", client.address, "text", true);
+    html += residentModalField("City", "modalEditCity", client.city);
+    html += residentModalField("Emergency Contact", "modalEditContact", client.contact);
+    html += residentModalField("Contact Phone", "modalEditContactPhone", client.contactPhone);
+    html += residentModalSection("Admission");
+    html += residentModalField("Entry Date", "modalEditEntryDate", client.entryDate, "date");
+  } else {
+    html += residentModalSection("Admission");
+    html += residentModalField("Phase 2 Entry Date", "modalEditPhase2AdmissionDate", client.phase2AdmissionDate, "date");
+  }
+
+  html += residentModalField("Expected Discharge Date", "modalEditDischargeDate", getDischargeDate(client), "date");
+  html += `
+    <label class="kbrh-modal-check">
+      <input id="modalEditOpoc" type="checkbox" ${client.opocCompleted ? "checked" : ""} />
+      <span>OPOC completed</span>
+    </label>
+  `;
+  fields.innerHTML = html;
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+  requestAnimationFrame(() => document.getElementById("modalEditFirstName")?.focus());
+}
+
+function closeEditResidentModal() {
+  document.getElementById("editResidentModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+  editingClientId = null;
+}
+
+function saveEditResidentModal(event) {
+  event?.preventDefault();
+  const client = rosterState.roster.find(item => item && item.id === editingClientId);
+  if (!client) return;
+
+  const value = id => document.getElementById(id)?.value.trim() || "";
+  const firstName = value("modalEditFirstName");
+  const lastName = value("modalEditLastName");
+  if (!firstName || !lastName) {
+    alert("First and last name are required.");
+    return;
+  }
+
+  client.roomNumber = value("modalEditRoomNumber");
+  client.clientId = value("modalEditClientId");
+  client.firstName = firstName;
+  client.lastName = lastName;
+  client.dob = value("modalEditDob");
+  client.phone = formatPhoneNumber(value("modalEditPhone"));
+  client.expectedDischargeDate = value("modalEditDischargeDate");
+  client.opocCompleted = Boolean(document.getElementById("modalEditOpoc")?.checked);
+
+  if ((client.phase || "phase1") === "phase1") {
+    client.address = value("modalEditAddress");
+    client.city = value("modalEditCity");
+    client.contact = value("modalEditContact");
+    client.contactPhone = formatPhoneNumber(value("modalEditContactPhone"));
+    client.entryDate = value("modalEditEntryDate");
+  } else {
+    client.phase2AdmissionDate = value("modalEditPhase2AdmissionDate");
+  }
+
+  closeEditResidentModal();
+  renderRoster();
+  saveRoster();
 }
 
 function handleRosterAction(clientId, action) {
@@ -738,7 +844,7 @@ function renderPhase2Roster() {
 }
 
 function renderActiveRosterRow(client, phase) {
-  const isEditing = editingAll || editingClientId === client.id;
+  const isEditing = editingAll;
   const dischargeDate = getDischargeDate(client);
   const daysRemaining = calculateDaysRemainingForClient(client);
   const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
@@ -1016,3 +1122,18 @@ auth.onAuthStateChanged(user => {
     setup();
   }
 })();
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("editResidentForm")?.addEventListener("submit", saveEditResidentModal);
+  document.getElementById("closeEditResidentModalBtn")?.addEventListener("click", closeEditResidentModal);
+  document.getElementById("cancelEditResidentModalBtn")?.addEventListener("click", closeEditResidentModal);
+  document.getElementById("editResidentModal")?.addEventListener("click", event => {
+    if (event.target?.id === "editResidentModal") closeEditResidentModal();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !document.getElementById("editResidentModal")?.classList.contains("hidden")) {
+      closeEditResidentModal();
+    }
+  });
+});

@@ -32,7 +32,7 @@
 </section>
 <section class="roster-summary" aria-label="Phase 1 roster summary">
   <article class="roster-stat-card" id="phase1ResidentCard">
-    <p class="roster-stat-label">Current</p>
+    <p class="roster-stat-label">Current Phase 1 Residents</p>
     <p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
     <p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
   </article>
@@ -73,7 +73,7 @@
   </div>
 </div>
 </section>
-<section class="card wide">
+<section class="card wide phase1-roster-section">
 <h2>Phase 1 Clients</h2>
 <div class="table-wrap">
 <table class="roster-table">
@@ -102,7 +102,7 @@
 </table>
 </div>
 </section>
-<section class="card wide">
+<section class="card wide phase2-roster-section">
 <h2>Phase 2 Clients</h2>
 <div class="table-wrap">
 <table class="roster-table">
@@ -126,7 +126,7 @@
 </table>
 </div>
 </section>
-<section class="card wide">
+<section class="card wide archived-roster-section">
 <h2>Archived Roster Records</h2>
 <div class="table-wrap">
 <table class="roster-table">
@@ -181,6 +181,27 @@
     <div class="button-row modal-actions">
       <button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="editResidentModal">
+  <div class="modal-card kbrh-edit-modal resident-edit-modal" role="dialog" aria-modal="true" aria-labelledby="editResidentModalTitle">
+    <div class="kbrh-edit-modal-header">
+      <div>
+        <h2 id="editResidentModalTitle">Edit Resident</h2>
+        <p id="editResidentModalSubtitle">Update this resident's information.</p>
+      </div>
+      <button class="secondary kbrh-modal-close" id="closeEditResidentModalBtn" type="button" aria-label="Close">×</button>
+    </div>
+    <form id="editResidentForm" class="kbrh-edit-modal-form">
+      <div class="kbrh-edit-modal-body">
+        <div class="kbrh-modal-grid" id="editResidentFields"></div>
+      </div>
+      <div class="kbrh-edit-modal-footer">
+        <button class="secondary" id="cancelEditResidentModalBtn" type="button">Cancel</button>
+        <button class="success" type="submit">Save Changes</button>
+      </div>
+    </form>
   </div>
 </div>
 

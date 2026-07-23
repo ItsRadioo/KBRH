@@ -145,3 +145,82 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
   min-width: max-content !important;
   table-layout: auto !important;
 }
+
+/* v3.7.2 — working individual edit modal and fully usable responsive roster */
+.resident-edit-modal{width:min(900px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+.resident-edit-modal .kbrh-edit-modal-body{overflow:auto}
+.resident-edit-modal .kbrh-modal-grid{padding-top:18px}
+.resident-edit-modal input{font-size:16px}
+
+/* Undo v3.7.1 automatic column hiding. Every roster field remains available. */
+.page-roster:not(.roster-edit-all-active) .roster-table th,
+.page-roster:not(.roster-edit-all-active) .roster-table td{display:table-cell}
+
+@media (max-width:1300px){
+  .page-roster:not(.roster-edit-all-active) .table-wrap{overflow:visible}
+  .page-roster:not(.roster-edit-all-active) .roster-table,
+  .page-roster:not(.roster-edit-all-active) .roster-table tbody,
+  .page-roster:not(.roster-edit-all-active) .roster-table tr,
+  .page-roster:not(.roster-edit-all-active) .roster-table td{display:block;width:100%;box-sizing:border-box}
+  .page-roster:not(.roster-edit-all-active) .roster-table{table-layout:auto!important;border:0;background:transparent}
+  .page-roster:not(.roster-edit-all-active) .roster-table thead{display:none}
+  .page-roster:not(.roster-edit-all-active) .roster-table tbody{display:grid;gap:14px}
+  .page-roster:not(.roster-edit-all-active) .roster-table tr{padding:8px 14px;border:1px solid #cbd5e1;border-left:5px solid #0f766e;border-radius:10px;background:#fff;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+  .page-roster:not(.roster-edit-all-active) .roster-table td{display:grid;grid-template-columns:minmax(125px,34%) 1fr;gap:12px;align-items:start;padding:8px 0;border:0;border-bottom:1px solid #e2e8f0;white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word}
+  .page-roster:not(.roster-edit-all-active) .roster-table td:last-child{border-bottom:0;position:static;width:100%}
+  .page-roster:not(.roster-edit-all-active) .roster-table td::before{font-weight:800;color:#475569}
+
+  .phase1-roster-section td:nth-child(1)::before{content:"Room #"}
+  .phase1-roster-section td:nth-child(2)::before{content:"First Name"}
+  .phase1-roster-section td:nth-child(3)::before{content:"Last Name"}
+  .phase1-roster-section td:nth-child(4)::before{content:"Client ID"}
+  .phase1-roster-section td:nth-child(5)::before{content:"DOB"}
+  .phase1-roster-section td:nth-child(6)::before{content:"Phone"}
+  .phase1-roster-section td:nth-child(7)::before{content:"Address"}
+  .phase1-roster-section td:nth-child(8)::before{content:"City"}
+  .phase1-roster-section td:nth-child(9)::before{content:"Contact"}
+  .phase1-roster-section td:nth-child(10)::before{content:"Contact #"}
+  .phase1-roster-section td:nth-child(11)::before{content:"Entry Date"}
+  .phase1-roster-section td:nth-child(12)::before{content:"Discharge Date"}
+  .phase1-roster-section td:nth-child(13)::before{content:"Days Remaining"}
+  .phase1-roster-section td:nth-child(14)::before{content:"OPOC"}
+  .phase1-roster-section td:nth-child(15)::before{content:"Admission Status"}
+  .phase1-roster-section td:nth-child(16)::before{content:"Notes"}
+  .phase1-roster-section td:nth-child(17)::before{content:"Actions"}
+
+  .phase2-roster-section td:nth-child(1)::before{content:"Room #"}
+  .phase2-roster-section td:nth-child(2)::before{content:"First Name"}
+  .phase2-roster-section td:nth-child(3)::before{content:"Last Name"}
+  .phase2-roster-section td:nth-child(4)::before{content:"Client ID"}
+  .phase2-roster-section td:nth-child(5)::before{content:"DOB"}
+  .phase2-roster-section td:nth-child(6)::before{content:"Phone"}
+  .phase2-roster-section td:nth-child(7)::before{content:"Phase 2 Entry Date"}
+  .phase2-roster-section td:nth-child(8)::before{content:"Discharge Date"}
+  .phase2-roster-section td:nth-child(9)::before{content:"Days Remaining"}
+  .phase2-roster-section td:nth-child(10)::before{content:"Admission Status"}
+  .phase2-roster-section td:nth-child(11)::before{content:"Notes"}
+  .phase2-roster-section td:nth-child(12)::before{content:"Actions"}
+
+  .archived-roster-section td:nth-child(1)::before{content:"Room #"}
+  .archived-roster-section td:nth-child(2)::before{content:"First Name"}
+  .archived-roster-section td:nth-child(3)::before{content:"Last Name"}
+  .archived-roster-section td:nth-child(4)::before{content:"Client ID"}
+  .archived-roster-section td:nth-child(5)::before{content:"Phone"}
+  .archived-roster-section td:nth-child(6)::before{content:"Entry Date"}
+  .archived-roster-section td:nth-child(7)::before{content:"Discharge Date"}
+  .archived-roster-section td:nth-child(8)::before{content:"Archived"}
+  .archived-roster-section td:nth-child(9)::before{content:"Reason"}
+  .archived-roster-section td:nth-child(10)::before{content:"Notes"}
+  .archived-roster-section td:nth-child(11)::before{content:"Actions"}
+
+  .page-roster:not(.roster-edit-all-active) .roster-table .actions-button{width:max-content;max-width:100%;min-width:110px}
+  .page-roster:not(.roster-edit-all-active) .roster-table .empty{display:block;text-align:center}
+}
+
+@media (max-width:700px){
+  .resident-edit-modal{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+  .resident-edit-modal .kbrh-edit-modal-footer{display:grid;grid-template-columns:1fr 1fr}
+  .resident-edit-modal .kbrh-edit-modal-footer button{width:100%}
+  .page-roster:not(.roster-edit-all-active) .roster-table td{grid-template-columns:1fr;gap:4px}
+}
+.resident-edit-modal.modal-card{padding:0;overflow:hidden;max-height:calc(100dvh - 32px)}
