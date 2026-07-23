@@ -58,3 +58,9 @@ Version 3.0: Added manual waitlist position changes from the applicant Actions m
 - Increased header contrast with a deeper navy background, white brand mark, teal accent border, and gold active-page indicator.
 - Navigation remains centred, with the page title on the left and Sign Out on the right.
 - Responsive spacing preserves readability on laptops and smaller screens.
+
+
+## Version 3.7
+- Added live Phase 1 resident count and 18-bed capacity status.
+- Individual resident editing now uses a grouped, two-column modal with a sticky footer.
+- Edit All Residents remains unchanged for bulk table edits.

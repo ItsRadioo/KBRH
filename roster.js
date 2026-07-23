@@ -654,9 +654,38 @@ function matchesRosterSearch(client) {
 
 function renderRoster() {
   updateEditAllButtons();
+  updatePhase1ResidentCount();
   renderPhase1Roster();
   renderPhase2Roster();
   renderArchivedRoster();
+}
+
+function updatePhase1ResidentCount() {
+  const capacity = 18;
+  const count = Array.isArray(rosterState.roster)
+    ? rosterState.roster.filter(client =>
+        client &&
+        client !== "temp" &&
+        !client.archived &&
+        (client.phase || "phase1") === "phase1"
+      ).length
+    : 0;
+
+  const countElement = document.getElementById("phase1ResidentCount");
+  const detailElement = document.getElementById("phase1CapacityDetail");
+  const card = document.getElementById("phase1ResidentCard");
+  if (!countElement || !detailElement || !card) return;
+
+  const available = Math.max(capacity - count, 0);
+  countElement.textContent = String(count);
+  detailElement.textContent = count >= capacity
+    ? "FULL"
+    : `${available} bed${available === 1 ? "" : "s"} available`;
+
+  card.classList.remove("capacity-open", "capacity-near", "capacity-full");
+  if (count >= capacity) card.classList.add("capacity-full");
+  else if (count === capacity - 1) card.classList.add("capacity-near");
+  else card.classList.add("capacity-open");
 }
 
 function getPhaseClients(phase) {

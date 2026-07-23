@@ -114,6 +114,15 @@
     `;
   }
 
+  function sectionHeading(title, description = "") {
+    return `
+      <div class="kbrh-modal-section-heading kbrh-modal-field-full">
+        <h3>${esc(title)}</h3>
+        ${description ? `<p>${esc(description)}</p>` : ""}
+      </div>
+    `;
+  }
+
   function ensureModal() {
     if ($(MODAL_ID)) return;
 
@@ -132,8 +141,10 @@
 
         <div id="kbrhModalMessage" class="kbrh-modal-message hidden"></div>
 
-        <form id="kbrhModalForm" novalidate>
-          <div id="kbrhModalFields" class="kbrh-modal-grid"></div>
+        <form id="kbrhModalForm" class="kbrh-edit-modal-form" novalidate>
+          <div class="kbrh-edit-modal-body">
+            <div id="kbrhModalFields" class="kbrh-modal-grid"></div>
+          </div>
 
           <footer class="kbrh-edit-modal-footer">
             <button type="button" class="secondary" id="kbrhModalCancel">Cancel</button>
@@ -468,16 +479,17 @@
       "Edit Resident",
       `${client.firstName || ""} ${client.lastName || ""}`.trim(),
       [
-        inputField("krRoom", "Room", client.roomNumber),
-        inputField("krClientId", "Client ID", client.clientId, "text", true),
+        sectionHeading("Resident Information", "Core identifying and contact details."),
         inputField("krFirst", "First Name", client.firstName, "text", true),
         inputField("krLast", "Last Name", client.lastName, "text", true),
+        inputField("krClientId", "Client ID", client.clientId, "text", true),
         inputField("krDob", "Date of Birth", client.dob, "date"),
         inputField("krPhone", "Phone", client.phone),
         inputField("krAddress", "Address", client.address, "text", false, true),
         inputField("krCity", "City", client.city),
-        inputField("krContact", "Emergency Contact", client.contact),
-        inputField("krContactPhone", "Emergency Contact Phone", client.contactPhone),
+
+        sectionHeading("Admission and Placement", "Room, phase, and program dates."),
+        inputField("krRoom", "Room", client.roomNumber),
         inputField("krEntry", "Admission Date", client.entryDate, "date"),
         inputField("krDischarge", "Expected Discharge", discharge, "date"),
         `
@@ -490,7 +502,11 @@
           </label>
         `,
         inputField("krPhase2", "Phase 2 Admission Date", client.phase2AdmissionDate, "date"),
-        checkboxField("krOpoc", "OPOC Completed", Boolean(client.opocCompleted))
+        checkboxField("krOpoc", "OPOC Completed", Boolean(client.opocCompleted)),
+
+        sectionHeading("Emergency Contact"),
+        inputField("krContact", "Emergency Contact", client.contact),
+        inputField("krContactPhone", "Emergency Contact Phone", client.contactPhone)
       ].join("")
     );
 
