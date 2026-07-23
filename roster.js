@@ -276,6 +276,7 @@ function updateEditAllButtons() {
   editAllBtn.classList.toggle("hidden", editingAll);
   saveAllBtn.classList.toggle("hidden", !editingAll);
   cancelAllBtn.classList.toggle("hidden", !editingAll);
+  document.body.classList.toggle("roster-edit-all-active", editingAll);
 }
 
 function saveAllEdits() {

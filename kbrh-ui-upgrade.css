@@ -3,3 +3,145 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 /* v3.7 — roster dashboard and individual resident editor */
 .roster-summary{width:100%;margin:0 auto 18px}.roster-stat-card{display:flex;align-items:center;gap:18px;width:min(410px,100%);padding:20px 22px;border:1px solid #cbd5e1;border-left:7px solid #0f766e;border-radius:12px;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.08)}.roster-stat-icon{display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;border-radius:11px;background:#0f172a;color:#fff;font-weight:800;letter-spacing:.04em}.roster-stat-label{margin:0 0 3px;color:#475569;font-size:.9rem;font-weight:800;text-transform:uppercase;letter-spacing:.045em}.roster-stat-value{margin:0;color:#0f172a;font-size:2rem;font-weight:850;line-height:1.05}.roster-stat-capacity{color:#64748b;font-size:1.1rem}.roster-stat-detail{margin:6px 0 0;color:#475569;font-weight:700}.roster-stat-card.capacity-near{border-left-color:#d97706;background:#fffbeb}.roster-stat-card.capacity-full{border-left-color:#b91c1c;background:#fef2f2}.roster-stat-card.capacity-full .roster-stat-detail{color:#991b1b}.kbrh-edit-modal{display:flex;flex-direction:column;max-height:calc(100vh - 48px)}.kbrh-edit-modal-form{display:flex;min-height:0;flex:1;flex-direction:column}.kbrh-edit-modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain}.kbrh-edit-modal-footer{position:sticky;bottom:0;z-index:3;flex:0 0 auto;box-shadow:0 -8px 18px rgba(15,23,42,.08)}.kbrh-modal-section-heading{margin:4px 0 -2px;padding:11px 13px;border-left:4px solid #0f766e;border-radius:5px;background:#f1f5f9}.kbrh-modal-section-heading:not(:first-child){margin-top:10px}.kbrh-modal-section-heading h3{margin:0;color:#0f172a;font-size:1rem}.kbrh-modal-section-heading p{margin:3px 0 0;color:#64748b;font-size:.86rem}.kbrh-modal-grid textarea{min-height:100px}.kbrh-edit-modal-footer .success{min-width:145px}
 @media (max-width:700px){.roster-stat-card{width:100%;box-sizing:border-box}.kbrh-modal-backdrop{padding:12px}.kbrh-edit-modal{max-height:calc(100vh - 24px)}.kbrh-modal-grid{grid-template-columns:1fr;padding:18px}.kbrh-modal-field-full{grid-column:1}.kbrh-edit-modal-header,.kbrh-edit-modal-footer{padding-left:18px;padding-right:18px}}
+
+/* v3.7.1 — compact occupancy card and responsive roster fitting */
+.roster-summary {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.roster-stat-card {
+  display: flex;
+  width: min(320px, 100%);
+  min-height: 150px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.roster-stat-label {
+  width: 100%;
+  margin: 0;
+  color: #334155;
+  font-size: clamp(.82rem, 1.1vw, .98rem);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.roster-stat-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+  font-size: clamp(2.25rem, 4vw, 3.15rem);
+  line-height: 1;
+}
+
+.roster-stat-capacity {
+  font-size: .56em;
+  font-weight: 800;
+}
+
+.roster-stat-detail {
+  margin: 2px 0 0;
+  font-size: clamp(.95rem, 1.25vw, 1.12rem);
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+/* Normal roster view should fit the viewport rather than requiring horizontal scrolling. */
+.page-roster:not(.roster-edit-all-active) .table-wrap {
+  overflow-x: hidden;
+}
+
+.page-roster:not(.roster-edit-all-active) .roster-table {
+  width: 100%;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.page-roster:not(.roster-edit-all-active) .roster-table th,
+.page-roster:not(.roster-edit-all-active) .roster-table td {
+  min-width: 0 !important;
+  width: auto !important;
+  padding: clamp(5px, .55vw, 8px) clamp(3px, .42vw, 7px);
+  font-size: clamp(8px, .72vw, 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-roster:not(.roster-edit-all-active) .roster-table th {
+  white-space: normal;
+  line-height: 1.1;
+}
+
+.page-roster:not(.roster-edit-all-active) .roster-table th:last-child,
+.page-roster:not(.roster-edit-all-active) .roster-table td:last-child {
+  width: clamp(62px, 6.5vw, 88px) !important;
+}
+
+.page-roster:not(.roster-edit-all-active) .roster-table .actions-button {
+  min-width: 0 !important;
+  width: 100%;
+  padding: 6px 4px;
+  font-size: inherit;
+}
+
+/* Automatically remove lower-priority columns as the work screen narrows. */
+@media (max-width: 1450px) {
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(16),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(16),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(14),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(14) { display: none; }
+}
+
+@media (max-width: 1250px) {
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(7),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(7),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(9),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(9),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(10),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(10) { display: none; }
+}
+
+@media (max-width: 1050px) {
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(5),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(5),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(8),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(8),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(12),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(12) { display: none; }
+}
+
+@media (max-width: 820px) {
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(6),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(6),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(13),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(13),
+  .page-roster:not(.roster-edit-all-active) #rosterBody td:nth-child(15),
+  .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(15) { display: none; }
+
+  .roster-stat-card {
+    width: 100%;
+  }
+
+  .roster-stat-label {
+    white-space: normal;
+  }
+}
+
+/* Edit All remains the full bulk-edit table and may scroll horizontally by design. */
+.page-roster.roster-edit-all-active .table-wrap {
+  overflow-x: auto;
+}
+
+.page-roster.roster-edit-all-active .roster-table {
+  min-width: max-content !important;
+  table-layout: auto !important;
+}
