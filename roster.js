@@ -440,7 +440,7 @@ function saveEditResidentModal(event) {
 function handleRosterAction(clientId, action) {
   if (!action) return;
 
-  if (action === "edit") startInlineEdit(clientId);
+  if (action === "edit") openEditResidentModal(clientId);
   if (action === "phase2") moveToPhase(clientId, "phase2");
   if (action === "phase1") moveToPhase(clientId, "phase1");
   if (action === "waitlist") moveBackToWaitlist(clientId);
