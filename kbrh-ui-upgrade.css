@@ -2,7 +2,7 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 
 /* v3.7 — roster dashboard and individual resident editor */
 .roster-summary{width:100%;margin:0 auto 18px}.roster-stat-card{display:flex;align-items:center;gap:18px;width:min(410px,100%);padding:20px 22px;border:1px solid #cbd5e1;border-left:7px solid #0f766e;border-radius:12px;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.08)}.roster-stat-icon{display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;border-radius:11px;background:#0f172a;color:#fff;font-weight:800;letter-spacing:.04em}.roster-stat-label{margin:0 0 3px;color:#475569;font-size:.9rem;font-weight:800;text-transform:uppercase;letter-spacing:.045em}.roster-stat-value{margin:0;color:#0f172a;font-size:2rem;font-weight:850;line-height:1.05}.roster-stat-capacity{color:#64748b;font-size:1.1rem}.roster-stat-detail{margin:6px 0 0;color:#475569;font-weight:700}.roster-stat-card.capacity-near{border-left-color:#d97706;background:#fffbeb}.roster-stat-card.capacity-full{border-left-color:#b91c1c;background:#fef2f2}.roster-stat-card.capacity-full .roster-stat-detail{color:#991b1b}.kbrh-edit-modal{display:flex;flex-direction:column;max-height:calc(100vh - 48px)}.kbrh-edit-modal-form{display:flex;min-height:0;flex:1;flex-direction:column}.kbrh-edit-modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain}.kbrh-edit-modal-footer{position:sticky;bottom:0;z-index:3;flex:0 0 auto;box-shadow:0 -8px 18px rgba(15,23,42,.08)}.kbrh-modal-section-heading{margin:4px 0 -2px;padding:11px 13px;border-left:4px solid #0f766e;border-radius:5px;background:#f1f5f9}.kbrh-modal-section-heading:not(:first-child){margin-top:10px}.kbrh-modal-section-heading h3{margin:0;color:#0f172a;font-size:1rem}.kbrh-modal-section-heading p{margin:3px 0 0;color:#64748b;font-size:.86rem}.kbrh-modal-grid textarea{min-height:100px}.kbrh-edit-modal-footer .success{min-width:145px}
-@media (max-width:700px){.roster-stat-card{width:100%;box-sizing:border-box}.kbrh-modal-backdrop{padding:12px}.kbrh-edit-modal{max-height:calc(100vh - 24px)}.kbrh-modal-grid{grid-template-columns:1fr;padding:18px}.kbrh-modal-field-full{grid-column:1}.kbrh-edit-modal-header,.kbrh-edit-modal-footer{padding-left:18px;padding-right:18px}}
+@media (max-width:700px){.roster-stat-card{width:320px;min-width:320px;max-width:320px;flex:0 0 320px;box-sizing:border-box}.kbrh-modal-backdrop{padding:12px}.kbrh-edit-modal{max-height:calc(100vh - 24px)}.kbrh-modal-grid{grid-template-columns:1fr;padding:18px}.kbrh-modal-field-full{grid-column:1}.kbrh-edit-modal-header,.kbrh-edit-modal-footer{padding-left:18px;padding-right:18px}}
 
 /* v3.7.1 — compact occupancy card and responsive roster fitting */
 .roster-summary {
@@ -12,7 +12,10 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 
 .roster-stat-card {
   display: flex;
-  width: min(320px, 100%);
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  flex: 0 0 320px;
   min-height: 150px;
   box-sizing: border-box;
   flex-direction: column;
@@ -128,11 +131,14 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
   .page-roster:not(.roster-edit-all-active) section:nth-of-type(3) th:nth-child(15) { display: none; }
 
   .roster-stat-card {
-    width: 100%;
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+    flex: 0 0 320px;
   }
 
   .roster-stat-label {
-    white-space: normal;
+    white-space: nowrap;
   }
 }
 

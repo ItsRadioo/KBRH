@@ -397,28 +397,20 @@ function setResidentChore(residentId, choreIndex) {
 
   if (!resident) return;
 
-  const nextIndex = Number(choreIndex);
+  const nextIndex = normalizeChoreIndex(Number(choreIndex));
   const choreName = getChoreName(nextIndex);
 
-  if (
-    choreName === OUTDOOR_CHORE &&
-    !isEligibleForOutsideYardwork(resident)
-  ) {
-    alert(
-      `${resident.name} cannot be assigned to Outside Yardwork until every other chore has been completed.`
-    );
-
-    render();
-    return;
-  }
-
-  if (!canAssign(resident, nextIndex)) {
-    alert(`${resident.name} cannot be assigned to ${choreName}.`);
-    render();
-    return;
-  }
-
+  /*
+    Manual assignment is an explicit staff override. It may assign any
+    resident to any chore, regardless of blocked-chore or Outdoor
+    eligibility rules. If the resident is already locked, move the lock
+    with the manual assignment so Rotate cannot undo the staff decision.
+  */
   resident.choreIndex = nextIndex;
+
+  if (resident.lockedChore) {
+    resident.lockedChore = choreName;
+  }
 
   saveAndRender();
 }
@@ -523,14 +515,11 @@ function rotateChores() {
   state.residents.forEach(resident => {
     if (resident.status !== "active") return;
 
-     if (
+    if (
       resident.lockedChore &&
-      state.chores.includes(resident.lockedChore) &&
-      canAssign(
-        resident,
-        choreIndexByName(resident.lockedChore)
-      )
+      state.chores.includes(resident.lockedChore)
     ) {
+      /* A valid locked chore is absolute during rotation. */
       resident.choreIndex = choreIndexByName(
         resident.lockedChore
       );
@@ -565,23 +554,18 @@ function rotateChores() {
       const lockedIndex = choreIndexByName(
         resident.lockedChore
       );
+      const lockedChore = getChoreName(lockedIndex);
 
-      if (canAssign(resident, lockedIndex)) {
-        const lockedChore = getChoreName(lockedIndex);
+      const latestHistory = state.history[0];
 
-        const latestHistory = state.history[0];
-
-        if (latestHistory?.residentId === resident.id) {
-          latestHistory.newChore = lockedChore;
-        }
-
-        return {
-          ...resident,
-          choreIndex: lockedIndex
-        };
+      if (latestHistory?.residentId === resident.id) {
+        latestHistory.newChore = lockedChore;
       }
 
-      resident.lockedChore = "";
+      return {
+        ...resident,
+        choreIndex: lockedIndex
+      };
     }
 
     const proposedIndex = normalizeChoreIndex(
@@ -613,7 +597,13 @@ function rotateChores() {
 
     return {
       ...resident,
-      choreIndex: newIndex
+      choreIndex: newIndex,
+      /* A resident legitimately rotated to Outdoor remains there until
+         staff explicitly clears or changes the lock. */
+      lockedChore:
+        newChore === OUTDOOR_CHORE
+          ? OUTDOOR_CHORE
+          : resident.lockedChore
     };
   });
 
@@ -694,17 +684,6 @@ function lockResidentToChore() {
   const choreIndex = choreIndexByName(choreName);
 
   if (choreIndex < 0) return;
-
-  if (
-    choreName === OUTDOOR_CHORE &&
-    !isEligibleForOutsideYardwork(resident)
-  ) {
-    alert(
-      `${resident.name} cannot be locked to Outside Yardwork until every other chore has been completed.`
-    );
-
-    return;
-  }
 
   resident.lockedChore = choreName;
 
@@ -931,28 +910,19 @@ function renderManualAssignments() {
       <td>
         <select
           onchange="setResidentChore('${resident.id}', this.value)"
-          ${resident.lockedChore ? "disabled" : ""}
         >
-          ${state.chores.map((chore, index) => {
-            const outsideBlocked =
-              chore === OUTDOOR_CHORE &&
-              !isEligibleForOutsideYardwork(resident);
-
-            return `
-              <option
-                value="${index}"
-                ${
-                  normalizeChoreIndex(resident.choreIndex) === index
-                    ? "selected"
-                    : ""
-                }
-                ${outsideBlocked ? "disabled" : ""}
-              >
-                ${escapeHtml(chore)}
-                ${outsideBlocked ? " — Not yet eligible" : ""}
-              </option>
-            `;
-          }).join("")}
+          ${state.chores.map((chore, index) => `
+            <option
+              value="${index}"
+              ${
+                normalizeChoreIndex(resident.choreIndex) === index
+                  ? "selected"
+                  : ""
+              }
+            >
+              ${escapeHtml(chore)}
+            </option>
+          `).join("")}
         </select>
       </td>
 
