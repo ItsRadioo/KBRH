@@ -24,6 +24,8 @@ function defaultAppState() {
     roster: [],
     counselingNotes: [],
     verbalWarnings: [],
+    writeUps: [],
+    choreChecks: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -179,6 +181,38 @@ function normalizeAppState(state) {
         residentResponse: warning.residentResponse || "",
         staffUser: warning.staffUser || "",
         createdAt: warning.createdAt || new Date().toISOString()
+      }))
+    : [];
+
+
+  merged.writeUps = Array.isArray(merged.writeUps)
+    ? merged.writeUps.filter(item => item && item !== "temp").map(item => ({
+        id: item.id || crypto.randomUUID(),
+        residentId: item.residentId || "",
+        residentName: item.residentName || "Unknown Resident",
+        date: item.date || "",
+        reason: item.reason || "",
+        issuedBy: item.issuedBy || "",
+        notes: item.notes || "",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || ""
+      }))
+    : [];
+
+  merged.choreChecks = Array.isArray(merged.choreChecks)
+    ? merged.choreChecks.filter(item => item && item !== "temp").map(item => ({
+        id: item.id || crypto.randomUUID(),
+        date: item.date || "",
+        areaId: item.areaId || "",
+        areaName: item.areaName || "",
+        roomNumber: item.roomNumber || "",
+        assignedResident: item.assignedResident || "",
+        checkedBy: item.checkedBy || "",
+        completedItems: Array.isArray(item.completedItems) ? item.completedItems : [],
+        issuesFound: Boolean(item.issuesFound),
+        notes: item.notes || "",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || ""
       }))
     : [];
 

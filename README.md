@@ -71,3 +71,7 @@ Version 3.0: Added manual waitlist position changes from the applicant Actions m
 - Added a read-only Applicant Information modal.
 - Preserved row status colours and existing Actions workflows.
 - Full waitlist table remains available while inline editing.
+
+
+## Version 4.0
+Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washrooms, Upstairs Floors, Main Floor Morning, Main Floor Night, Basement, and Resident Rooms 1-14 excluding 5.
