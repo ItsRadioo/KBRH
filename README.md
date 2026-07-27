@@ -80,3 +80,9 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 ## v4.0.2
 - Added a printable Chore Notes Report containing only two columns: Room / Chore and Note.
 - The report includes saved notes from today and omits inspections without notes.
+
+
+## v4.1 — Pre-Screening
+- Added a Pre-Screening page limited to active waitlist applicants with status Offer Given.
+- Added guided intake script, per-question notes, sobriety calculation, testing disclosures, application highlights, goals, outcome, draft saving, and completion tracking.
+- Pre-screening records are stored in the existing shared Firestore application document under `preScreenings`.

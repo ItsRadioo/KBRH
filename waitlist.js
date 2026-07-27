@@ -647,6 +647,10 @@ function getWaitlistStatusClass(item) {
 function applicantDisplayStatus(item) {
   const noCallCount = getConsecutiveNoCallCount(item);
   if (noCallCount >= 2) return `No Call (${noCallCount})`;
+  const prescreen = Array.isArray(waitlistState.preScreenings)
+    ? waitlistState.preScreenings.find(record => record.applicantId === item.id)
+    : null;
+  if (item.status === "Offer Given" && prescreen?.status === "Completed") return "Offer Given · Pre-Screened ✓";
   return item.status || "N/A";
 }
 
@@ -787,7 +791,7 @@ function renderActiveWaitlist() {
             <td>${escapeHtml(item.lastName)}</td>
             <td>${escapeHtml(item.firstName)}</td>
             <td class="phone-cell">${escapeHtml(item.contact)}</td>
-            <td>${escapeHtml(item.status)}</td>
+            <td>${escapeHtml(applicantDisplayStatus(item))}</td>
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
             <td>

@@ -26,6 +26,7 @@ function defaultAppState() {
     verbalWarnings: [],
     writeUps: [],
     choreChecks: [],
+    preScreenings: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -213,6 +214,22 @@ function normalizeAppState(state) {
         notes: item.notes || "",
         createdAt: item.createdAt || new Date().toISOString(),
         updatedAt: item.updatedAt || ""
+      }))
+    : [];
+
+  merged.preScreenings = Array.isArray(merged.preScreenings)
+    ? merged.preScreenings.filter(item => item && item !== "temp").map(item => ({
+        id: item.id || crypto.randomUUID(),
+        applicantId: item.applicantId || "",
+        applicantName: item.applicantName || "",
+        status: item.status || "Not Started",
+        staffUser: item.staffUser || "",
+        startedAt: item.startedAt || "",
+        completedAt: item.completedAt || "",
+        updatedAt: item.updatedAt || "",
+        answers: item.answers && typeof item.answers === "object" ? item.answers : {},
+        outcome: item.outcome || "",
+        overallNotes: item.overallNotes || ""
       }))
     : [];
 
