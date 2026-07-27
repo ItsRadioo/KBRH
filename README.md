@@ -75,3 +75,8 @@ Version 3.0: Added manual waitlist position changes from the applicant Actions m
 
 ## Version 4.0
 Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washrooms, Upstairs Floors, Main Floor Morning, Main Floor Night, Basement, and Resident Rooms 1-14 excluding 5.
+
+
+## v4.0.2
+- Added a printable Chore Notes Report containing only two columns: Room / Chore and Note.
+- The report includes saved notes from today and omits inspections without notes.

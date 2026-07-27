@@ -2096,3 +2096,58 @@ table.roster-table,
 
 /* v4.0 Write-Up and Chore Check Trackers */
 .record-list{display:grid;gap:14px;margin-top:14px}.record-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;background:var(--surface)}.record-card-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.record-card-heading>div{display:grid;gap:3px}.record-card-heading span{color:var(--text-muted);font-size:.9rem}.tracker-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:18px}.tracker-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:8px;min-height:145px;padding:20px;border:1px solid var(--border);border-left:6px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}.tracker-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}.tracker-card-title{font-size:1.15rem;font-weight:800}.tracker-card.pending{border-left-color:#a86712}.tracker-card.partial{border-left-color:#2876b8;background:#f2f8fd}.tracker-card.complete{border-left-color:#217a55;background:#edf8f2}.tracker-card.issues{border-left-color:#b63a43;background:#fbecee}.room-button-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}.room-pick{display:grid;gap:4px;min-height:70px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}.room-pick span{font-size:.8rem;color:var(--text-muted)}.room-pick.complete{background:#edf8f2;border-color:#8bc9aa}.room-pick.issues{background:#fbecee;border-color:#e5a2a8}.checklist-items{display:grid;gap:8px;margin:14px 0 18px}.checklist-row{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-soft)}.checklist-row input{margin-top:3px;transform:scale(1.15)}.issue-toggle{display:flex;gap:9px;align-items:center;margin:8px 0 14px;font-weight:700;color:var(--danger)}.status-pill{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:.8rem;font-weight:800}.status-success{background:#dff2e7;color:#17613f}.status-danger{background:#f8d7da;color:#8f2630}@media(max-width:760px){.record-card-heading{flex-direction:column}.tracker-grid{grid-template-columns:1fr}}
+
+
+/* v4.0.1 Chore inspection modal alignment and room workflow */
+.page-chore-checks .modal-card,
+.page-chore-checks .modal-card * {
+  text-align: left;
+}
+.page-chore-checks .modal-title-row {
+  align-items: flex-start;
+}
+.page-chore-checks .modal-title-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.page-chore-checks .modal-title-row h2,
+.page-chore-checks .modal-title-row p,
+.page-chore-checks .field-group label,
+.page-chore-checks .checklist-row span,
+.page-chore-checks .issue-toggle {
+  text-align: left;
+}
+.page-chore-checks .checklist-row {
+  width: 100%;
+  justify-content: flex-start;
+  cursor: pointer;
+}
+.page-chore-checks .checklist-row span {
+  flex: 1;
+  line-height: 1.45;
+}
+.page-chore-checks .form-row {
+  align-items: start;
+}
+.page-chore-checks input,
+.page-chore-checks textarea {
+  text-align: left;
+}
+.page-chore-checks .room-pick {
+  text-align: left;
+  justify-items: start;
+}
+.page-chore-checks .modal-actions {
+  justify-content: flex-end;
+}
+.page-chore-checks #backToRoomsBtn {
+  margin-right: auto;
+}
+@media (max-width: 760px) {
+  .page-chore-checks .modal-actions {
+    align-items: stretch;
+  }
+  .page-chore-checks #backToRoomsBtn {
+    margin-right: 0;
+  }
+}

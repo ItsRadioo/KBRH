@@ -77,10 +77,9 @@ const CHORE_CHECK_AREAS = {
       "Bed made or ready for new admission",
       "Floor vacuumed",
       "Garbage can clean and emptied",
-      "Lights operational",
       "Windows clean",
-      "Resident laundry placed into bags",
-      "Clothes hung or placed inside table/cupboards"
+      "Clothes hung or placed inside table/cupboards",
+      "Closet organized"
     ]
   ]
 };
