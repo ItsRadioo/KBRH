@@ -2136,6 +2136,7 @@ table.roster-table,
 .page-chore-checks .room-pick {
   text-align: left;
   justify-items: start;
+  color: #000000
 }
 .page-chore-checks .modal-actions {
   justify-content: flex-end;
