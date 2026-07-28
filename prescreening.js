@@ -18,22 +18,20 @@ const sections = [
   },
   {
     id: "sobriety", title: "Sobriety Screening",
-    intro: "We require that potential residents have been clean/sober for a minimum of 5 days.",
+    intro: "We normally require potential residents to have been clean/sober for at least five days before admission. The staff decision below may account for the bed-filling timeline, a Detox plan, or an authorized override.",
     items: [
       ["lastUse", "When was the last time you used?", "date"],
-      ["substance", "What was the substance?"],
-      ["cleanRequirement", "Five-day clean/sober requirement reviewed", "check"],
-      ["detox", "If under five days, contact Detox for bed availability", "check"]
-    ], daysClean: true
+      ["substance", "What was the substance?", "text"]
+    ], sobriety: true
   },
   {
     id: "testing", title: "Arrival Testing and Disclosure",
     items: [
       ["arrivalScreen", "Upon arrival, we will administer a urine screen and breathalyzer."],
-      ["undisclosedPositive", "A positive result for a substance not listed in the application or disclosed during this call will prevent entry to the program."],
-      ["baseline", "If a listed substance may still produce a positive result, a baseline will be established and monitored with more frequent testing until it is out of the applicant’s system."],
+      ["undisclosedPositive", "A positive result for a substance not listed in the application or disclosed during this call may prevent entry to the program."],
+      ["baseline", "If a listed substance may still produce a positive result, a baseline may be established and monitored with more frequent testing until it is out of the applicant’s system."],
       ["timeline", "The monitoring timeline is substance-specific."],
-      ["detoxSuspension", "If the substance takes longer than expected to clear, treatment will be suspended while the applicant attends Detox; return is possible once a negative result is produced."],
+      ["detoxSuspension", "If the substance takes longer than expected to clear, treatment may be suspended while the applicant attends Detox; return is possible once a negative result is produced."],
       ["finalDisclosure", "A positive result for an unlisted or undisclosed substance means the applicant will not be permitted to access the program."]
     ]
   },
@@ -41,14 +39,14 @@ const sections = [
     id: "health", title: "Application Highlights — Health Screen",
     items: [
       ["physicalHealth", "Are there any physical health problems that will prevent you from participating in the program?"],
-      ["lifeSkills", "Life Skills participation explained", "check"]
+      ["lifeSkills", "Life Skills participation explained"]
     ]
   },
   {
     id: "legal", title: "Application Highlights — Legal Status",
     items: [
       ["legalStatus", "Confirm current legal status, including anything not listed on the application"],
-      ["legalVerified", "Legal status verified with applicant", "check"]
+      ["legalVerified", "Legal status verified with applicant"]
     ]
   },
   {
@@ -56,7 +54,7 @@ const sections = [
     items: [
       ["currentMedication", "Are you currently taking any medication?"],
       ["pharmacy", "Which pharmacy are you with? Include details needed for medication transfer."],
-      ["medTransfer", "Medication transfer details confirmed", "check"],
+      ["medTransfer", "Medication transfer details confirmed"],
       ["allergies", "Do you have any allergies?"]
     ]
   },
@@ -64,10 +62,10 @@ const sections = [
     id: "treatment", title: "Application Highlights — Treatment History and Program Expectations",
     items: [
       ["history", "Review treatment history. If no prior treatment experience, explain the 12-step-based recovery model."],
-      ["allAspects", "Expected to take part in all aspects of the program", "check"],
-      ["sponsor", "Expected to find a sponsor", "check"],
-      ["stepWork", "Expected to complete step work", "check"],
-      ["meetings", "Expected to attend a minimum of four closed AA/NA meetings per week", "check"]
+      ["allAspects", "Expected to take part in all aspects of the program"],
+      ["sponsor", "Expected to find a sponsor"],
+      ["stepWork", "Expected to complete step work"],
+      ["meetings", "Expected to attend a minimum of four closed AA/NA meetings per week"]
     ]
   },
   {
@@ -101,49 +99,145 @@ function renderList(){
 }
 
 function emptyRecord(a){
-  return {id:crypto.randomUUID(), applicantId:a.id, applicantName:applicantName(a), status:"In Progress", staffUser:auth.currentUser?.email||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(), answers:{}, outcome:"", overallNotes:""};
+  return {
+    id:crypto.randomUUID(), applicantId:a.id, applicantName:applicantName(a), status:"In Progress",
+    staffUser:auth.currentUser?.email||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(),
+    answers:{}, bedTiming:"", expectedBedDate:"", sobrietyDecision:"", detoxPlan:"", overrideReason:"", outcome:"", overallNotes:""
+  };
 }
 function answer(record, sectionId, itemId){ return record.answers?.[sectionId]?.[itemId] || {}; }
+function responseOptions(sectionId,itemId,current){
+  const name=`response-${sectionId}-${itemId}`;
+  return `<div class="question-response" role="radiogroup" aria-label="Question status">
+    ${[["completed","Asked / Reviewed"],["skipped","Skipped"],["na","Not Applicable"]].map(([value,label])=>`
+      <label class="response-choice ${current===value?"selected":""}">
+        <input type="radio" name="${name}" data-section="${sectionId}" data-item="${itemId}" data-field="response" value="${value}" ${current===value?"checked":""}>
+        <span>${label}</span>
+      </label>`).join("")}
+  </div>`;
+}
 function renderField(section,item,record){
   const [id,label,type="text"] = item; const val=answer(record,section.id,id);
-  const checked=Boolean(val.reviewed); const notes=val.notes||"";
-  const control=type==="date"?`<input type="date" data-section="${section.id}" data-item="${id}" data-field="value" value="${attr(val.value||"")}">`:
-    type==="check"?`<label class="prescreen-check"><input type="checkbox" data-section="${section.id}" data-item="${id}" data-field="reviewed" ${checked?"checked":""}><span>Confirmed / reviewed</span></label>`:
-    section.script?`<label class="prescreen-check"><input type="checkbox" data-section="${section.id}" data-item="${id}" data-field="reviewed" ${checked?"checked":""}><span>Read / confirmed</span></label>`:"";
-  return `<div class="prescreen-question"><div class="prescreen-question-text">${esc(label)}</div>${control}<label>Notes<textarea data-section="${section.id}" data-item="${id}" data-field="notes" rows="2">${esc(notes)}</textarea></label></div>`;
+  const response=val.response||""; const notes=val.notes||"";
+  const valueControl=type==="date"
+    ? `<label class="answer-label">Answer<input type="date" data-section="${section.id}" data-item="${id}" data-field="value" value="${attr(val.value||"")}"></label>`
+    : (section.id==="sobriety" && id==="substance")
+      ? `<label class="answer-label">Answer<input type="text" data-section="${section.id}" data-item="${id}" data-field="value" value="${attr(val.value||"")}" placeholder="Substance disclosed"></label>`
+      : "";
+  return `<div class="prescreen-question">
+    <div class="prescreen-question-text">${esc(label)}</div>
+    ${responseOptions(section.id,id,response)}
+    ${valueControl}
+    <label class="answer-label">Notes <span class="optional-label">optional</span><textarea data-section="${section.id}" data-item="${id}" data-field="notes" rows="2">${esc(notes)}</textarea></label>
+  </div>`;
 }
 function calculateDays(dateString){ if(!dateString)return null; const d=new Date(dateString+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0); return Math.max(0,Math.floor((today-d)/86400000)); }
+function renderSobrietyDecision(record){
+  const last=answer(record,"sobriety","lastUse").value; const days=calculateDays(last);
+  const box=days===null
+    ? `<div class="eligibility-box neutral">Enter the last-use date to calculate days clean.</div>`
+    : days>=5
+      ? `<div class="eligibility-box eligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Meets the normal five-day requirement.</span></div>`
+      : `<div class="eligibility-box ineligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Does not currently meet the normal five-day requirement. Choose the operational decision below.</span></div>`;
+  return `${box}
+  <div class="decision-panel">
+    <h4>Bed-Filling Timeline</h4>
+    <div class="outcome-grid compact-options">
+      ${[["immediate","Immediate / urgent vacancy"],["planned","Planned vacancy — time for Detox"],["flexible","Flexible / not yet confirmed"]].map(([v,l])=>`<label><input type="radio" name="bedTiming" value="${v}" ${record.bedTiming===v?"checked":""}> ${l}</label>`).join("")}
+    </div>
+    <label>Expected Bed Date <span class="optional-label">optional</span><input type="date" id="expectedBedDate" value="${attr(record.expectedBedDate||"")}"></label>
+    <h4>Staff Decision</h4>
+    <div class="outcome-grid decision-options">
+      ${[
+        ["meets","Meets five-day requirement — proceed"],
+        ["detox","Arrange Detox and hold the offer"],
+        ["return","Return applicant to waitlist and contact next eligible person"],
+        ["override","Authorized override — proceed despite normal criteria"],
+        ["pending","Decision pending / further review"]
+      ].map(([v,l])=>`<label><input type="radio" name="sobrietyDecision" value="${v}" ${record.sobrietyDecision===v?"checked":""}> ${l}</label>`).join("")}
+    </div>
+    <label>Detox Plan / Arrangements <span class="optional-label">complete when applicable</span><textarea id="detoxPlan" rows="3">${esc(record.detoxPlan||"")}</textarea></label>
+    <label>Override Reason / Authorization <span class="optional-label">required only when override is selected</span><textarea id="overrideReason" rows="3">${esc(record.overrideReason||"")}</textarea></label>
+  </div>`;
+}
 function renderForm(record){
   const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
   $("prescreenApplicantName").textContent=`${applicantName(a)} · ${a.contact||"No phone listed"}`;
-  $("prescreenProgress").innerHTML=sections.map(s=>`<a href="#section-${s.id}">${esc(s.title.replace("Application Highlights — ",""))}</a>`).join("");
+  $("prescreenProgress").innerHTML=sections.map(s=>`<a href="#section-${s.id}">${esc(s.title.replace("Application Highlights — ",""))}</a>`).join("")+`<a href="#section-outcome">Outcome</a>`;
   let html=sections.map(section=>{
-    let extra="";
-    if(section.daysClean){ const last=answer(record,"sobriety","lastUse").value; const days=calculateDays(last); extra=days===null?`<div class="eligibility-box neutral">Enter the last-use date to calculate days clean.</div>`:days>=5?`<div class="eligibility-box eligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Meets the five-day requirement.</span></div>`:`<div class="eligibility-box ineligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Does not meet the five-day requirement. Contact Detox for bed availability.</span></div>`; }
-    return `<section class="prescreen-section" id="section-${section.id}"><h3>${esc(section.title)}</h3>${section.intro?`<p class="prescreen-script-block">${esc(section.intro)}</p>`:""}${extra}${section.items.map(item=>renderField(section,item,record)).join("")}</section>`;
+    return `<section class="prescreen-section" id="section-${section.id}">
+      <h3>${esc(section.title)}</h3>
+      ${section.intro?`<p class="prescreen-script-block">${esc(section.intro)}</p>`:""}
+      ${section.sobriety?renderSobrietyDecision(record):""}
+      ${section.items.map(item=>renderField(section,item,record)).join("")}
+    </section>`;
   }).join("");
-  html+=`<section class="prescreen-section" id="section-outcome"><h3>Outcome</h3><div class="outcome-grid">${["Approved","Needs Detox First","Hold","Applicant Declined","Further Review Required"].map(o=>`<label><input type="radio" name="outcome" value="${attr(o)}" ${record.outcome===o?"checked":""}> ${esc(o)}</label>`).join("")}</div><label>Overall Notes<textarea id="overallNotes" rows="5">${esc(record.overallNotes||"")}</textarea></label></section>`;
+  html+=`<section class="prescreen-section" id="section-outcome"><h3>Call Outcome</h3>
+    <p class="hint">Choose the result that best describes what happens after this call. Questions may be skipped or marked not applicable without preventing completion.</p>
+    <div class="outcome-grid">
+      ${[
+        ["Approved","Approved / ready for admission"],
+        ["Detox Plan","Detox arranged — offer remains active"],
+        ["Returned to Waitlist","Returned to waitlist — contact next eligible applicant"],
+        ["Applicant Declined","Applicant declined"],
+        ["Hold","Hold / decision pending"],
+        ["Further Review Required","Further review required"]
+      ].map(([v,l])=>`<label><input type="radio" name="outcome" value="${attr(v)}" ${record.outcome===v?"checked":""}> ${esc(l)}</label>`).join("")}
+    </div>
+    <label>Overall Notes <span class="optional-label">optional</span><textarea id="overallNotes" rows="5">${esc(record.overallNotes||"")}</textarea></label>
+  </section>`;
   $("prescreenForm").innerHTML=html;
-  $("prescreenForm").querySelectorAll("input,textarea").forEach(el=>el.addEventListener("change",()=>{ if(el.dataset.section==="sobriety"&&el.dataset.item==="lastUse") collectForm(record); renderForm(record); }));
+
+  $("prescreenForm").addEventListener("input", e=>{
+    if(e.target.matches('input[type="radio"][data-field="response"]')){
+      e.target.closest('.question-response').querySelectorAll('.response-choice').forEach(label=>label.classList.toggle('selected',label.contains(e.target)));
+    }
+  });
+  $("prescreenForm").querySelector('[data-section="sobriety"][data-item="lastUse"][data-field="value"]')?.addEventListener("change",()=>{
+    collectForm(record); renderForm(record);
+  });
 }
 
 function collectForm(record){
   record.answers=record.answers||{};
   $("prescreenForm").querySelectorAll("[data-section][data-item][data-field]").forEach(el=>{
     const {section,item,field}=el.dataset; record.answers[section]=record.answers[section]||{}; record.answers[section][item]=record.answers[section][item]||{};
-    record.answers[section][item][field]=el.type==="checkbox"?el.checked:el.value;
+    if(el.type==="radio") { if(el.checked) record.answers[section][item][field]=el.value; }
+    else record.answers[section][item][field]=el.value;
   });
+  record.bedTiming=$("prescreenForm").querySelector('input[name="bedTiming"]:checked')?.value||"";
+  record.expectedBedDate=$("expectedBedDate")?.value||"";
+  record.sobrietyDecision=$("prescreenForm").querySelector('input[name="sobrietyDecision"]:checked')?.value||"";
+  record.detoxPlan=$("detoxPlan")?.value||"";
+  record.overrideReason=$("overrideReason")?.value||"";
   record.outcome=$("prescreenForm").querySelector('input[name="outcome"]:checked')?.value||"";
   record.overallNotes=$("overallNotes")?.value||"";
   record.updatedAt=new Date().toISOString(); record.staffUser=auth.currentUser?.email||record.staffUser||"";
+}
+function addWaitlistNote(applicant,text){
+  applicant.notes=Array.isArray(applicant.notes)?applicant.notes:[];
+  applicant.notes.unshift({id:crypto.randomUUID(),author:auth.currentUser?.email||"Unknown",text,createdAt:new Date().toISOString()});
 }
 async function saveRecord(complete=false){
   const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
   let r=getRecord(a.id); if(!r){r=emptyRecord(a); prescreenState.preScreenings.push(r);}
   collectForm(r);
   if(complete){
-    if(!r.outcome){alert("Select an outcome before completing the pre-screening.");return;}
+    if(!r.outcome){alert("Select a call outcome before completing the pre-screening.");return;}
+    if(r.sobrietyDecision==="override" && !r.overrideReason.trim()){
+      alert("Enter the override reason or authorization before completing this pre-screening.");
+      $("overrideReason")?.focus(); return;
+    }
     r.status="Completed"; r.completedAt=new Date().toISOString();
+    if(r.outcome==="Returned to Waitlist"){
+      a.status="N/A";
+      addWaitlistNote(a,`Pre-screening completed: returned to waitlist. ${r.overallNotes||r.detoxPlan||"Applicant did not meet the current admission timeline."}`);
+    } else if(r.outcome==="Applicant Declined"){
+      a.status="N/A";
+      addWaitlistNote(a,`Pre-screening completed: applicant declined. ${r.overallNotes||""}`.trim());
+    } else if(r.outcome==="Detox Plan"){
+      addWaitlistNote(a,`Pre-screening completed: Detox plan arranged; offer remains active. ${r.detoxPlan||r.overallNotes||""}`.trim());
+    }
   } else if(r.status!=="Completed") r.status="In Progress";
   await saveAppState(prescreenState); renderList();
   alert(complete?"Pre-screening completed.":"Draft saved.");
