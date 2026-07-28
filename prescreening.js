@@ -1,82 +1,11 @@
 let prescreenState = null;
 let currentApplicantId = null;
+let currentRecord = null;
+let currentStep = "opening";
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
 const attr = value => esc(value);
-
-const sections = [
-  {
-    id: "opening", title: "Opening Script", script: true,
-    items: [
-      ["identity", "Am I speaking with [applicant name]?"],
-      ["introduction", "This is [staff name] calling from the KBRH."],
-      ["availability", "The reason I’m calling is because we have an availability in our program, and you are the next person on our waitlist."],
-      ["interest", "Are you still interested in attending our program?"],
-      ["permission", "Do you have a few minutes to go over your application and answer some questions?"]
-    ]
-  },
-  {
-    id: "sobriety", title: "Sobriety Screening",
-    intro: "We normally require potential residents to have been clean/sober for at least five days before admission. The staff decision below may account for the bed-filling timeline, a Detox plan, or an authorized override.",
-    items: [
-      ["lastUse", "When was the last time you used?", "date"],
-      ["substance", "What was the substance?", "text"]
-    ], sobriety: true
-  },
-  {
-    id: "testing", title: "Arrival Testing and Disclosure",
-    items: [
-      ["arrivalScreen", "Upon arrival, we will administer a urine screen and breathalyzer."],
-      ["undisclosedPositive", "A positive result for a substance not listed in the application or disclosed during this call may prevent entry to the program."],
-      ["baseline", "If a listed substance may still produce a positive result, a baseline may be established and monitored with more frequent testing until it is out of the applicant’s system."],
-      ["timeline", "The monitoring timeline is substance-specific."],
-      ["detoxSuspension", "If the substance takes longer than expected to clear, treatment may be suspended while the applicant attends Detox; return is possible once a negative result is produced."],
-      ["finalDisclosure", "A positive result for an unlisted or undisclosed substance means the applicant will not be permitted to access the program."]
-    ]
-  },
-  {
-    id: "health", title: "Application Highlights — Health Screen",
-    items: [
-      ["physicalHealth", "Are there any physical health problems that will prevent you from participating in the program?"],
-      ["lifeSkills", "Life Skills participation explained"]
-    ]
-  },
-  {
-    id: "legal", title: "Application Highlights — Legal Status",
-    items: [
-      ["legalStatus", "Confirm current legal status, including anything not listed on the application"],
-      ["legalVerified", "Legal status verified with applicant"]
-    ]
-  },
-  {
-    id: "medication", title: "Application Highlights — Medication and Allergies",
-    items: [
-      ["currentMedication", "Are you currently taking any medication?"],
-      ["pharmacy", "Which pharmacy are you with? Include details needed for medication transfer."],
-      ["medTransfer", "Medication transfer details confirmed"],
-      ["allergies", "Do you have any allergies?"]
-    ]
-  },
-  {
-    id: "treatment", title: "Application Highlights — Treatment History and Program Expectations",
-    items: [
-      ["history", "Review treatment history. If no prior treatment experience, explain the 12-step-based recovery model."],
-      ["allAspects", "Expected to take part in all aspects of the program"],
-      ["sponsor", "Expected to find a sponsor"],
-      ["stepWork", "Expected to complete step work"],
-      ["meetings", "Expected to attend a minimum of four closed AA/NA meetings per week"]
-    ]
-  },
-  {
-    id: "goals", title: "Long-Term Goals / Discharge Plan",
-    items: [
-      ["housing", "Housing"],
-      ["employment", "Employment"],
-      ["counselling", "Outside counselling"]
-    ]
-  }
-];
 
 function getApplicants(){
   return (prescreenState?.waitlist || []).filter(a => !a.archived && a.status === "Offer Given");
@@ -84,8 +13,18 @@ function getApplicants(){
 function getRecord(applicantId){
   return (prescreenState?.preScreenings || []).find(r => r.applicantId === applicantId);
 }
-function formatDateTime(value){ if(!value) return "—"; const d=new Date(value); return isNaN(d)?"—":d.toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}); }
 function applicantName(a){ return `${a.firstName||""} ${a.lastName||""}`.trim() || "Unnamed Applicant"; }
+function staffDisplayName(){
+  const email = auth.currentUser?.email || "Staff Member";
+  const local = email.split("@")[0].replace(/[._-]+/g," ");
+  return local.replace(/\b\w/g, c => c.toUpperCase());
+}
+function formatDateTime(value){ if(!value) return "—"; const d=new Date(value); return isNaN(d)?"—":d.toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}); }
+function calculateDays(dateString){ if(!dateString)return null; const d=new Date(dateString+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0); return Math.max(0,Math.floor((today-d)/86400000)); }
+function addWaitlistNote(applicant,text){
+  applicant.notes=Array.isArray(applicant.notes)?applicant.notes:[];
+  applicant.notes.unshift({id:crypto.randomUUID(),author:auth.currentUser?.email||"Unknown",text,createdAt:new Date().toISOString()});
+}
 
 function renderList(){
   const applicants=getApplicants();
@@ -94,165 +33,234 @@ function renderList(){
   $("prescreenApplicantBody").innerHTML=applicants.length?applicants.map(a=>{
     const r=getRecord(a.id); const status=r?.status||"Not Started";
     const cls=status==="Completed"?"status-completed":status==="In Progress"?"status-progress":"status-not-started";
-    return `<tr><td><strong>${esc(applicantName(a))}</strong></td><td>${esc(a.contact||"—")}</td><td>${esc(a.dateApplied||"—")}</td><td><span class="prescreen-status ${cls}">${esc(status)}</span></td><td>${esc(formatDateTime(r?.updatedAt||r?.completedAt||r?.startedAt))}</td><td><button type="button" onclick="openPrescreen('${a.id}')">${status==="Not Started"?"Start":status==="Completed"?"View / Edit":"Continue"}</button></td></tr>`;
+    return `<tr><td><strong>${esc(applicantName(a))}</strong></td><td>${esc(a.contact||a.phone||"—")}</td><td>${esc(a.dateApplied||"—")}</td><td><span class="prescreen-status ${cls}">${esc(status)}</span>${r?.workflowStatus?`<div class="hint">${esc(r.workflowStatus)}</div>`:""}</td><td>${esc(formatDateTime(r?.updatedAt||r?.completedAt||r?.startedAt))}</td><td><button type="button" onclick="openPrescreen('${a.id}')">${status==="Not Started"?"Start":status==="Completed"?"View / Edit":"Continue"}</button></td></tr>`;
   }).join(""):`<tr><td colspan="6" class="empty">No active waitlist applicants are currently marked Offer Given.</td></tr>`;
 }
 
 function emptyRecord(a){
   return {
     id:crypto.randomUUID(), applicantId:a.id, applicantName:applicantName(a), status:"In Progress",
-    staffUser:auth.currentUser?.email||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(),
-    answers:{}, bedTiming:"", expectedBedDate:"", sobrietyDecision:"", detoxPlan:"", overrideReason:"", outcome:"", overallNotes:""
+    workflowStatus:"Opening Script", staffUser:auth.currentUser?.email||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(),
+    step:"opening", answers:{}, outcome:"", overallNotes:""
   };
 }
-function answer(record, sectionId, itemId){ return record.answers?.[sectionId]?.[itemId] || {}; }
-function responseOptions(sectionId,itemId,current){
-  const name=`response-${sectionId}-${itemId}`;
-  return `<div class="question-response" role="radiogroup" aria-label="Question status">
-    ${[["completed","Asked / Reviewed"],["skipped","Skipped"],["na","Not Applicable"]].map(([value,label])=>`
-      <label class="response-choice ${current===value?"selected":""}">
-        <input type="radio" name="${name}" data-section="${sectionId}" data-item="${itemId}" data-field="response" value="${value}" ${current===value?"checked":""}>
-        <span>${label}</span>
-      </label>`).join("")}
-  </div>`;
-}
-function renderField(section,item,record){
-  const [id,label,type="text"] = item; const val=answer(record,section.id,id);
-  const response=val.response||""; const notes=val.notes||"";
-  const valueControl=type==="date"
-    ? `<label class="answer-label">Answer<input type="date" data-section="${section.id}" data-item="${id}" data-field="value" value="${attr(val.value||"")}"></label>`
-    : (section.id==="sobriety" && id==="substance")
-      ? `<label class="answer-label">Answer<input type="text" data-section="${section.id}" data-item="${id}" data-field="value" value="${attr(val.value||"")}" placeholder="Substance disclosed"></label>`
-      : "";
-  return `<div class="prescreen-question">
-    <div class="prescreen-question-text">${esc(label)}</div>
-    ${responseOptions(section.id,id,response)}
-    ${valueControl}
-    <label class="answer-label">Notes <span class="optional-label">optional</span><textarea data-section="${section.id}" data-item="${id}" data-field="notes" rows="2">${esc(notes)}</textarea></label>
-  </div>`;
-}
-function calculateDays(dateString){ if(!dateString)return null; const d=new Date(dateString+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0); return Math.max(0,Math.floor((today-d)/86400000)); }
-function renderSobrietyDecision(record){
-  const last=answer(record,"sobriety","lastUse").value; const days=calculateDays(last);
-  const box=days===null
-    ? `<div class="eligibility-box neutral">Enter the last-use date to calculate days clean.</div>`
-    : days>=5
-      ? `<div class="eligibility-box eligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Meets the normal five-day requirement.</span></div>`
-      : `<div class="eligibility-box ineligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Does not currently meet the normal five-day requirement. Choose the operational decision below.</span></div>`;
-  return `${box}
-  <div class="decision-panel">
-    <h4>Bed-Filling Timeline</h4>
-    <div class="outcome-grid compact-options">
-      ${[["immediate","Immediate / urgent vacancy"],["planned","Planned vacancy — time for Detox"],["flexible","Flexible / not yet confirmed"]].map(([v,l])=>`<label><input type="radio" name="bedTiming" value="${v}" ${record.bedTiming===v?"checked":""}> ${l}</label>`).join("")}
-    </div>
-    <label>Expected Bed Date <span class="optional-label">optional</span><input type="date" id="expectedBedDate" value="${attr(record.expectedBedDate||"")}"></label>
-    <h4>Staff Decision</h4>
-    <div class="outcome-grid decision-options">
-      ${[
-        ["meets","Meets five-day requirement — proceed"],
-        ["detox","Arrange Detox and hold the offer"],
-        ["return","Return applicant to waitlist and contact next eligible person"],
-        ["override","Authorized override — proceed despite normal criteria"],
-        ["pending","Decision pending / further review"]
-      ].map(([v,l])=>`<label><input type="radio" name="sobrietyDecision" value="${v}" ${record.sobrietyDecision===v?"checked":""}> ${l}</label>`).join("")}
-    </div>
-    <label>Detox Plan / Arrangements <span class="optional-label">complete when applicable</span><textarea id="detoxPlan" rows="3">${esc(record.detoxPlan||"")}</textarea></label>
-    <label>Override Reason / Authorization <span class="optional-label">required only when override is selected</span><textarea id="overrideReason" rows="3">${esc(record.overrideReason||"")}</textarea></label>
-  </div>`;
-}
-function renderForm(record){
-  const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
-  $("prescreenApplicantName").textContent=`${applicantName(a)} · ${a.contact||"No phone listed"}`;
-  $("prescreenProgress").innerHTML=sections.map(s=>`<a href="#section-${s.id}">${esc(s.title.replace("Application Highlights — ",""))}</a>`).join("")+`<a href="#section-outcome">Outcome</a>`;
-  let html=sections.map(section=>{
-    return `<section class="prescreen-section" id="section-${section.id}">
-      <h3>${esc(section.title)}</h3>
-      ${section.intro?`<p class="prescreen-script-block">${esc(section.intro)}</p>`:""}
-      ${section.sobriety?renderSobrietyDecision(record):""}
-      ${section.items.map(item=>renderField(section,item,record)).join("")}
-    </section>`;
-  }).join("");
-  html+=`<section class="prescreen-section" id="section-outcome"><h3>Call Outcome</h3>
-    <p class="hint">Choose the result that best describes what happens after this call. Questions may be skipped or marked not applicable without preventing completion.</p>
-    <div class="outcome-grid">
-      ${[
-        ["Approved","Approved / ready for admission"],
-        ["Detox Plan","Detox arranged — offer remains active"],
-        ["Returned to Waitlist","Returned to waitlist — contact next eligible applicant"],
-        ["Applicant Declined","Applicant declined"],
-        ["Hold","Hold / decision pending"],
-        ["Further Review Required","Further review required"]
-      ].map(([v,l])=>`<label><input type="radio" name="outcome" value="${attr(v)}" ${record.outcome===v?"checked":""}> ${esc(l)}</label>`).join("")}
-    </div>
-    <label>Overall Notes <span class="optional-label">optional</span><textarea id="overallNotes" rows="5">${esc(record.overallNotes||"")}</textarea></label>
-  </section>`;
-  $("prescreenForm").innerHTML=html;
 
-  $("prescreenForm").addEventListener("input", e=>{
-    if(e.target.matches('input[type="radio"][data-field="response"]')){
-      e.target.closest('.question-response').querySelectorAll('.response-choice').forEach(label=>label.classList.toggle('selected',label.contains(e.target)));
-    }
-  });
-  $("prescreenForm").querySelector('[data-section="sobriety"][data-item="lastUse"][data-field="value"]')?.addEventListener("change",()=>{
-    collectForm(record); renderForm(record);
-  });
+function radioGroup(name, options, selected=""){
+  return `<div class="prescreen-choice-grid">${options.map(([value,label,help])=>`<label class="prescreen-choice ${selected===value?"selected":""}"><input type="radio" name="${name}" value="${attr(value)}" ${selected===value?"checked":""}><span><strong>${esc(label)}</strong>${help?`<small>${esc(help)}</small>`:""}</span></label>`).join("")}</div>`;
+}
+function optionalTextarea(id,label,value="",placeholder=""){
+  return `<label class="prescreen-field"><span>${esc(label)} <small>optional</small></span><textarea id="${id}" rows="3" placeholder="${attr(placeholder)}">${esc(value)}</textarea></label>`;
+}
+function field(id,label,type,value="",placeholder="",required=false){
+  return `<label class="prescreen-field"><span>${esc(label)}${required?" *":""}</span><input id="${id}" type="${type}" value="${attr(value)}" placeholder="${attr(placeholder)}"></label>`;
+}
+function applicationLegalText(a){
+  const candidates=[a.legalStatus,a.legal,a.legalIssues,a.courtInfo,a.probation];
+  const value=candidates.find(v=>v && String(v).trim());
+  return value?String(value):"No legal-status information was recorded on the application.";
 }
 
-function collectForm(record){
-  record.answers=record.answers||{};
-  $("prescreenForm").querySelectorAll("[data-section][data-item][data-field]").forEach(el=>{
-    const {section,item,field}=el.dataset; record.answers[section]=record.answers[section]||{}; record.answers[section][item]=record.answers[section][item]||{};
-    if(el.type==="radio") { if(el.checked) record.answers[section][item][field]=el.value; }
-    else record.answers[section][item][field]=el.value;
-  });
-  record.bedTiming=$("prescreenForm").querySelector('input[name="bedTiming"]:checked')?.value||"";
-  record.expectedBedDate=$("expectedBedDate")?.value||"";
-  record.sobrietyDecision=$("prescreenForm").querySelector('input[name="sobrietyDecision"]:checked')?.value||"";
-  record.detoxPlan=$("detoxPlan")?.value||"";
-  record.overrideReason=$("overrideReason")?.value||"";
-  record.outcome=$("prescreenForm").querySelector('input[name="outcome"]:checked')?.value||"";
-  record.overallNotes=$("overallNotes")?.value||"";
-  record.updatedAt=new Date().toISOString(); record.staffUser=auth.currentUser?.email||record.staffUser||"";
+function determineSteps(r){
+  const a=r.answers||{};
+  const steps=["opening","interest"];
+  if(a.interested==="no"){
+    steps.push("remain");
+    if(a.remainWaitlist==="no") steps.push("removeConfirm");
+    steps.push("summary");
+    return steps;
+  }
+  if(a.interested!=="yes") return steps;
+  steps.push("permission");
+  if(a.permission==="no"){
+    steps.push("callback","summary");
+    return steps;
+  }
+  if(a.permission!=="yes") return steps;
+  steps.push("sobriety");
+  const days=calculateDays(a.lastUseDate);
+  if(days!==null && days<5){
+    steps.push("sobrietyFail");
+    if(a.sobrietyAction==="detox") steps.push("detoxPlan");
+    steps.push("summary");
+    return steps;
+  }
+  if(days===null || days<5) return steps;
+  steps.push("expectations","legal","health","medication","treatment","goals","summary");
+  return steps;
 }
-function addWaitlistNote(applicant,text){
-  applicant.notes=Array.isArray(applicant.notes)?applicant.notes:[];
-  applicant.notes.unshift({id:crypto.randomUUID(),author:auth.currentUser?.email||"Unknown",text,createdAt:new Date().toISOString()});
+
+function renderProgress(r){
+  const steps=determineSteps(r); const index=Math.max(0,steps.indexOf(currentStep));
+  const labels={opening:"Opening",interest:"Interest",remain:"Waitlist",removeConfirm:"Waitlist",permission:"Availability",callback:"Callback",sobriety:"Sobriety",sobrietyFail:"Decision",detoxPlan:"Detox",expectations:"Expectations",legal:"Legal",health:"Health",medication:"Medication",treatment:"Treatment",goals:"Goals",summary:"Summary"};
+  $("prescreenProgress").innerHTML=steps.map((s,i)=>`<span class="prescreen-step-pill ${i<index?"done":i===index?"active":""}">${esc(labels[s])}</span>`).join("");
 }
-async function saveRecord(complete=false){
-  const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
-  let r=getRecord(a.id); if(!r){r=emptyRecord(a); prescreenState.preScreenings.push(r);}
-  collectForm(r);
-  if(complete){
-    if(!r.outcome){alert("Select a call outcome before completing the pre-screening.");return;}
-    if(r.sobrietyDecision==="override" && !r.overrideReason.trim()){
-      alert("Enter the override reason or authorization before completing this pre-screening.");
-      $("overrideReason")?.focus(); return;
+
+function stepHtml(step,r,a){
+  const x=r.answers||{};
+  switch(step){
+    case "opening": return `<section class="prescreen-step"><h3>Opening Script</h3><div class="prescreen-script-block">
+      <p>Am I speaking with <strong>${esc(applicantName(a))}</strong>?</p>
+      <p>This is <strong>${esc(staffDisplayName())}</strong> calling from the Ken Brown Recovery Home.</p>
+      <p>The reason I’m calling is because we have an availability in our program and you are the next person on our waitlist.</p>
+    </div><p class="hint">No acknowledgement is required. Continue when the opening has been delivered.</p></section>`;
+    case "interest": return `<section class="prescreen-step"><h3>Current Interest</h3><p class="prescreen-question-large">Are you still interested in attending our program?</p>${radioGroup("interested",[["yes","Yes","Continue with the call"],["no","No","Determine whether the applicant wishes to remain on the waitlist"]],x.interested)}</section>`;
+    case "remain": return `<section class="prescreen-step"><h3>Future Openings</h3><p class="prescreen-question-large">Would you like to remain on the waitlist for a future opening?</p>${radioGroup("remainWaitlist",[["yes","Yes","Return the applicant to the waitlist"],["no","No","Confirm removal from the active waitlist"]],x.remainWaitlist)}${optionalTextarea("interestNotes","Notes",x.interestNotes,"Reason for declining or relevant details")}</section>`;
+    case "removeConfirm": return `<section class="prescreen-step"><h3>Remove from Waitlist</h3><div class="eligibility-box ineligible"><strong>Applicant does not want to remain on the waitlist.</strong><span>Confirm how this application should be handled.</span></div>${radioGroup("removeFromWaitlist",[["archive","Archive application","Remove from the active waitlist while preserving the record"],["keep","Keep on waitlist","Do not archive; return to regular waitlist status"]],x.removeFromWaitlist)}</section>`;
+    case "permission": return `<section class="prescreen-step"><h3>Availability to Continue</h3><p class="prescreen-question-large">Do you have a few minutes to go over your application and answer some questions?</p>${radioGroup("permission",[["yes","Yes","Continue with pre-screening"],["no","No","Schedule another call"]],x.permission)}</section>`;
+    case "callback": return `<section class="prescreen-step"><h3>Schedule Callback</h3><div class="prescreen-two-column">${field("callbackDate","Callback date","date",x.callbackDate||"","",true)}${field("callbackTime","Callback time","time",x.callbackTime||"","",true)}</div>${optionalTextarea("callbackNotes","Callback notes",x.callbackNotes,"Best number, preferred time, or other details")}</section>`;
+    case "sobriety": {
+      const days=calculateDays(x.lastUseDate);
+      const badge=days===null?`<div class="eligibility-box neutral">Enter the last-use date to calculate days clean.</div>`:days>=5?`<div class="eligibility-box eligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Meets the five-day admission requirement.</span></div>`:`<div class="eligibility-box ineligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Does not meet the five-day admission requirement. There are no overrides.</span></div>`;
+      return `<section class="prescreen-step"><h3>Sobriety Verification</h3><p class="prescreen-question-large">We require potential residents to have been clean/sober for a minimum of five days.</p><div class="prescreen-two-column">${field("lastUseDate","When was the last time you used?","date",x.lastUseDate||"","",true)}${field("lastUseSubstance","What was the substance?","text",x.lastUseSubstance||"","Substance disclosed",true)}</div>${badge}${optionalTextarea("sobrietyNotes","Notes",x.sobrietyNotes)}</section>`;
     }
-    r.status="Completed"; r.completedAt=new Date().toISOString();
-    if(r.outcome==="Returned to Waitlist"){
-      a.status="N/A";
-      addWaitlistNote(a,`Pre-screening completed: returned to waitlist. ${r.overallNotes||r.detoxPlan||"Applicant did not meet the current admission timeline."}`);
-    } else if(r.outcome==="Applicant Declined"){
-      a.status="N/A";
-      addWaitlistNote(a,`Pre-screening completed: applicant declined. ${r.overallNotes||""}`.trim());
-    } else if(r.outcome==="Detox Plan"){
-      addWaitlistNote(a,`Pre-screening completed: Detox plan arranged; offer remains active. ${r.detoxPlan||r.overallNotes||""}`.trim());
-    }
-  } else if(r.status!=="Completed") r.status="In Progress";
+    case "sobrietyFail": return `<section class="prescreen-step"><h3>Applicant Does Not Meet Sobriety Requirement</h3><div class="eligibility-box ineligible"><strong>No exception is available.</strong><span>Choose the operational next step based on whether there is enough time to complete Detox before admission.</span></div>${radioGroup("sobrietyAction",[["detox","Arrange Detox and hold the offer","Use when there is enough time before the bed must be filled"],["return","Return to waitlist and call next eligible applicant","Use when the bed must be filled before this applicant can meet the requirement"]],x.sobrietyAction)}</section>`;
+    case "detoxPlan": return `<section class="prescreen-step"><h3>Detox Plan</h3><div class="prescreen-two-column">${field("detoxFacility","Detox facility","text",x.detoxFacility||"","Facility or service")}${field("detoxExpectedDate","Expected five-day completion date","date",x.detoxExpectedDate||"")}</div>${radioGroup("detoxContacted",[["yes","Detox contacted","Arrangements have been initiated"],["no","Not yet contacted","Follow-up is still required"]],x.detoxContacted)}${optionalTextarea("detoxNotes","Detox arrangements",x.detoxNotes,"Bed availability, contact person, transportation, follow-up")}</section>`;
+    case "expectations": return `<section class="prescreen-step"><h3>Admission Expectations</h3><div class="prescreen-script-block"><p>Upon arrival, we will administer a urine screen and breathalyzer.</p><p>If a disclosed substance may still produce a positive result, we may establish a baseline and monitor it until the substance is out of the applicant’s system. The timeline is substance-specific.</p><p>If the substance takes longer than expected to clear, treatment may be suspended while the resident attends Detox and can return once a negative result is produced.</p><p>If a urine screen is positive for a substance that was not listed on the application or disclosed during this call, the applicant will not be permitted to enter the program.</p></div>${radioGroup("expectationsReviewed",[["yes","Reviewed","The applicant received the admission expectations"],["deferred","Deferred","The expectations were not reviewed during this call"]],x.expectationsReviewed)}${x.expectationsReviewed==="deferred"?optionalTextarea("expectationsNotes","Reason deferred",x.expectationsNotes,"Required when deferred"):optionalTextarea("expectationsNotes","Notes",x.expectationsNotes)}</section>`;
+    case "legal": return `<section class="prescreen-step"><h3>Legal Status Verification</h3><div class="application-highlight"><span>Application information</span><p>${esc(applicationLegalText(a))}</p></div><p class="prescreen-question-large">Has your legal status changed since submitting your application?</p>${radioGroup("legalChanged",[["no","No","No changes disclosed"],["yes","Yes","Record the changes and assess possible conflicts"]],x.legalChanged)}${x.legalChanged==="yes"?`${optionalTextarea("legalChangeNotes","Describe the change",x.legalChangeNotes,"New charges, warrant, bail, probation, parole, court date, curfew, peace bond, or other obligation")}<fieldset class="prescreen-fieldset"><legend>Select all that apply</legend>${["New criminal charges","Outstanding warrant","Bail conditions","Probation","Parole","House arrest","Upcoming court date","Curfew","Peace bond","Other"].map(v=>`<label class="check-row"><input type="checkbox" name="legalTypes" value="${attr(v)}" ${(x.legalTypes||[]).includes(v)?"checked":""}> <span>${esc(v)}</span></label>`).join("")}</fieldset><p class="prescreen-question-large">Could any legal obligation interfere with full participation in the program?</p>${radioGroup("legalConflict",[["no","No","No participation conflict identified"],["yes","Yes","Executive Director or designated management review is required"],["unknown","Unsure","Further verification is required"]],x.legalConflict)}${x.legalConflict!=="no"?optionalTextarea("legalConflictNotes","Conflict details",x.legalConflictNotes,"Court dates, travel restrictions, curfew, reporting requirements, attendance restrictions, or other concerns"):""}`:""}</section>`;
+    case "health": return `<section class="prescreen-step"><h3>Health Screen</h3><p class="prescreen-question-large">Are there any physical health problems that will prevent you from participating in the program?</p>${radioGroup("healthConflict",[["no","No","No health barrier disclosed"],["yes","Yes","Record the condition and required review"],["unknown","Unsure","Further information is required"]],x.healthConflict)}${x.healthConflict!=="no"?optionalTextarea("healthNotes","Health details",x.healthNotes,"Describe limitations, accommodation needs, or required follow-up"):optionalTextarea("healthNotes","Notes",x.healthNotes)}<p class="prescreen-question-large">Were Life Skills participation expectations explained?</p>${radioGroup("lifeSkillsReviewed",[["yes","Yes","Reviewed during this call"],["skipped","Skipped","Not required or deferred for this call"]],x.lifeSkillsReviewed)}</section>`;
+    case "medication": return `<section class="prescreen-step"><h3>Medication and Allergies</h3><p class="prescreen-question-large">Are you currently taking any medication?</p>${radioGroup("takesMedication",[["yes","Yes","Enter current medications and pharmacy details"],["no","No","Skip medication-transfer questions"],["skipped","Skipped","Question not used during this call"]],x.takesMedication)}${x.takesMedication==="yes"?`${optionalTextarea("medications","Current medications",x.medications,"Medication name, dose, and schedule when available")}<div class="prescreen-two-column">${field("pharmacy","Pharmacy","text",x.pharmacy||"","Name and location")}${field("pharmacyPhone","Pharmacy phone","tel",x.pharmacyPhone||"")}</div>${radioGroup("medTransfer",[["yes","Transfer details obtained","Medication transfer can be arranged"],["pending","Pending","Additional pharmacy information is needed"],["na","Not applicable","No transfer required"]],x.medTransfer)}`:""}<p class="prescreen-question-large">Do you have any allergies?</p>${radioGroup("hasAllergies",[["yes","Yes","Record the allergies"],["no","No","No allergies disclosed"],["skipped","Skipped","Question not used during this call"]],x.hasAllergies)}${x.hasAllergies==="yes"?optionalTextarea("allergies","Allergies",x.allergies,"Medication, food, environmental, or other allergies"):""}</section>`;
+    case "treatment": return `<section class="prescreen-step"><h3>Treatment History and Program Expectations</h3><p class="prescreen-question-large">Have you attended treatment before?</p>${radioGroup("priorTreatment",[["yes","Yes","Record prior treatment experience"],["no","No","Explain the 12-step-based recovery model"],["skipped","Skipped","Question not used during this call"]],x.priorTreatment)}${x.priorTreatment==="yes"?optionalTextarea("treatmentHistory","Previous treatment",x.treatmentHistory,"Program, date, outcome, and relevant details"):""}<div class="prescreen-script-block"><p>KBRH is a 12-step-based recovery program. Residents are expected to take part in all aspects of the program, find a sponsor, complete step work, and attend a minimum of four closed AA/NA meetings per week.</p></div>${radioGroup("programReviewed",[["yes","Reviewed","Program expectations were explained"],["skipped","Skipped","Not reviewed during this call"]],x.programReviewed)}${optionalTextarea("treatmentNotes","Notes",x.treatmentNotes)}</section>`;
+    case "goals": return `<section class="prescreen-step"><h3>Long-Term Goals / Discharge Plan</h3><p class="hint">These fields are optional and may be skipped when they are not useful during this call.</p>${optionalTextarea("goalHousing","Housing",x.goalHousing)}${optionalTextarea("goalEmployment","Employment",x.goalEmployment)}${optionalTextarea("goalCounselling","Outside counselling",x.goalCounselling)}</section>`;
+    case "summary": return summaryHtml(r,a);
+    default: return "";
+  }
+}
+
+function summaryHtml(r,a){
+  const x=r.answers||{}; const days=calculateDays(x.lastUseDate);
+  const rows=[];
+  rows.push(["Applicant",applicantName(a)]);
+  rows.push(["Interest",x.interested==="yes"?"Interested":x.interested==="no"?"Not interested":"Not answered"]);
+  if(x.interested==="no") rows.push(["Waitlist",x.remainWaitlist==="yes"?"Remain on waitlist":x.remainWaitlist==="no"?"Does not wish to remain":"Not answered"]);
+  if(x.permission==="no") rows.push(["Callback",`${x.callbackDate||"Date not set"}${x.callbackTime?` at ${x.callbackTime}`:""}`]);
+  if(days!==null) rows.push(["Sobriety",`${days} day${days===1?"":"s"} clean — ${days>=5?"Meets requirement":"Does not meet requirement"}`]);
+  if(x.sobrietyAction) rows.push(["Sobriety action",x.sobrietyAction==="detox"?"Arrange Detox and hold offer":"Return to waitlist and contact next applicant"]);
+  if(x.legalChanged) rows.push(["Legal status",x.legalChanged==="no"?"No change reported":x.legalConflict==="yes"?"Potential conflict — review required":x.legalConflict==="unknown"?"Verification required":"Change reported; no participation conflict identified"]);
+  if(x.healthConflict) rows.push(["Health",x.healthConflict==="no"?"No barrier disclosed":x.healthConflict==="yes"?"Potential barrier — review required":"Further information required"]);
+  if(x.takesMedication) rows.push(["Medication",x.takesMedication==="yes"?"Medication information reviewed":x.takesMedication==="no"?"No medication disclosed":"Skipped"]);
+  const suggested = suggestedOutcome(r);
+  return `<section class="prescreen-step"><h3>Pre-Screening Summary</h3><div class="summary-list">${rows.map(([k,v])=>`<div><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</div><div class="eligibility-box ${suggested.kind}"><strong>${esc(suggested.title)}</strong><span>${esc(suggested.detail)}</span></div>${optionalTextarea("overallNotes","Overall notes",r.overallNotes||"")}<p class="hint">Completing the pre-screening will apply the outcome shown above. Use Back to correct any answer first.</p></section>`;
+}
+
+function suggestedOutcome(r){
+  const x=r.answers||{};
+  if(x.interested==="no"){
+    if(x.remainWaitlist==="yes") return {code:"returned-interest",title:"Return to Waitlist",detail:"Applicant declined this opening but wishes to be considered for a future opening.",kind:"neutral"};
+    if(x.removeFromWaitlist==="archive") return {code:"archive",title:"Archive Application",detail:"Applicant declined and does not wish to remain on the waitlist.",kind:"ineligible"};
+    return {code:"returned-interest",title:"Return to Waitlist",detail:"Applicant declined this opening.",kind:"neutral"};
+  }
+  if(x.permission==="no") return {code:"callback",title:"Callback Scheduled",detail:"The offer remains active until the scheduled callback.",kind:"neutral"};
+  const days=calculateDays(x.lastUseDate);
+  if(days!==null && days<5){
+    if(x.sobrietyAction==="detox") return {code:"detox",title:"Detox Plan — Offer Held",detail:"Applicant must complete Detox and satisfy the five-day sobriety requirement before admission.",kind:"neutral"};
+    return {code:"returned-sobriety",title:"Return to Waitlist",detail:"Applicant does not meet the five-day sobriety requirement and the next eligible applicant should be contacted.",kind:"ineligible"};
+  }
+  if(x.legalConflict==="yes" || x.legalConflict==="unknown" || x.healthConflict==="yes" || x.healthConflict==="unknown") return {code:"review",title:"Further Review Required",detail:"A possible legal or health participation conflict requires review before admission.",kind:"neutral"};
+  return {code:"approved",title:"Pre-Screening Complete — Eligible to Proceed",detail:"The applicant meets the documented pre-screening criteria.",kind:"eligible"};
+}
+
+function collectCurrentStep(){
+  if(!currentRecord)return;
+  const x=currentRecord.answers=currentRecord.answers||{};
+  document.querySelectorAll('#prescreenForm input[type="radio"]:checked').forEach(el=>x[el.name]=el.value);
+  document.querySelectorAll('#prescreenForm input:not([type="radio"]):not([type="checkbox"]), #prescreenForm textarea').forEach(el=>{ if(el.id) x[el.id]=el.value; });
+  x.legalTypes=[...document.querySelectorAll('#prescreenForm input[name="legalTypes"]:checked')].map(el=>el.value);
+  if($("overallNotes")) currentRecord.overallNotes=$("overallNotes").value;
+  currentRecord.step=currentStep; currentRecord.updatedAt=new Date().toISOString(); currentRecord.staffUser=auth.currentUser?.email||currentRecord.staffUser||"";
+}
+
+function validateStep(step,r){
+  const x=r.answers||{};
+  const need=(condition,message,selector)=>{ if(!condition){alert(message); if(selector)document.querySelector(selector)?.focus(); return false;} return true; };
+  if(step==="interest") return need(x.interested,"Select whether the applicant is still interested.",'input[name="interested"]');
+  if(step==="remain") return need(x.remainWaitlist,"Select whether the applicant wants to remain on the waitlist.",'input[name="remainWaitlist"]');
+  if(step==="removeConfirm") return need(x.removeFromWaitlist,"Choose whether to archive or keep the application on the waitlist.",'input[name="removeFromWaitlist"]');
+  if(step==="permission") return need(x.permission,"Select whether the applicant is available to continue.",'input[name="permission"]');
+  if(step==="callback") return need(x.callbackDate && x.callbackTime,"Enter a callback date and time.","#callbackDate");
+  if(step==="sobriety") return need(x.lastUseDate && x.lastUseSubstance?.trim(),"Enter both the last-use date and substance.","#lastUseDate");
+  if(step==="sobrietyFail") return need(x.sobrietyAction,"Choose whether to arrange Detox or return the applicant to the waitlist.",'input[name="sobrietyAction"]');
+  if(step==="expectations" && x.expectationsReviewed==="deferred") return need(x.expectationsNotes?.trim(),"Enter a reason when admission expectations are deferred.","#expectationsNotes");
+  if(step==="legal" && x.legalChanged==="yes") return need(x.legalChangeNotes?.trim() && x.legalConflict,"Describe the legal change and indicate whether it may interfere with participation.","#legalChangeNotes");
+  return true;
+}
+
+function renderForm(){
+  const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a||!currentRecord)return;
+  const steps=determineSteps(currentRecord); if(!steps.includes(currentStep)) currentStep=steps[0];
+  $("prescreenApplicantName").textContent=`${applicantName(a)} · ${a.contact||a.phone||"No phone listed"}`;
+  renderProgress(currentRecord);
+  $("prescreenForm").innerHTML=stepHtml(currentStep,currentRecord,a);
+  $("prescreenForm").querySelectorAll('.prescreen-choice input').forEach(input=>input.addEventListener('change',()=>{
+    input.closest('.prescreen-choice-grid').querySelectorAll('.prescreen-choice').forEach(l=>l.classList.toggle('selected',l.contains(input)));
+    collectCurrentStep();
+    if(["interest","remain","permission","sobrietyFail","legal","health","medication"].includes(currentStep)) renderForm();
+  }));
+  $("lastUseDate")?.addEventListener("change",()=>{collectCurrentStep();renderForm();});
+  updateFooter();
+}
+
+function updateFooter(){
+  const steps=determineSteps(currentRecord); const i=steps.indexOf(currentStep);
+  $("backPrescreenBtn").disabled=i<=0;
+  $("nextPrescreenBtn").classList.toggle("hidden",currentStep==="summary");
+  $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary");
+  $("nextPrescreenBtn").textContent=i===steps.length-2?"Review Summary":"Continue";
+}
+
+async function saveDraft(showAlert=true){
+  collectCurrentStep();
+  currentRecord.status=currentRecord.status==="Completed"?"Completed":"In Progress";
+  currentRecord.workflowStatus=currentStep.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
   await saveAppState(prescreenState); renderList();
-  alert(complete?"Pre-screening completed.":"Draft saved.");
-  if(complete) closePrescreen();
+  if(showAlert) alert("Draft saved.");
 }
+
+async function completePrescreen(){
+  collectCurrentStep();
+  const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
+  const result=suggestedOutcome(currentRecord); const x=currentRecord.answers||{};
+  currentRecord.status="Completed"; currentRecord.completedAt=new Date().toISOString(); currentRecord.updatedAt=currentRecord.completedAt; currentRecord.outcome=result.code; currentRecord.workflowStatus=result.title;
+  if(result.code==="returned-interest"){
+    a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant declined the current opening and ${x.remainWaitlist==="yes"?"wishes to remain on the waitlist":"was returned to the waitlist"}. ${x.interestNotes||""}`.trim());
+  } else if(result.code==="archive"){
+    a.archived=true; a.status="N/A"; addWaitlistNote(a,"Pre-screening: applicant declined the opening and requested removal from the active waitlist.");
+  } else if(result.code==="callback"){
+    addWaitlistNote(a,`Pre-screening callback scheduled for ${x.callbackDate} at ${x.callbackTime}. ${x.callbackNotes||""}`.trim());
+  } else if(result.code==="detox"){
+    addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Detox plan initiated; offer remains active. ${x.detoxFacility||""} ${x.detoxExpectedDate?`Expected completion: ${x.detoxExpectedDate}.`:""} ${x.detoxNotes||""}`.trim());
+  } else if(result.code==="returned-sobriety"){
+    a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant did not meet the five-day sobriety requirement and was returned to the waitlist. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. Contact the next eligible applicant.`);
+  } else if(result.code==="review"){
+    addWaitlistNote(a,"Pre-screening completed: further review required due to a possible legal or health participation conflict.");
+  } else if(result.code==="approved"){
+    addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
+  }
+  await saveAppState(prescreenState); renderList(); alert(result.title); closePrescreen();
+}
+
 function openPrescreen(id){
   currentApplicantId=id; const a=getApplicants().find(x=>x.id===id); if(!a)return;
-  let r=getRecord(id); if(!r){r=emptyRecord(a); prescreenState.preScreenings.push(r);}
-  renderForm(r); $("prescreenModal").classList.remove("hidden"); document.body.classList.add("kbrh-modal-open");
+  currentRecord=getRecord(id); if(!currentRecord){currentRecord=emptyRecord(a); prescreenState.preScreenings.push(currentRecord);}
+  currentRecord.answers=currentRecord.answers||{}; currentStep=currentRecord.step||"opening";
+  if(currentRecord.status==="Completed") currentStep="summary";
+  renderForm(); $("prescreenModal").classList.remove("hidden"); document.body.classList.add("kbrh-modal-open");
 }
-function closePrescreen(){ $("prescreenModal").classList.add("hidden"); document.body.classList.remove("kbrh-modal-open"); currentApplicantId=null; }
+function closePrescreen(){ $("prescreenModal").classList.add("hidden"); document.body.classList.remove("kbrh-modal-open"); currentApplicantId=null; currentRecord=null; currentStep="opening"; }
+
+function nextStep(){
+  collectCurrentStep(); if(!validateStep(currentStep,currentRecord))return;
+  const steps=determineSteps(currentRecord); const i=steps.indexOf(currentStep); if(i<steps.length-1){currentStep=steps[i+1]; currentRecord.step=currentStep; renderForm(); $("prescreenForm").scrollTop=0;}
+}
+function previousStep(){
+  collectCurrentStep(); const steps=determineSteps(currentRecord); const i=steps.indexOf(currentStep); if(i>0){currentStep=steps[i-1]; currentRecord.step=currentStep; renderForm(); $("prescreenForm").scrollTop=0;}
+}
 
 document.addEventListener("DOMContentLoaded",()=>{
   $("closePrescreenX").onclick=$("cancelPrescreenBtn").onclick=closePrescreen;
-  $("saveDraftBtn").onclick=()=>saveRecord(false); $("completePrescreenBtn").onclick=()=>saveRecord(true);
+  $("saveDraftBtn").onclick=()=>saveDraft(true);
+  $("nextPrescreenBtn").onclick=nextStep;
+  $("backPrescreenBtn").onclick=previousStep;
+  $("completePrescreenBtn").onclick=completePrescreen;
   $("prescreenModal").addEventListener("click",e=>{if(e.target===$("prescreenModal"))closePrescreen();});
 });
 auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{prescreenState=state;prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];renderList();});});

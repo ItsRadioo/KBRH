@@ -367,3 +367,32 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
   .waitlist-table-compact th:nth-child(4){width:24%}
   .waitlist-table-compact th:nth-child(5){width:20%}
 }
+
+/* Pre-Screening guided workflow v4.2 */
+.page-prescreening .prescreen-modal{width:min(920px,96vw);max-height:94vh;display:flex;flex-direction:column;text-align:left}
+.page-prescreening .prescreen-modal-header,.page-prescreening .prescreen-form,.page-prescreening .prescreen-step,.page-prescreening .prescreen-field,.page-prescreening .prescreen-question-large{text-align:left}
+.page-prescreening .prescreen-form{overflow:auto;padding:4px 6px 18px;min-height:420px}
+.page-prescreening .prescreen-progress{display:flex;gap:7px;overflow-x:auto;padding:4px 2px 14px;margin-bottom:8px}
+.page-prescreening .prescreen-step-pill{white-space:nowrap;border:1px solid var(--border-color,#d8dee8);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--text-muted,#64748b);background:#fff}
+.page-prescreening .prescreen-step-pill.active{background:#173f35;color:#fff;border-color:#173f35}
+.page-prescreening .prescreen-step-pill.done{background:#e6f3ee;color:#173f35;border-color:#9fcbbb}
+.page-prescreening .prescreen-step h3{margin:0 0 18px}
+.page-prescreening .prescreen-script-block{background:#f7f9fb;border-left:4px solid #173f35;border-radius:8px;padding:16px 18px;margin:0 0 18px;line-height:1.55}
+.page-prescreening .prescreen-script-block p{margin:0 0 12px}.page-prescreening .prescreen-script-block p:last-child{margin-bottom:0}
+.page-prescreening .prescreen-question-large{font-size:1.04rem;font-weight:700;margin:18px 0 10px}
+.page-prescreening .prescreen-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 0 18px}
+.page-prescreening .prescreen-choice{display:flex;align-items:flex-start;gap:10px;border:1px solid #d8dee8;border-radius:10px;padding:13px 14px;cursor:pointer;background:#fff;text-align:left}
+.page-prescreening .prescreen-choice:hover,.page-prescreening .prescreen-choice.selected{border-color:#2f6f5e;background:#eef7f3}
+.page-prescreening .prescreen-choice input{margin-top:3px;flex:0 0 auto}
+.page-prescreening .prescreen-choice span{display:flex;flex-direction:column;gap:3px}.page-prescreening .prescreen-choice small{font-weight:400;color:#64748b;line-height:1.35}
+.page-prescreening .prescreen-field{display:flex;flex-direction:column;gap:6px;margin:14px 0;font-weight:600}
+.page-prescreening .prescreen-field span small{font-weight:400;color:#64748b}
+.page-prescreening .prescreen-field input,.page-prescreening .prescreen-field textarea{width:100%;text-align:left;font-weight:400}
+.page-prescreening .prescreen-two-column{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.page-prescreening .application-highlight{background:#f8fafc;border:1px solid #d8dee8;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.page-prescreening .application-highlight span{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700}.page-prescreening .application-highlight p{margin:7px 0 0}
+.page-prescreening .prescreen-fieldset{border:1px solid #d8dee8;border-radius:10px;padding:12px 14px;margin:14px 0}.page-prescreening .prescreen-fieldset legend{padding:0 6px;font-weight:700}
+.page-prescreening .check-row{display:flex;align-items:center;gap:8px;padding:7px 0;text-align:left}
+.page-prescreening .summary-list{border:1px solid #d8dee8;border-radius:10px;overflow:hidden;margin-bottom:16px}.page-prescreening .summary-list>div{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:11px 14px;border-bottom:1px solid #e8edf3}.page-prescreening .summary-list>div:last-child{border-bottom:0}.page-prescreening .summary-list span{color:#64748b}
+.page-prescreening .prescreen-footer{align-items:center}.page-prescreening .prescreen-footer-spacer{flex:1}
+@media(max-width:700px){.page-prescreening .prescreen-two-column{grid-template-columns:1fr}.page-prescreening .prescreen-choice-grid{grid-template-columns:1fr}.page-prescreening .summary-list>div{grid-template-columns:1fr;gap:3px}.page-prescreening .prescreen-footer{flex-wrap:wrap}.page-prescreening .prescreen-footer-spacer{display:none}}
