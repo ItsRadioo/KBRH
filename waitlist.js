@@ -6,6 +6,69 @@ let actionsApplicantId = null;
 let positionApplicantId = null;
 let priorityOrderSavePending = false;
 
+const COMPACT_WAITLIST_COLUMNS_STORAGE_KEY = "kbrh.waitlist.compactColumns.v1";
+const ACTIVE_COMPACT_COLUMN_DEFS = [
+  { key: "position", label: "#" }, { key: "applicant", label: "Applicant", required: true },
+  { key: "contact", label: "Contact" }, { key: "city", label: "City" },
+  { key: "dateApplied", label: "Date Applied" }, { key: "lastCallIn", label: "Last Call-In" },
+  { key: "status", label: "Status" }, { key: "info", label: "Info" },
+  { key: "actions", label: "Actions", required: true }
+];
+const ARCHIVED_COMPACT_COLUMN_DEFS = [
+  { key: "position", label: "#" }, { key: "applicant", label: "Applicant", required: true },
+  { key: "contact", label: "Contact" }, { key: "city", label: "City" },
+  { key: "dateApplied", label: "Date Applied" }, { key: "archivedAt", label: "Archived" },
+  { key: "reason", label: "Reason" }, { key: "status", label: "Status" },
+  { key: "info", label: "Info" }, { key: "actions", label: "Actions", required: true }
+];
+const DEFAULT_ACTIVE_COMPACT_COLUMNS = ["position", "applicant", "status", "info", "actions"];
+const DEFAULT_ARCHIVED_COMPACT_COLUMNS = ["position", "applicant", "status", "info", "actions"];
+
+function sanitizeCompactColumns(value, definitions, defaults) {
+  const allowed = new Set(definitions.map(column => column.key));
+  const required = definitions.filter(column => column.required).map(column => column.key);
+  const requested = Array.isArray(value) ? value.filter(key => allowed.has(key)) : [];
+  const selected = requested.length ? requested : [...defaults];
+  required.forEach(key => { if (!selected.includes(key)) selected.push(key); });
+  return definitions.map(column => column.key).filter(key => selected.includes(key));
+}
+function loadCompactWaitlistColumnPreferences() {
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem(COMPACT_WAITLIST_COLUMNS_STORAGE_KEY) || "{}"); }
+  catch (error) { console.warn("Could not read compact waitlist column preferences:", error); }
+  return {
+    active: sanitizeCompactColumns(stored.active, ACTIVE_COMPACT_COLUMN_DEFS, DEFAULT_ACTIVE_COMPACT_COLUMNS),
+    archived: sanitizeCompactColumns(stored.archived, ARCHIVED_COMPACT_COLUMN_DEFS, DEFAULT_ARCHIVED_COMPACT_COLUMNS)
+  };
+}
+let compactWaitlistColumnPreferences = loadCompactWaitlistColumnPreferences();
+function saveCompactWaitlistColumnPreferences() { localStorage.setItem(COMPACT_WAITLIST_COLUMNS_STORAGE_KEY, JSON.stringify(compactWaitlistColumnPreferences)); }
+function renderCompactColumnOptions() {
+  const renderGroup = (containerId, groupName, definitions) => {
+    const container = document.getElementById(containerId); if (!container) return;
+    const selected = compactWaitlistColumnPreferences[groupName];
+    container.innerHTML = definitions.map(column => `<label class="compact-column-option ${column.required ? "compact-column-required" : ""}"><input type="checkbox" data-compact-column-group="${groupName}" data-compact-column-key="${column.key}" ${selected.includes(column.key) ? "checked" : ""} ${column.required ? "disabled" : ""}/><span>${escapeHtml(column.label)}</span>${column.required ? "<small>Required</small>" : ""}</label>`).join("");
+  };
+  renderGroup("activeCompactColumnOptions", "active", ACTIVE_COMPACT_COLUMN_DEFS);
+  renderGroup("archivedCompactColumnOptions", "archived", ARCHIVED_COMPACT_COLUMN_DEFS);
+}
+function updateCompactColumnPreference(groupName, key, checked) {
+  const definitions = groupName === "archived" ? ARCHIVED_COMPACT_COLUMN_DEFS : ACTIVE_COMPACT_COLUMN_DEFS;
+  const defaults = groupName === "archived" ? DEFAULT_ARCHIVED_COMPACT_COLUMNS : DEFAULT_ACTIVE_COMPACT_COLUMNS;
+  const current = new Set(compactWaitlistColumnPreferences[groupName]);
+  checked ? current.add(key) : current.delete(key);
+  compactWaitlistColumnPreferences[groupName] = sanitizeCompactColumns([...current], definitions, defaults);
+  saveCompactWaitlistColumnPreferences(); renderCompactColumnOptions(); renderCompactActiveWaitlist(); renderCompactArchivedWaitlist();
+}
+function resetCompactColumns(groupName) {
+  compactWaitlistColumnPreferences[groupName] = groupName === "archived" ? [...DEFAULT_ARCHIVED_COMPACT_COLUMNS] : [...DEFAULT_ACTIVE_COMPACT_COLUMNS];
+  saveCompactWaitlistColumnPreferences(); renderCompactColumnOptions(); renderCompactActiveWaitlist(); renderCompactArchivedWaitlist();
+}
+function renderCompactHeader(headerId, definitions, selectedColumns) {
+  const header = document.getElementById(headerId); if (!header) return;
+  header.innerHTML = selectedColumns.map(key => `<th>${escapeHtml(definitions.find(column => column.key === key)?.label || key)}</th>`).join("");
+}
+
 function getInputValue(id) {
   const input = document.getElementById(id);
 
@@ -698,42 +761,50 @@ function applicantDisplayStatus(item) {
   return item.status || "N/A";
 }
 
-function renderCompactActiveWaitlist() {
-  const body = document.getElementById("compactWaitlistBody");
-  if (!body) return;
-  const waitlist = getActiveWaitlist();
-  body.innerHTML = waitlist.length ? waitlist.map((item, index) => {
-    const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
-    return `
-      <tr class="${getWaitlistStatusClass(item)}">
-        <td>${index + 1}</td>
-        <td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.contact || item.city || "No contact listed")}</span></td>
-        <td>${escapeHtml(applicantDisplayStatus(item))}</td>
-        <td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>
-        <td><button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button></td>
-      </tr>`;
-  }).join("") : `<tr><td colspan="5" class="empty">No active applicants on the waitlist.</td></tr>`;
+function activeCompactCell(item, index, key) {
+  const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
+  const cells = {
+    position: `<td>${index + 1}</td>`,
+    applicant: `<td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.contact || item.city || "No contact listed")}</span></td>`,
+    contact: `<td class="phone-cell">${escapeHtml(item.contact || "—")}</td>`,
+    city: `<td>${escapeHtml(item.city || "—")}</td>`,
+    dateApplied: `<td>${escapeHtml(item.dateApplied || "—")}</td>`,
+    lastCallIn: `<td>${escapeHtml(getLastCallText(item))}</td>`,
+    status: `<td>${escapeHtml(applicantDisplayStatus(item))}</td>`,
+    info: `<td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>`,
+    actions: `<td><button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button></td>`
+  };
+  return cells[key] || "";
 }
-
+function archivedCompactCell(item, index, key) {
+  const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
+  const cells = {
+    position: `<td>${index + 1}</td>`,
+    applicant: `<td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.archiveReason || "Archived applicant")}</span></td>`,
+    contact: `<td class="phone-cell">${escapeHtml(item.contact || "—")}</td>`,
+    city: `<td>${escapeHtml(item.city || "—")}</td>`,
+    dateApplied: `<td>${escapeHtml(item.dateApplied || "—")}</td>`,
+    archivedAt: `<td>${escapeHtml(formatDateTime(item.archivedAt) || "—")}</td>`,
+    reason: `<td>${escapeHtml(item.archiveReason || "—")}</td>`,
+    status: `<td>${escapeHtml(applicantDisplayStatus(item))}</td>`,
+    info: `<td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>`,
+    actions: `<td><select aria-label="Archived applicant actions" onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';"><option value="">Actions</option><option value="reinstate">Reinstate</option><option value="delete">Delete</option></select></td>`
+  };
+  return cells[key] || "";
+}
+function renderCompactActiveWaitlist() {
+  const body = document.getElementById("compactWaitlistBody"); if (!body) return;
+  const columns = compactWaitlistColumnPreferences.active;
+  renderCompactHeader("compactWaitlistHeader", ACTIVE_COMPACT_COLUMN_DEFS, columns);
+  const waitlist = getActiveWaitlist();
+  body.innerHTML = waitlist.length ? waitlist.map((item, index) => `<tr class="${getWaitlistStatusClass(item)}">${columns.map(key => activeCompactCell(item, index, key)).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty">No active applicants on the waitlist.</td></tr>`;
+}
 function renderCompactArchivedWaitlist() {
-  const body = document.getElementById("compactArchivedWaitlistBody");
-  if (!body) return;
+  const body = document.getElementById("compactArchivedWaitlistBody"); if (!body) return;
+  const columns = compactWaitlistColumnPreferences.archived;
+  renderCompactHeader("compactArchivedWaitlistHeader", ARCHIVED_COMPACT_COLUMN_DEFS, columns);
   const archived = getArchivedWaitlist();
-  body.innerHTML = archived.length ? archived.map((item, index) => {
-    const fullName = `${item.firstName || ""} ${item.lastName || ""}`.trim() || "Unnamed Applicant";
-    return `
-      <tr class="${getWaitlistStatusClass(item)}">
-        <td>${index + 1}</td>
-        <td class="compact-applicant-cell"><strong>${escapeHtml(fullName)}</strong><span>${escapeHtml(item.archiveReason || "Archived applicant")}</span></td>
-        <td>${escapeHtml(applicantDisplayStatus(item))}</td>
-        <td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>
-        <td>
-          <select aria-label="Archived applicant actions" onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">
-            <option value="">Actions</option><option value="reinstate">Reinstate</option><option value="delete">Delete</option>
-          </select>
-        </td>
-      </tr>`;
-  }).join("") : `<tr><td colspan="5" class="empty">No archived applicants.</td></tr>`;
+  body.innerHTML = archived.length ? archived.map((item, index) => `<tr class="${getWaitlistStatusClass(item)}">${columns.map(key => archivedCompactCell(item, index, key)).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty">No archived applicants.</td></tr>`;
 }
 
 function applicantInfoItem(label, value, full = false) {
@@ -922,6 +993,17 @@ function escapeAttribute(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  renderCompactColumnOptions();
+  document.getElementById("toggleCompactColumnsBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("compactColumnPanel"); const button = document.getElementById("toggleCompactColumnsBtn"); if (!panel || !button) return;
+    const open = panel.classList.contains("hidden"); panel.classList.toggle("hidden", !open); button.textContent = open ? "Hide Compact Column Options" : "Choose Compact Columns";
+  });
+  ["activeCompactColumnOptions", "archivedCompactColumnOptions"].forEach(id => document.getElementById(id)?.addEventListener("change", event => {
+    const input = event.target.closest("input[data-compact-column-group]"); if (!input) return;
+    updateCompactColumnPreference(input.dataset.compactColumnGroup, input.dataset.compactColumnKey, input.checked);
+  }));
+  document.getElementById("resetActiveCompactColumnsBtn")?.addEventListener("click", () => resetCompactColumns("active"));
+  document.getElementById("resetArchivedCompactColumnsBtn")?.addEventListener("click", () => resetCompactColumns("archived"));
   document.getElementById("closeApplicantInfoModalBtn")?.addEventListener("click", closeApplicantInfoModal);
   document.getElementById("closeApplicantInfoModalFooterBtn")?.addEventListener("click", closeApplicantInfoModal);
   document.getElementById("applicantInfoModal")?.addEventListener("mousedown", event => {

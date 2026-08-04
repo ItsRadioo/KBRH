@@ -2201,3 +2201,7 @@ table.roster-table,
   .page-prescreening .question-response{display:grid;grid-template-columns:1fr}
   .page-prescreening .response-choice span{width:100%}
 }
+
+
+/* v4.2.2: selectable compact waitlist columns */
+.compact-column-toolbar{display:flex;justify-content:flex-end;margin:12px 0 14px}.compact-column-panel{display:grid;gap:18px;margin-bottom:18px;padding:18px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-soft)}.compact-column-group{display:grid;gap:12px}.compact-column-group+.compact-column-group{padding-top:16px;border-top:1px solid var(--border)}.compact-column-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.compact-column-heading h3{margin:0 0 3px;font-size:1rem}.compact-column-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}.compact-column-option{display:flex;align-items:center;gap:8px;min-height:42px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;font-weight:650}.compact-column-option input{width:auto;margin:0}.compact-column-option small{margin-left:auto;color:var(--text-muted);font-size:.72rem;font-weight:700}.compact-column-required{background:var(--surface-muted);cursor:default}.waitlist-table-compact th,.waitlist-table-compact td{white-space:normal;overflow-wrap:anywhere}@media(max-width:700px){.compact-column-heading{flex-direction:column}.compact-column-heading button,.compact-column-toolbar button{width:100%}}
