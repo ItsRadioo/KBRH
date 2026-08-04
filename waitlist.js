@@ -4,6 +4,7 @@ let notesApplicantId = null;
 let callInApplicantId = null;
 let actionsApplicantId = null;
 let positionApplicantId = null;
+let priorityOrderSavePending = false;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -92,59 +93,98 @@ function restoreActiveOrder(orderSnapshot) {
 }
 
 function getCallPriority(item) {
-  if (item.callPriority) return item.callPriority;
+  const stored = String(item?.callPriority || "").trim().toLowerCase();
 
-  const last = item.callInHistory?.[0];
-  if (!last) return "normal";
-
-  if (last.result === "Yes") return "normal";
-  if (last.reason === "Called late") return "late";
-
-  if (
-    last.reason === "No call" ||
-    last.reason === "Unable to reach" ||
-    last.reason === "Wrong number / disconnected"
-  ) {
-    return "nocall";
+  if (stored === "normal" || stored === "late" || stored === "nocall") {
+    return stored;
   }
 
-  return "late";
+  const last = item?.callInHistory?.[0];
+  const status = normalizeCallInStatus(last);
+
+  if (status === "Call In") return "normal";
+  if (status === "Late Call") return "late";
+  if (status === "No Call") return "nocall";
+
+  return "normal";
 }
 
 function rebuildWaitlist(activeList, archivedList) {
   waitlistState.waitlist = [...activeList, ...archivedList];
 }
 
-function moveLateApplicantAboveNoCalls(applicantId) {
-  const active = getActiveWaitlist();
-  const archived = getArchivedWaitlist();
-
-  const currentIndex = active.findIndex(item => item.id === applicantId);
-  if (currentIndex === -1) return;
-
-  const [applicant] = active.splice(currentIndex, 1);
-  const firstNoCallIndex = active.findIndex(item => getCallPriority(item) === "nocall");
-
-  if (firstNoCallIndex === -1) {
-    active.push(applicant);
-  } else {
-    active.splice(firstNoCallIndex, 0, applicant);
-  }
-
-  rebuildWaitlist(active, archived);
+function priorityRank(item) {
+  const priority = getCallPriority(item);
+  if (priority === "late") return 1;
+  if (priority === "nocall") return 2;
+  return 0;
 }
 
-function moveNoCallApplicantToBottom(applicantId) {
+/**
+ * Keeps the active waitlist in three stable groups:
+ *   1. Call In / not yet called
+ *   2. Late Call
+ *   3. No Call
+ *
+ * The sort is stable, so applicants remain in the exact order they were
+ * placed inside their own group.
+ */
+function enforceCallPriorityOrder() {
   const active = getActiveWaitlist();
   const archived = getArchivedWaitlist();
+  const before = active.map(item => item.id).join("|");
 
+  const calledIn = [];
+  const late = [];
+  const noCall = [];
+
+  active.forEach(item => {
+    const priority = getCallPriority(item);
+    item.callPriority = priority;
+
+    if (priority === "late") {
+      late.push(item);
+    } else if (priority === "nocall") {
+      noCall.push(item);
+    } else {
+      calledIn.push(item);
+    }
+  });
+
+  const ordered = [...calledIn, ...late, ...noCall];
+  const after = ordered.map(item => item.id).join("|");
+  rebuildWaitlist(ordered, archived);
+
+  return before !== after;
+}
+
+/**
+ * Moves an applicant to the end of their current call-in group.
+ * This preserves the order staff assign each Call In, Late Call, or No Call.
+ */
+function moveApplicantToEndOfPriorityGroup(applicantId) {
+  const active = getActiveWaitlist();
+  const archived = getArchivedWaitlist();
   const currentIndex = active.findIndex(item => item.id === applicantId);
+
   if (currentIndex === -1) return;
 
   const [applicant] = active.splice(currentIndex, 1);
-  active.push(applicant);
+  const rank = priorityRank(applicant);
 
+  let insertAt = active.length;
+
+  if (rank === 0) {
+    const firstLowerPriority = active.findIndex(item => priorityRank(item) > 0);
+    insertAt = firstLowerPriority === -1 ? active.length : firstLowerPriority;
+  } else if (rank === 1) {
+    const firstNoCall = active.findIndex(item => priorityRank(item) === 2);
+    insertAt = firstNoCall === -1 ? active.length : firstNoCall;
+  }
+
+  active.splice(insertAt, 0, applicant);
   rebuildWaitlist(active, archived);
+  enforceCallPriorityOrder();
 }
 
 function addWaitlistApplicant() {
@@ -366,6 +406,7 @@ function savePositionChange() {
   const [applicant] = active.splice(currentIndex, 1);
   active.splice(requestedPosition - 1, 0, applicant);
   rebuildWaitlist(active, archived);
+  enforceCallPriorityOrder();
 
   closePositionModal();
   renderWaitlist();
@@ -458,11 +499,14 @@ function saveCallInStatus(selected) {
     applicant.callPriority = "normal";
   } else if (selected === "Late Call") {
     applicant.callPriority = "late";
-    moveLateApplicantAboveNoCalls(applicant.id);
   } else {
     applicant.callPriority = "nocall";
-    moveNoCallApplicantToBottom(applicant.id);
   }
+
+  // Place the applicant at the end of the selected status group. This means
+  // called-in applicants stay first, late calls stay beneath them, and no
+  // calls stay at the bottom, while preserving the order staff send them down.
+  moveApplicantToEndOfPriorityGroup(applicant.id);
 
   closeCallInModal();
   renderWaitlist();
@@ -961,6 +1005,18 @@ auth.onAuthStateChanged(user => {
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
+    const priorityOrderChanged = enforceCallPriorityOrder();
     renderWaitlist();
+
+    // Repair older or manually misordered records in Firestore. The guard
+    // prevents repeated writes while the corrected snapshot is returning.
+    if (priorityOrderChanged && !priorityOrderSavePending) {
+      priorityOrderSavePending = true;
+      saveAppState(waitlistState)
+        .catch(error => console.error("Could not save automatic waitlist order:", error))
+        .finally(() => {
+          priorityOrderSavePending = false;
+        });
+    }
   });
 });

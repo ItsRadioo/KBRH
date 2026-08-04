@@ -86,3 +86,10 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 - Added a Pre-Screening page limited to active waitlist applicants with status Offer Given.
 - Added guided intake script, per-question notes, sobriety calculation, testing disclosures, application highlights, goals, outcome, draft saving, and completion tracking.
 - Pre-screening records are stored in the existing shared Firestore application document under `preScreenings`.
+
+
+## v4.2.1
+- Active waitlist is continuously grouped by call-in status.
+- Call In applicants appear first, Late Call applicants second, and No Call applicants last.
+- Relative order is preserved within each status group.
+- Changing a call-in status moves that applicant to the end of the selected group.
