@@ -994,9 +994,32 @@ function escapeAttribute(value) {
 
 document.addEventListener("DOMContentLoaded", () => {
   renderCompactColumnOptions();
-  document.getElementById("toggleCompactColumnsBtn")?.addEventListener("click", () => {
-    const panel = document.getElementById("compactColumnPanel"); const button = document.getElementById("toggleCompactColumnsBtn"); if (!panel || !button) return;
-    const open = panel.classList.contains("hidden"); panel.classList.toggle("hidden", !open); button.textContent = open ? "Hide Compact Column Options" : "Choose Compact Columns";
+  const openCompactColumnsModal = () => {
+    const panel = document.getElementById("compactColumnPanel");
+    if (!panel) return;
+    panel.classList.remove("hidden");
+    document.body.classList.add("kbrh-modal-open");
+    document.getElementById("closeCompactColumnsModalBtn")?.focus();
+  };
+
+  const closeCompactColumnsModal = () => {
+    const panel = document.getElementById("compactColumnPanel");
+    if (!panel) return;
+    panel.classList.add("hidden");
+    document.body.classList.remove("kbrh-modal-open");
+    document.getElementById("toggleCompactColumnsBtn")?.focus();
+  };
+
+  document.getElementById("toggleCompactColumnsBtn")?.addEventListener("click", openCompactColumnsModal);
+  document.getElementById("closeCompactColumnsModalBtn")?.addEventListener("click", closeCompactColumnsModal);
+  document.getElementById("doneCompactColumnsModalBtn")?.addEventListener("click", closeCompactColumnsModal);
+  document.getElementById("compactColumnPanel")?.addEventListener("mousedown", event => {
+    if (event.target.id === "compactColumnPanel") closeCompactColumnsModal();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !document.getElementById("compactColumnPanel")?.classList.contains("hidden")) {
+      closeCompactColumnsModal();
+    }
   });
   ["activeCompactColumnOptions", "archivedCompactColumnOptions"].forEach(id => document.getElementById(id)?.addEventListener("change", event => {
     const input = event.target.closest("input[data-compact-column-group]"); if (!input) return;

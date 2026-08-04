@@ -93,3 +93,5 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 - Call In applicants appear first, Late Call applicants second, and No Call applicants last.
 - Relative order is preserved within each status group.
 - Changing a call-in status moves that applicant to the end of the selected group.
+
+- v4.2.3: Improved contrast and readability in compact waitlist column selector boxes.
