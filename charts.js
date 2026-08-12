@@ -77,12 +77,19 @@ function weeklyTable(kind){
   const headers=DAYS.map((d,i)=>kind==='electronics'?`<th>${dayLabel(d)}<span class="day-subhead">in</span></th>`:`<th>${dayLabel(d)}${meetingDate(i)?`<span class="day-subhead">${esc(shortPdfDate(meetingDate(i)))}</span>`:''}</th>`).join('');
   return `${heading}<table class="resident-chart weekly-chart ${kind}-chart"><thead><tr><th>Resident</th>${headers}</tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty-state">No active Phase 1 residents on the roster.</td></tr>`}</tbody></table>`;
 }
+function updateExportButton(){
+  const btn=document.getElementById('printChartBtn');
+  if(!btn) return;
+  btn.textContent=currentChart==='laundry'?'Generate PDF':'Generate Excel';
+}
+
 function renderChart(){
   if(!chartState)return;ensureChartData();
   const title=document.getElementById('chartTitle'),hint=document.getElementById('chartHint'),box=document.getElementById('chartContainer');
   if(currentChart==='laundry'){title.textContent='Laundry Checklist';hint.textContent='Select the start date. The end date is automatically set six days later.';box.innerHTML=laundryTable();}
-  else if(currentChart==='electronics'){title.textContent='Electronic Devices Markoff';hint.textContent='Weekly electronic-device markoff for active Phase 1 residents.';box.innerHTML=weeklyTable('electronics');}
-  else{title.textContent='Meetings Chart';hint.textContent='Record meeting information for active Phase 1 residents throughout the week.';box.innerHTML=weeklyTable('meetings');}
+  else if(currentChart==='electronics'){title.textContent='Electronic Devices Markoff';hint.textContent='Weekly electronic-device markoff for active Phase 1 residents. Export to Excel to adjust column widths or row heights before printing.';box.innerHTML=weeklyTable('electronics');}
+  else{title.textContent='Meetings Chart';hint.textContent='Record meeting information for active Phase 1 residents throughout the week. Export to Excel to adjust the sheet before printing.';box.innerHTML=weeklyTable('meetings');}
+  updateExportButton();
 }
 
 function updateFromInput(el){
@@ -185,10 +192,122 @@ function generateChartPdf(){
   }
   doc.save(pdfFileName());
 }
+
+function excelFileName(kind){
+  const stamp=new Date().toISOString().slice(0,10);
+  const names={electronics:'Electronic-Devices-Markoff',meetings:'Meetings-Chart'};
+  return `${names[kind]||'Resident-Chart'}-${stamp}.xlsx`;
+}
+
+function downloadArrayBuffer(buffer,fileName){
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+function applyExcelGrid(sheet,startRow,endRow,startCol,endCol){
+  for(let r=startRow;r<=endRow;r++){
+    for(let c=startCol;c<=endCol;c++){
+      const cell=sheet.getCell(r,c);
+      cell.border={
+        top:{style:'thin',color:{argb:'FF000000'}},
+        left:{style:'thin',color:{argb:'FF000000'}},
+        bottom:{style:'thin',color:{argb:'FF000000'}},
+        right:{style:'thin',color:{argb:'FF000000'}}
+      };
+      cell.alignment={vertical:'middle',horizontal:c===1?'left':'center',wrapText:true};
+      cell.font={name:'Arial',size:10};
+    }
+  }
+}
+
+async function generateWeeklyExcel(kind){
+  if(!window.ExcelJS){
+    alert('Excel generator did not load. Refresh the page and try again.');
+    return;
+  }
+  ensureChartData();
+  const isDevices=kind==='electronics';
+  const residents=activeResidents();
+  const wb=new ExcelJS.Workbook();
+  wb.creator='Ken Brown Recovery Home';
+  wb.created=new Date();
+  const sheet=wb.addWorksheet(isDevices?'Electronic Devices':'Meetings',{pageSetup:{orientation:'landscape',paperSize:1,fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:0.25,right:0.25,top:0.35,bottom:0.35,header:0.15,footer:0.15}}});
+
+  // Title area
+  sheet.mergeCells('A1:H1');
+  const titleCell=sheet.getCell('A1');
+  titleCell.value=isDevices?'ELECTRONIC DEVICES':'CLOSED AA/NA MEETINGS ATTENDED';
+  titleCell.font={name:'Arial',size:16,bold:true};
+  titleCell.alignment={horizontal:'center',vertical:'middle'};
+  sheet.getRow(1).height=24;
+
+  let headerRow=3;
+  if(isDevices){
+    sheet.mergeCells('A2:H2');
+    const sub=sheet.getCell('A2');
+    sub.value="MARK TWO X'S FOR MULTIPLE DEVICES";
+    sub.font={name:'Arial',size:9,bold:false};
+    sub.alignment={horizontal:'center'};
+  }
+
+  const headers=['Resident',...DAYS.map((day,i)=>{
+    if(isDevices) return `${dayLabel(day)}\nin`;
+    const dt=meetingDate(i);
+    return dt?`${dayLabel(day)}\n${shortPdfDate(dt)}`:dayLabel(day);
+  })];
+  sheet.getRow(headerRow).values=headers;
+  sheet.getRow(headerRow).height=34;
+  for(let c=1;c<=8;c++){
+    const cell=sheet.getCell(headerRow,c);
+    cell.font={name:'Arial',size:9,bold:true};
+    cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+  }
+
+  const data=chartState.chartData[kind]||{};
+  residents.forEach((resident,index)=>{
+    const rowNo=headerRow+1+index;
+    const values=[residentName(resident),...DAYS.map(day=>data[resident.id]?.[day]||'')];
+    sheet.getRow(rowNo).values=values;
+    sheet.getRow(rowNo).height=25;
+  });
+
+  const endRow=Math.max(headerRow+residents.length,headerRow+1);
+  applyExcelGrid(sheet,headerRow,endRow,1,8);
+
+  // Column widths intentionally mirror the paper forms but remain fully editable in Excel.
+  sheet.getColumn(1).width=28;
+  for(let c=2;c<=8;c++) sheet.getColumn(c).width=isDevices?10:13;
+  sheet.views=[{state:'frozen',xSplit:1,ySplit:headerRow}];
+  sheet.pageSetup.printArea=`A1:H${endRow}`;
+  sheet.pageSetup.horizontalCentered=true;
+  sheet.pageSetup.verticalCentered=false;
+  sheet.pageSetup.fitToPage=true;
+  sheet.pageSetup.fitToWidth=1;
+  sheet.pageSetup.fitToHeight=1;
+
+  const buffer=await wb.xlsx.writeBuffer();
+  downloadArrayBuffer(buffer,excelFileName(kind));
+}
+
+async function exportCurrentChart(){
+  if(currentChart==='laundry'){
+    generateChartPdf();
+  }else{
+    await generateWeeklyExcel(currentChart);
+  }
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('chartSelector').addEventListener('change',e=>{currentChart=e.target.value;renderChart();});
   document.getElementById('chartContainer').addEventListener('change',e=>{if(e.target.matches('input'))updateFromInput(e.target);});
   document.getElementById('chartContainer').addEventListener('input',e=>{if(e.target.matches('.weekly-chart-input'))updateFromInput(e.target);});
-  document.getElementById('printChartBtn').addEventListener('click',generateChartPdf);
+  document.getElementById('printChartBtn').addEventListener('click',exportCurrentChart);
   listenToAppState(state=>{chartState=state;renderChart();});
 });
