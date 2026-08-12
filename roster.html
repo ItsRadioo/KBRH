@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Client Roster</title>
 <link href="style.css" rel="stylesheet"/>
-<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -19,7 +19,7 @@
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Client Roster</h1>
 <p>Current clients attending the home.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a aria-current="page" class="app-nav-link active" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a></nav></header>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a aria-current="page" class="app-nav-link active" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a></nav></header>
 <main>
 <section class="card wide page-action-card">
 <div class="card-heading-row">
@@ -27,15 +27,15 @@
 <h2>Client Management</h2>
 <p class="hint">Add a new resident or search and manage the current roster.</p>
 </div>
-<button id="openAddClientModalBtn" class="primary-action-btn" type="button">+ Add Client</button>
+<button class="primary-action-btn" id="openAddClientModalBtn" type="button">+ Add Client</button>
 </div>
 </section>
-<section class="roster-summary" aria-label="Phase 1 roster summary">
-  <article class="roster-stat-card" id="phase1ResidentCard">
-    <p class="roster-stat-label">Current Phase 1 Residents</p>
-    <p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
-    <p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
-  </article>
+<section aria-label="Phase 1 roster summary" class="roster-summary">
+<article class="roster-stat-card" id="phase1ResidentCard">
+<p class="roster-stat-label">Current Phase 1 Residents</p>
+<p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
+<p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
+</article>
 </section>
 <section class="card wide">
 <h2>Roster Controls</h2>
@@ -47,30 +47,30 @@
 <button id="editAllBtn" onclick="startEditAll()" type="button">Edit All Residents</button>
 <button class="success hidden" id="saveAllBtn" onclick="saveAllEdits()" type="button">Save All Changes</button>
 <button class="secondary hidden" id="cancelAllBtn" onclick="cancelEditAll()" type="button">Cancel Edit All</button>
-<button class="secondary" id="toggleRosterColumnsBtn" type="button" aria-expanded="false" aria-controls="rosterColumnPanel">Choose Columns</button>
+<button aria-controls="rosterColumnPanel" aria-expanded="false" class="secondary" id="toggleRosterColumnsBtn" type="button">Choose Columns</button>
 </div>
 <div class="roster-column-panel hidden" id="rosterColumnPanel">
-  <div class="roster-column-panel-heading">
-    <div>
-      <strong>Visible Columns</strong>
-      <p class="hint">Hide less-used columns to fit more information on screen. Your choices are remembered on this browser.</p>
-    </div>
-    <button class="secondary" id="showAllRosterColumnsBtn" type="button">Show All</button>
-  </div>
-  <div class="roster-column-options">
-    <label><input type="checkbox" data-roster-column="dob" checked> DOB</label>
-    <label><input type="checkbox" data-roster-column="phone" checked> Phone</label>
-    <label><input type="checkbox" data-roster-column="address" checked> Address</label>
-    <label><input type="checkbox" data-roster-column="city" checked> City</label>
-    <label><input type="checkbox" data-roster-column="contact" checked> Contact</label>
-    <label><input type="checkbox" data-roster-column="contactPhone" checked> Contact #</label>
-    <label><input type="checkbox" data-roster-column="entryDate" checked> Entry Date</label>
-    <label><input type="checkbox" data-roster-column="dischargeDate" checked> Discharge Date</label>
-    <label><input type="checkbox" data-roster-column="daysRemaining" checked> Days Remaining</label>
-    <label><input type="checkbox" data-roster-column="opoc" checked> OPOC</label>
-    <label><input type="checkbox" data-roster-column="admissionStatus" checked> Admission Status</label>
-    <label><input type="checkbox" data-roster-column="notes" checked> Notes</label>
-  </div>
+<div class="roster-column-panel-heading">
+<div>
+<strong>Visible Columns</strong>
+<p class="hint">Hide less-used columns to fit more information on screen. Your choices are remembered on this browser.</p>
+</div>
+<button class="secondary" id="showAllRosterColumnsBtn" type="button">Show All</button>
+</div>
+<div class="roster-column-options">
+<label><input checked="" data-roster-column="dob" type="checkbox"/> DOB</label>
+<label><input checked="" data-roster-column="phone" type="checkbox"/> Phone</label>
+<label><input checked="" data-roster-column="address" type="checkbox"/> Address</label>
+<label><input checked="" data-roster-column="city" type="checkbox"/> City</label>
+<label><input checked="" data-roster-column="contact" type="checkbox"/> Contact</label>
+<label><input checked="" data-roster-column="contactPhone" type="checkbox"/> Contact #</label>
+<label><input checked="" data-roster-column="entryDate" type="checkbox"/> Entry Date</label>
+<label><input checked="" data-roster-column="dischargeDate" type="checkbox"/> Discharge Date</label>
+<label><input checked="" data-roster-column="daysRemaining" type="checkbox"/> Days Remaining</label>
+<label><input checked="" data-roster-column="opoc" type="checkbox"/> OPOC</label>
+<label><input checked="" data-roster-column="admissionStatus" type="checkbox"/> Admission Status</label>
+<label><input checked="" data-roster-column="notes" type="checkbox"/> Notes</label>
+</div>
 </div>
 </section>
 <section class="card wide phase1-roster-section">
@@ -100,7 +100,7 @@
 </thead>
 <tbody id="rosterBody"></tbody>
 </table>
-<table class="roster-table roster-table-compact" aria-label="Compact Phase 1 client roster">
+<table aria-label="Compact Phase 1 client roster" class="roster-table roster-table-compact">
 <thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
 <tbody id="compactRosterBody"></tbody>
 </table>
@@ -128,7 +128,7 @@
 </thead>
 <tbody id="phase2RosterBody"></tbody>
 </table>
-<table class="roster-table roster-table-compact" aria-label="Compact Phase 2 client roster">
+<table aria-label="Compact Phase 2 client roster" class="roster-table roster-table-compact">
 <thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
 <tbody id="compactPhase2RosterBody"></tbody>
 </table>
@@ -163,8 +163,8 @@
 <h2 id="notesModalTitle">Notes</h2>
 <div class="field-group">
 <label for="noteAuthor">Staff Member</label>
-<input autocomplete="off" id="noteAuthor" placeholder="Enter your name" type="text"/>
-</div>
+<input autocomplete="off" id="noteAuthor" placeholder="Enter your name" type="text">
+</input></div>
 <textarea class="notes-box" id="newNoteText" placeholder="Add a new note..."></textarea>
 <div class="button-row">
 <button id="addNoteBtn" onclick="addClientNote()" type="button">Add Note</button>
@@ -173,62 +173,56 @@
 <ul class="list" id="notesList"></ul>
 </div>
 </div>
-
 <div class="modal-backdrop hidden" id="rosterActionsModal">
-  <div class="modal-card applicant-actions-modal" role="dialog" aria-modal="true" aria-labelledby="rosterActionsModalTitle">
-    <div class="modal-title-row">
-      <div>
-        <h2 id="rosterActionsModalTitle">Client Actions</h2>
-        <p class="hint" id="rosterActionsName"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closeRosterActionsModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-
-    <div class="applicant-action-list" id="rosterActionList" aria-label="Available client actions"></div>
-
-    <div class="button-row modal-actions">
-      <button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
-    </div>
-  </div>
+<div aria-labelledby="rosterActionsModalTitle" aria-modal="true" class="modal-card applicant-actions-modal" role="dialog">
+<div class="modal-title-row">
+<div>
+<h2 id="rosterActionsModalTitle">Client Actions</h2>
+<p class="hint" id="rosterActionsName"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closeRosterActionsModalBtn" type="button">×</button>
+</div>
+<div aria-label="Available client actions" class="applicant-action-list" id="rosterActionList"></div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="residentInfoModal">
-  <div class="modal-card resident-info-modal" role="dialog" aria-modal="true" aria-labelledby="residentInfoModalTitle">
-    <div class="modal-title-row resident-info-header">
-      <div>
-        <h2 id="residentInfoModalTitle">Resident Information</h2>
-        <p class="hint" id="residentInfoModalSubtitle"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closeResidentInfoModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-    <div class="resident-info-body" id="residentInfoBody"></div>
-    <div class="button-row modal-actions resident-info-footer">
-      <button class="secondary" id="closeResidentInfoModalFooterBtn" type="button">Close</button>
-    </div>
-  </div>
+<div aria-labelledby="residentInfoModalTitle" aria-modal="true" class="modal-card resident-info-modal" role="dialog">
+<div class="modal-title-row resident-info-header">
+<div>
+<h2 id="residentInfoModalTitle">Resident Information</h2>
+<p class="hint" id="residentInfoModalSubtitle"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closeResidentInfoModalBtn" type="button">×</button>
+</div>
+<div class="resident-info-body" id="residentInfoBody"></div>
+<div class="button-row modal-actions resident-info-footer">
+<button class="secondary" id="closeResidentInfoModalFooterBtn" type="button">Close</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="editResidentModal">
-  <div class="modal-card kbrh-edit-modal resident-edit-modal" role="dialog" aria-modal="true" aria-labelledby="editResidentModalTitle">
-    <div class="kbrh-edit-modal-header">
-      <div>
-        <h2 id="editResidentModalTitle">Edit Resident</h2>
-        <p id="editResidentModalSubtitle">Update this resident's information.</p>
-      </div>
-      <button class="secondary kbrh-modal-close" id="closeEditResidentModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-    <form id="editResidentForm" class="kbrh-edit-modal-form">
-      <div class="kbrh-edit-modal-body">
-        <div class="kbrh-modal-grid" id="editResidentFields"></div>
-      </div>
-      <div class="kbrh-edit-modal-footer">
-        <button class="secondary" id="cancelEditResidentModalBtn" type="button">Cancel</button>
-        <button class="success" type="submit">Save Changes</button>
-      </div>
-    </form>
-  </div>
+<div aria-labelledby="editResidentModalTitle" aria-modal="true" class="modal-card kbrh-edit-modal resident-edit-modal" role="dialog">
+<div class="kbrh-edit-modal-header">
+<div>
+<h2 id="editResidentModalTitle">Edit Resident</h2>
+<p id="editResidentModalSubtitle">Update this resident's information.</p>
 </div>
-
+<button aria-label="Close" class="secondary kbrh-modal-close" id="closeEditResidentModalBtn" type="button">×</button>
+</div>
+<form class="kbrh-edit-modal-form" id="editResidentForm">
+<div class="kbrh-edit-modal-body">
+<div class="kbrh-modal-grid" id="editResidentFields"></div>
+</div>
+<div class="kbrh-edit-modal-footer">
+<button class="secondary" id="cancelEditResidentModalBtn" type="button">Cancel</button>
+<button class="success" type="submit">Save Changes</button>
+</div>
+</form>
+</div>
+</div>
 <script src="roster.js"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 </body>

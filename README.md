@@ -95,3 +95,12 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 - Changing a call-in status moves that applicant to the end of the selected group.
 
 - v4.2.3: Improved contrast and readability in compact waitlist column selector boxes.
+
+## v4.3 — Modern UI Refresh + Resident Incident Reports
+- Added `kbrh-modern.css` as the presentation-only modern theme layer.
+- Modernized the application shell, navigation, cards, tables, forms, modals, buttons, status colours, and responsive layouts without changing existing Firebase storage paths.
+- Preserved the fixed-width Phase 1 occupancy card.
+- Preserved waitlist semantic row colours, including light red for two consecutive No Calls.
+- Added Resident Incident Reports to primary navigation.
+- Incident reports are populated from the active roster and stored in the shared `incidentReports` application-state array.
+- Added printable resident incident report view and Executive Director review/follow-up fields.

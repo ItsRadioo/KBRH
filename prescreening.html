@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Pre-Screening</title>
 <link href="style.css" rel="stylesheet"/>
-<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -16,13 +17,13 @@
 </head>
 <body class="page-prescreening">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Pre-Screening</h1><p>Complete guided intake calls for waitlist applicants who have been given an offer.</p></div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div>
-<nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a aria-current="page" class="app-nav-link active" href="prescreening.html">Pre-Screening</a></nav></header>
+<nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a aria-current="page" class="app-nav-link active" href="prescreening.html">Pre-Screening</a></nav></header>
 <main>
 <section class="card wide page-action-card"><div class="card-heading-row"><div><h2>Applicants Ready for Pre-Screening</h2><p class="hint">Only active waitlist applicants marked <strong>Offer Given</strong> appear here.</p></div><div class="prescreen-summary" id="prescreenSummary"></div></div></section>
 <section class="card wide"><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Phone</th><th>Date Applied</th><th>Pre-Screening Status</th><th>Last Updated</th><th>Action</th></tr></thead><tbody id="prescreenApplicantBody"></tbody></table></div></section>
 </main>
-<div class="modal-backdrop hidden" id="prescreenModal"><div class="modal-card prescreen-modal" role="dialog" aria-modal="true" aria-labelledby="prescreenModalTitle">
-<div class="modal-title-row prescreen-modal-header"><div><h2 id="prescreenModalTitle">Pre-Screening</h2><p class="hint" id="prescreenApplicantName"></p></div><button class="secondary modal-close-button" id="closePrescreenX" type="button" aria-label="Close">×</button></div>
+<div class="modal-backdrop hidden" id="prescreenModal"><div aria-labelledby="prescreenModalTitle" aria-modal="true" class="modal-card prescreen-modal" role="dialog">
+<div class="modal-title-row prescreen-modal-header"><div><h2 id="prescreenModalTitle">Pre-Screening</h2><p class="hint" id="prescreenApplicantName"></p></div><button aria-label="Close" class="secondary modal-close-button" id="closePrescreenX" type="button">×</button></div>
 <div class="prescreen-progress" id="prescreenProgress"></div>
 <div class="prescreen-form" id="prescreenForm"></div>
 <div class="button-row prescreen-footer"><button class="secondary" id="cancelPrescreenBtn" type="button">Close</button><button class="secondary" id="saveDraftBtn" type="button">Save Draft</button><span class="prescreen-footer-spacer"></span><button class="secondary" id="backPrescreenBtn" type="button">Back</button><button id="nextPrescreenBtn" type="button">Continue</button><button class="hidden" id="completePrescreenBtn" type="button">Complete Pre-Screening</button></div>

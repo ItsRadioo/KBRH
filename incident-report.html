@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Incident Reports</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-modern.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>requireLogin();</script>
+</head>
+<body class="page-incident-report">
+<header>
+  <div class="header-top">
+    <div class="brand-and-title"><div class="brand-mark" aria-hidden="true">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Incident Reports</h1><p>Confidential resident incident documentation.</p></div></div>
+    <button class="logout-btn" onclick="logout()" type="button">Sign Out</button>
+  </div>
+  <nav class="app-nav" aria-label="Primary navigation">
+    <a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link active" aria-current="page" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a>
+  </nav>
+</header>
+<main>
+  <section class="card wide page-action-card">
+    <div class="card-heading-row">
+      <div><h2>Resident Incident Reports</h2><p class="hint">Document resident incidents as soon as possible following the event. Reports are confidential.</p></div>
+      <button class="primary-action-btn" id="newIncidentBtn" type="button">+ New Incident Report</button>
+    </div>
+    <div class="incident-summary-grid">
+      <div class="incident-summary-tile"><strong id="incidentTotalCount">0</strong><span>Total Reports</span></div>
+      <div class="incident-summary-tile"><strong id="incidentMonthCount">0</strong><span>This Month</span></div>
+      <div class="incident-summary-tile"><strong id="incidentFollowUpCount">0</strong><span>Follow-Up Required</span></div>
+    </div>
+  </section>
+  <section class="card wide">
+    <div class="card-heading-row"><div><h2>Incident Report Log</h2><p class="hint">Select View to review a completed report. Use Edit to update Executive Director review or follow-up information.</p></div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Resident</th><th>Incident Date</th><th>Type</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="incidentReportBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div class="modal-backdrop hidden" id="incidentModal">
+  <div class="modal-card kbrh-edit-modal incident-modal" role="dialog" aria-modal="true" aria-labelledby="incidentModalTitle" style="width:min(1080px,calc(100vw - 28px));max-height:calc(100vh - 28px);padding:0;overflow:hidden;">
+    <div class="kbrh-edit-modal-header"><div><h2 id="incidentModalTitle">New Resident Incident Report</h2><p id="incidentModalSubtitle">CONFIDENTIAL</p></div><button class="secondary kbrh-modal-close" id="closeIncidentModalBtn" type="button" aria-label="Close">×</button></div>
+    <form id="incidentForm" class="kbrh-edit-modal-form">
+      <div class="kbrh-edit-modal-body">
+        <div class="incident-form-stack">
+          <section class="incident-section"><h3>1. Client Information</h3><div class="incident-form-grid">
+            <div class="incident-field full"><label for="irResident">Resident *</label><select id="irResident" required></select></div>
+            <div class="incident-field"><label for="irDob">Date of Birth</label><input id="irDob" type="date" readonly/></div>
+            <div class="incident-field"><label for="irRoom">Room / Unit #</label><input id="irRoom" type="text" readonly/></div>
+            <div class="incident-field"><label for="irAdmissionDate">Admission Date</label><input id="irAdmissionDate" type="date" readonly/></div>
+          </div></section>
+          <section class="incident-section"><h3>2. Incident Details</h3><div class="incident-form-grid">
+            <div class="incident-field"><label for="irDate">Date of Incident *</label><input id="irDate" type="date" required/></div>
+            <div class="incident-field"><label for="irTime">Time of Incident *</label><input id="irTime" type="time" required/></div>
+            <div class="incident-field full"><label for="irLocation">Location of Incident *</label><input id="irLocation" type="text" required/></div>
+            <div class="incident-field full"><label>Type of Incident — select all that apply</label><div id="incidentTypeChoices" class="incident-choice-grid"></div></div>
+            <div class="incident-field full hidden" id="otherIncidentTypeWrap"><label for="irOtherType">Other Incident Type</label><input id="irOtherType" type="text"/></div>
+          </div></section>
+          <section class="incident-section"><h3>3. Incident Description</h3><div class="incident-field"><label for="irDescription">Detailed, factual account *</label><textarea id="irDescription" required placeholder="Describe what occurred, how, where, and who was involved."></textarea></div></section>
+          <section class="incident-section"><h3>4. Immediate Action Taken</h3><div id="immediateActionChoices" class="incident-choice-grid"></div><div class="incident-field hidden" id="otherActionWrap" style="margin-top:10px"><label for="irOtherAction">Other Action</label><input id="irOtherAction" type="text"/></div><div class="incident-field" style="margin-top:10px"><label for="irImmediateDescription">Describe immediate actions taken</label><textarea id="irImmediateDescription"></textarea></div></section>
+          <section class="incident-section"><h3>5. Injuries Sustained</h3><div class="incident-form-grid">
+            <div class="incident-field"><label for="irClientInjured">Client Injured?</label><select id="irClientInjured"><option>No</option><option>Yes</option></select></div>
+            <div class="incident-field" id="clientInjuryWrap"><label for="irClientInjury">If yes, describe injury</label><input id="irClientInjury" type="text"/></div>
+            <div class="incident-field"><label for="irOthersInjured">Others Injured?</label><select id="irOthersInjured"><option>No</option><option>Yes</option></select></div>
+            <div class="incident-field"><label for="irOthersInjury">If yes, specify who and injury type</label><input id="irOthersInjury" type="text"/></div>
+          </div></section>
+          <section class="incident-section"><h3>6. Witnesses</h3><div id="witnessRows"></div><button class="secondary" id="addWitnessBtn" type="button">+ Add Witness</button></section>
+          <section class="incident-section"><h3>7. Staff Completing Report</h3><div class="incident-form-grid">
+            <div class="incident-field"><label for="irStaffName">Name *</label><input id="irStaffName" type="text" required/></div>
+            <div class="incident-field"><label for="irStaffPosition">Position *</label><input id="irStaffPosition" type="text" required/></div>
+            <div class="incident-field"><label for="irStaffSignature">Signature / Typed Name</label><input id="irStaffSignature" type="text"/></div>
+            <div class="incident-field"><label for="irReportDate">Report Date</label><input id="irReportDate" type="date"/></div>
+          </div></section>
+          <section class="incident-section"><h3>8. Executive Director Review</h3><div class="incident-form-grid">
+            <div class="incident-field"><label for="irEdName">Executive Director Name</label><input id="irEdName" type="text"/></div>
+            <div class="incident-field"><label for="irReviewedDate">Date Reviewed</label><input id="irReviewedDate" type="date"/></div>
+            <div class="incident-field"><label for="irFollowUpRequired">Follow-Up Required?</label><select id="irFollowUpRequired"><option>No</option><option>Yes</option></select></div>
+            <div class="incident-field"><label for="irEdSignature">Executive Director Signature / Typed Name</label><input id="irEdSignature" type="text"/></div>
+            <div class="incident-field full"><label for="irEdFollowUp">If yes, describe follow-up</label><textarea id="irEdFollowUp"></textarea></div>
+          </div></section>
+          <section class="incident-section"><h3>9. Follow Up Required</h3><div class="incident-field"><label for="irFollowUpDetails">Describe any follow-up, dates, and responsible person</label><textarea id="irFollowUpDetails"></textarea></div></section>
+        </div>
+      </div>
+      <div class="kbrh-edit-modal-footer"><button class="secondary" id="cancelIncidentBtn" type="button">Cancel</button><button class="success" type="submit">Save Incident Report</button></div>
+    </form>
+  </div>
+</div>
+<script src="incident-report.js"></script>
+</body>
+</html>

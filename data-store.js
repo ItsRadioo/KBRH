@@ -27,6 +27,7 @@ function defaultAppState() {
     writeUps: [],
     choreChecks: [],
     preScreenings: [],
+    incidentReports: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -230,6 +231,44 @@ function normalizeAppState(state) {
         answers: item.answers && typeof item.answers === "object" ? item.answers : {},
         outcome: item.outcome || "",
         overallNotes: item.overallNotes || ""
+      }))
+    : [];
+
+  merged.incidentReports = Array.isArray(merged.incidentReports)
+    ? merged.incidentReports.filter(item => item && item !== "temp").map(item => ({
+        id: item.id || crypto.randomUUID(),
+        residentId: item.residentId || "",
+        residentName: item.residentName || "",
+        clientDob: item.clientDob || "",
+        roomNumber: item.roomNumber || "",
+        admissionDate: item.admissionDate || "",
+        incidentDate: item.incidentDate || "",
+        incidentTime: item.incidentTime || "",
+        incidentLocation: item.incidentLocation || "",
+        incidentTypes: Array.isArray(item.incidentTypes) ? item.incidentTypes : [],
+        otherIncidentType: item.otherIncidentType || "",
+        description: item.description || "",
+        immediateActions: Array.isArray(item.immediateActions) ? item.immediateActions : [],
+        otherImmediateAction: item.otherImmediateAction || "",
+        immediateActionDescription: item.immediateActionDescription || "",
+        clientInjured: item.clientInjured || "No",
+        clientInjuryDescription: item.clientInjuryDescription || "",
+        othersInjured: item.othersInjured || "No",
+        othersInjuryDescription: item.othersInjuryDescription || "",
+        witnesses: Array.isArray(item.witnesses) ? item.witnesses : [],
+        staffName: item.staffName || "",
+        staffPosition: item.staffPosition || "",
+        staffSignature: item.staffSignature || "",
+        reportDate: item.reportDate || "",
+        executiveDirectorName: item.executiveDirectorName || "",
+        dateReviewed: item.dateReviewed || "",
+        followUpRequired: item.followUpRequired || "No",
+        executiveFollowUp: item.executiveFollowUp || "",
+        executiveDirectorSignature: item.executiveDirectorSignature || "",
+        followUpDetails: item.followUpDetails || "",
+        status: item.status || "Submitted",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || ""
       }))
     : [];
 

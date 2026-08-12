@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Waitlist</title>
 <link href="style.css" rel="stylesheet"/>
-<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -19,7 +19,7 @@
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Waitlist</h1>
 <p>Manage applicants, call-in status, notes, and archived applicants.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a></nav></header>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a></nav></header>
 <main>
 <section class="card wide page-action-card">
 <div class="card-heading-row">
@@ -27,54 +27,50 @@
 <h2>Waitlist Management</h2>
 <p class="hint">Add a new applicant or search and manage the current waitlist.</p>
 </div>
-<button id="openAddWaitlistModalBtn" class="primary-action-btn" type="button">+ Add Applicant</button>
+<button class="primary-action-btn" id="openAddWaitlistModalBtn" type="button">+ Add Applicant</button>
 </div>
 </section>
 <section class="card wide">
 <h2>Current Waitlist</h2>
 <p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. Two consecutive No Calls highlight the applicant for follow-up.</p>
 <div class="compact-column-toolbar">
-  <button id="toggleCompactColumnsBtn" class="secondary" type="button">Choose Compact Columns</button>
+<button class="secondary" id="toggleCompactColumnsBtn" type="button">Choose Compact Columns</button>
 </div>
-
-<div id="compactColumnPanel" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="compactColumnsModalTitle">
-  <div class="modal-card compact-columns-modal-card">
-    <div class="modal-title-row">
-      <div>
-        <h2 id="compactColumnsModalTitle">Choose Compact Columns</h2>
-        <p class="hint">Choose the information shown when the waitlist switches to its smaller-screen layout.</p>
-      </div>
-      <button id="closeCompactColumnsModalBtn" class="modal-close-btn" type="button" aria-label="Close compact column options">×</button>
-    </div>
-
-    <div class="compact-columns-modal-body">
-      <section class="compact-column-group">
-        <div class="compact-column-heading">
-          <div>
-            <h3>Current Waitlist</h3>
-            <p class="hint">Applicant and Actions are always shown.</p>
-          </div>
-          <button id="resetActiveCompactColumnsBtn" class="secondary" type="button">Reset</button>
-        </div>
-        <div id="activeCompactColumnOptions" class="compact-column-options"></div>
-      </section>
-
-      <section class="compact-column-group">
-        <div class="compact-column-heading">
-          <div>
-            <h3>Archived Waitlist</h3>
-            <p class="hint">Applicant and Actions are always shown.</p>
-          </div>
-          <button id="resetArchivedCompactColumnsBtn" class="secondary" type="button">Reset</button>
-        </div>
-        <div id="archivedCompactColumnOptions" class="compact-column-options"></div>
-      </section>
-    </div>
-
-    <div class="button-row compact-columns-modal-footer">
-      <button id="doneCompactColumnsModalBtn" class="primary" type="button">Done</button>
-    </div>
-  </div>
+<div aria-labelledby="compactColumnsModalTitle" aria-modal="true" class="modal-backdrop hidden" id="compactColumnPanel" role="dialog">
+<div class="modal-card compact-columns-modal-card">
+<div class="modal-title-row">
+<div>
+<h2 id="compactColumnsModalTitle">Choose Compact Columns</h2>
+<p class="hint">Choose the information shown when the waitlist switches to its smaller-screen layout.</p>
+</div>
+<button aria-label="Close compact column options" class="modal-close-btn" id="closeCompactColumnsModalBtn" type="button">×</button>
+</div>
+<div class="compact-columns-modal-body">
+<section class="compact-column-group">
+<div class="compact-column-heading">
+<div>
+<h3>Current Waitlist</h3>
+<p class="hint">Applicant and Actions are always shown.</p>
+</div>
+<button class="secondary" id="resetActiveCompactColumnsBtn" type="button">Reset</button>
+</div>
+<div class="compact-column-options" id="activeCompactColumnOptions"></div>
+</section>
+<section class="compact-column-group">
+<div class="compact-column-heading">
+<div>
+<h3>Archived Waitlist</h3>
+<p class="hint">Applicant and Actions are always shown.</p>
+</div>
+<button class="secondary" id="resetArchivedCompactColumnsBtn" type="button">Reset</button>
+</div>
+<div class="compact-column-options" id="archivedCompactColumnOptions"></div>
+</section>
+</div>
+<div class="button-row compact-columns-modal-footer">
+<button class="primary" id="doneCompactColumnsModalBtn" type="button">Done</button>
+</div>
+</div>
 </div>
 <div class="table-wrap waitlist-table-full-wrap">
 <table class="waitlist-table-full">
@@ -134,21 +130,20 @@
 </section>
 </main>
 <div class="modal-backdrop hidden" id="applicantInfoModal">
-  <div class="modal-card applicant-info-modal" role="dialog" aria-modal="true" aria-labelledby="applicantInfoModalTitle">
-    <div class="applicant-info-header modal-title-row">
-      <div>
-        <h2 id="applicantInfoModalTitle">Applicant Information</h2>
-        <p class="hint" id="applicantInfoModalSubtitle"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closeApplicantInfoModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-    <div class="applicant-info-body" id="applicantInfoBody"></div>
-    <div class="button-row applicant-info-footer">
-      <button class="secondary" id="closeApplicantInfoModalFooterBtn" type="button">Close</button>
-    </div>
-  </div>
+<div aria-labelledby="applicantInfoModalTitle" aria-modal="true" class="modal-card applicant-info-modal" role="dialog">
+<div class="applicant-info-header modal-title-row">
+<div>
+<h2 id="applicantInfoModalTitle">Applicant Information</h2>
+<p class="hint" id="applicantInfoModalSubtitle"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closeApplicantInfoModalBtn" type="button">×</button>
+</div>
+<div class="applicant-info-body" id="applicantInfoBody"></div>
+<div class="button-row applicant-info-footer">
+<button class="secondary" id="closeApplicantInfoModalFooterBtn" type="button">Close</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="notesModal">
 <div class="modal-card">
 <h2 id="notesModalTitle">Notes</h2>
@@ -160,79 +155,68 @@
 <ul class="list" id="waitlistNotesList"></ul>
 </div>
 </div>
-
 <div class="modal-backdrop hidden" id="callInModal">
-  <div class="modal-card call-in-modal" role="dialog" aria-modal="true" aria-labelledby="callInModalTitle">
-    <div class="modal-title-row">
-      <div>
-        <h2 id="callInModalTitle">Update Call-In Status</h2>
-        <p class="hint" id="callInApplicantName"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closeCallInModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-
-    <p class="call-in-instruction">Select the applicant's call-in status</p>
-
-    <div class="call-in-action-list" aria-label="Available call-in statuses">
-      <button class="call-in-choice call-in-choice-success" type="button" data-call-in-status="Call In">Call In</button>
-      <button class="call-in-choice call-in-choice-warning" type="button" data-call-in-status="Late Call">Late Call</button>
-      <button class="call-in-choice call-in-choice-danger" type="button" data-call-in-status="No Call">No Call</button>
-    </div>
-
-    <div class="button-row modal-actions">
-      <button class="secondary" id="cancelCallInModalBtn" type="button">Cancel</button>
-    </div>
-  </div>
+<div aria-labelledby="callInModalTitle" aria-modal="true" class="modal-card call-in-modal" role="dialog">
+<div class="modal-title-row">
+<div>
+<h2 id="callInModalTitle">Update Call-In Status</h2>
+<p class="hint" id="callInApplicantName"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closeCallInModalBtn" type="button">×</button>
+</div>
+<p class="call-in-instruction">Select the applicant's call-in status</p>
+<div aria-label="Available call-in statuses" class="call-in-action-list">
+<button class="call-in-choice call-in-choice-success" data-call-in-status="Call In" type="button">Call In</button>
+<button class="call-in-choice call-in-choice-warning" data-call-in-status="Late Call" type="button">Late Call</button>
+<button class="call-in-choice call-in-choice-danger" data-call-in-status="No Call" type="button">No Call</button>
+</div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelCallInModalBtn" type="button">Cancel</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="applicantActionsModal">
-  <div class="modal-card applicant-actions-modal" role="dialog" aria-modal="true" aria-labelledby="applicantActionsModalTitle">
-    <div class="modal-title-row">
-      <div>
-        <h2 id="applicantActionsModalTitle">Applicant Actions</h2>
-        <p class="hint" id="applicantActionsName"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closeApplicantActionsModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-
-    <div class="applicant-action-list" aria-label="Available applicant actions">
-      <button type="button" data-applicant-action="edit">Edit</button>
-      <button type="button" data-applicant-action="changePosition">Change Position</button>
-      <button type="button" data-applicant-action="moveToRoster">Move to Roster</button>
-      <button type="button" id="undoLastCallInActionBtn" data-applicant-action="undoCallIn">Undo Last Call-In</button>
-      <button type="button" data-applicant-action="archive">Archive</button>
-      <button type="button" class="danger" data-applicant-action="delete">Delete</button>
-    </div>
-
-    <div class="button-row modal-actions">
-      <button class="secondary" id="cancelApplicantActionsModalBtn" type="button">Cancel</button>
-    </div>
-  </div>
+<div aria-labelledby="applicantActionsModalTitle" aria-modal="true" class="modal-card applicant-actions-modal" role="dialog">
+<div class="modal-title-row">
+<div>
+<h2 id="applicantActionsModalTitle">Applicant Actions</h2>
+<p class="hint" id="applicantActionsName"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closeApplicantActionsModalBtn" type="button">×</button>
+</div>
+<div aria-label="Available applicant actions" class="applicant-action-list">
+<button data-applicant-action="edit" type="button">Edit</button>
+<button data-applicant-action="changePosition" type="button">Change Position</button>
+<button data-applicant-action="moveToRoster" type="button">Move to Roster</button>
+<button data-applicant-action="undoCallIn" id="undoLastCallInActionBtn" type="button">Undo Last Call-In</button>
+<button data-applicant-action="archive" type="button">Archive</button>
+<button class="danger" data-applicant-action="delete" type="button">Delete</button>
+</div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelApplicantActionsModalBtn" type="button">Cancel</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="positionModal">
-  <div class="modal-card position-modal" role="dialog" aria-modal="true" aria-labelledby="positionModalTitle">
-    <div class="modal-title-row">
-      <div>
-        <h2 id="positionModalTitle">Change Waitlist Position</h2>
-        <p class="hint" id="positionApplicantName"></p>
-      </div>
-      <button class="secondary modal-close-button" id="closePositionModalBtn" type="button" aria-label="Close">×</button>
-    </div>
-
-    <label class="position-field" for="positionNumberInput">
-      <span>New position</span>
-      <input id="positionNumberInput" type="number" min="1" step="1" inputmode="numeric" />
-      <small id="positionRangeHint"></small>
-    </label>
-
-    <div class="button-row modal-actions">
-      <button class="secondary" id="cancelPositionModalBtn" type="button">Cancel</button>
-      <button id="savePositionBtn" type="button">Save Position</button>
-    </div>
-  </div>
+<div aria-labelledby="positionModalTitle" aria-modal="true" class="modal-card position-modal" role="dialog">
+<div class="modal-title-row">
+<div>
+<h2 id="positionModalTitle">Change Waitlist Position</h2>
+<p class="hint" id="positionApplicantName"></p>
 </div>
-
+<button aria-label="Close" class="secondary modal-close-button" id="closePositionModalBtn" type="button">×</button>
+</div>
+<label class="position-field" for="positionNumberInput">
+<span>New position</span>
+<input id="positionNumberInput" inputmode="numeric" min="1" step="1" type="number"/>
+<small id="positionRangeHint"></small>
+</label>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelPositionModalBtn" type="button">Cancel</button>
+<button id="savePositionBtn" type="button">Save Position</button>
+</div>
+</div>
+</div>
 <script src="waitlist.js"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 </body>
