@@ -28,6 +28,7 @@ function defaultAppState() {
     choreChecks: [],
     preScreenings: [],
     incidentReports: [],
+    chartData: { laundry: {}, electronics: {}, meetings: {} },
     updatedAt: new Date().toISOString()
   };
 }
@@ -271,6 +272,13 @@ function normalizeAppState(state) {
         updatedAt: item.updatedAt || ""
       }))
     : [];
+
+  const rawChartData = merged.chartData && typeof merged.chartData === "object" ? merged.chartData : {};
+  merged.chartData = {
+    laundry: rawChartData.laundry && typeof rawChartData.laundry === "object" ? rawChartData.laundry : {},
+    electronics: rawChartData.electronics && typeof rawChartData.electronics === "object" ? rawChartData.electronics : {},
+    meetings: rawChartData.meetings && typeof rawChartData.meetings === "object" ? rawChartData.meetings : {}
+  };
 
   return merged;
 }
