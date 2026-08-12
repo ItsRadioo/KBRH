@@ -390,3 +390,17 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
   body.page-charts .weekly-chart th:first-child,body.page-charts .weekly-chart td:first-child{width:15%!important}
   body.page-charts .weekly-chart input{font-size:7pt!important;min-width:0!important;width:100%!important}
 }
+
+/* v5.2.3 paper-chart layout */
+.page-charts .resident-chart{border-collapse:collapse!important;border-spacing:0!important;background:#fff!important}
+.page-charts .resident-chart th,.page-charts .resident-chart td{border:1px solid #27323d!important}
+.page-charts .resident-chart thead th{background:#f5f7f9!important;color:#172534!important}
+.page-charts .laundry-chart{width:min(430px,100%)!important;margin:0 auto!important;table-layout:fixed!important}
+.page-charts .laundry-chart td,.page-charts .laundry-chart th{height:40px!important;padding:6px 10px!important}
+.page-charts .laundry-chart th:first-child,.page-charts .laundry-chart td:first-child{width:auto!important}
+.page-charts .laundry-chart th:nth-child(2),.page-charts .laundry-chart td:nth-child(2){width:58px!important;min-width:58px!important;max-width:58px!important;text-align:center!important}
+.page-charts .paper-chart-heading{text-align:center;margin:2px 0 14px}.page-charts .paper-chart-heading h2{margin:0;text-transform:uppercase;font-size:1.2rem;letter-spacing:.02em}.page-charts .paper-chart-heading p{margin:3px 0 0;font-size:.75rem;text-transform:uppercase;color:var(--text-muted)}
+.page-charts .day-subhead{display:block;font-size:.7rem;font-weight:600;text-transform:none;margin-top:2px}
+.page-charts .meetings-week-label{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:.78rem;font-weight:800}.page-charts .meetings-week-label input{width:160px}
+.page-charts .weekly-chart th:first-child,.page-charts .weekly-chart td:first-child{width:220px!important}.page-charts .weekly-chart th:not(:first-child),.page-charts .weekly-chart td:not(:first-child){width:auto!important}
+.page-charts .weekly-chart-input{border:0!important;border-radius:0!important;background:transparent!important;min-width:0!important;height:34px!important;padding:4px!important}

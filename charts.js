@@ -22,6 +22,7 @@ function ensureChartData(){
   chartState.chartData.laundryStartDate=chartState.chartData.laundryStartDate || chartState.chartData.laundryDate || "";
   chartState.chartData.electronics=chartState.chartData.electronics||{};
   chartState.chartData.meetings=chartState.chartData.meetings||{};
+  chartState.chartData.meetingsStartDate=chartState.chartData.meetingsStartDate||"";
 }
 
 function setSaveStatus(t){const el=document.getElementById("chartSaveStatus"); if(el) el.textContent=t;}
@@ -52,12 +53,30 @@ function laundryTable(){
   return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident</th><th class="small-check-column">✓</th></tr></thead><tbody>${rows||'<tr><td colspan="2" class="empty-state">No active Phase 1 residents on the roster.</td></tr>'}</tbody></table>`;
 }
 
-function weeklyTable(kind){
-  const data=chartState.chartData[kind];
-  const rows=activeResidents().map(r=>`<tr><td class="chart-resident-name">${esc(residentName(r))}</td>${DAYS.map(day=>{const val=data[r.id]?.[day] ?? '';return `<td><input class="weekly-chart-input" data-id="${esc(r.id)}" data-day="${day}" data-kind="${kind}" value="${esc(val)}"></td>`}).join('')}</tr>`).join('');
-  return `<table class="resident-chart weekly-chart"><thead><tr><th>Resident</th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty-state">No active Phase 1 residents on the roster.</td></tr>`}</tbody></table>`;
+function dayLabel(day){return day.slice(0,3);}
+
+function meetingDate(dayIndex){
+  const start=chartState.chartData.meetingsStartDate||"";
+  return start ? addDays(start,dayIndex) : "";
 }
 
+function shortPdfDate(dateString){
+  if(!dateString) return "";
+  const d=new Date(`${dateString}T00:00:00`);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-CA",{month:"short",day:"numeric"}).toUpperCase();
+}
+
+function weeklyTable(kind){
+  const data=chartState.chartData[kind];
+  const residents=activeResidents();
+  const rows=residents.map(r=>`<tr><td class="chart-resident-name">${esc(residentName(r))}</td>${DAYS.map(day=>{const val=data[r.id]?.[day] ?? '';return `<td><input class="weekly-chart-input" data-id="${esc(r.id)}" data-day="${day}" data-kind="${kind}" value="${esc(val)}"></td>`}).join('')}</tr>`).join('');
+  const heading=kind==='electronics'
+    ? `<div class="paper-chart-heading"><h2>Electronic Devices</h2><p>Mark two X's for multiple devices</p></div>`
+    : `<div class="paper-chart-heading"><h2>Closed AA/NA Meetings Attended</h2><label class="meetings-week-label">Week Starting <input aria-label="Meetings week start date" data-kind="meetings-start-date" type="date" value="${esc(chartState.chartData.meetingsStartDate||'')}"></label></div>`;
+  const headers=DAYS.map((d,i)=>kind==='electronics'?`<th>${dayLabel(d)}<span class="day-subhead">in</span></th>`:`<th>${dayLabel(d)}${meetingDate(i)?`<span class="day-subhead">${esc(shortPdfDate(meetingDate(i)))}</span>`:''}</th>`).join('');
+  return `${heading}<table class="resident-chart weekly-chart ${kind}-chart"><thead><tr><th>Resident</th>${headers}</tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty-state">No active Phase 1 residents on the roster.</td></tr>`}</tbody></table>`;
+}
 function renderChart(){
   if(!chartState)return;ensureChartData();
   const title=document.getElementById('chartTitle'),hint=document.getElementById('chartHint'),box=document.getElementById('chartContainer');
@@ -72,6 +91,9 @@ function updateFromInput(el){
   if(kind==='laundry-start-date'){
     chartState.chartData.laundryStartDate=el.value;
     chartState.chartData.laundryDate=el.value; // backward compatibility
+    renderChart();
+  } else if(kind==='meetings-start-date'){
+    chartState.chartData.meetingsStartDate=el.value;
     renderChart();
   } else if(kind==='laundry-check'){
     const rec=chartState.chartData.laundry[id]||{checked:false};rec.checked=el.checked;chartState.chartData.laundry[id]=rec;
@@ -93,43 +115,76 @@ function generateChartPdf(){
     return;
   }
   ensureChartData();
-  const { jsPDF }=window.jspdf;
+  const {jsPDF}=window.jspdf;
+  const residents=activeResidents();
   const landscape=currentChart!=='laundry';
   const doc=new jsPDF({orientation:landscape?'landscape':'portrait',unit:'pt',format:'letter'});
-  const margin=28;
-  let y=34;
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(16);
-  const title=currentChart==='laundry'?'Laundry Checklist':currentChart==='electronics'?'Electronic Devices Markoff':'Meetings Chart';
-  doc.text(title,doc.internal.pageSize.getWidth()/2,y,{align:'center'});
-  y+=18;
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  doc.setTextColor(0,0,0);
+
   if(currentChart==='laundry'){
     const start=chartState.chartData.laundryStartDate||'';
     const end=addDays(start,6);
-    doc.setFont('helvetica','normal'); doc.setFontSize(10);
-    doc.text(start?`${formatDate(start)} - ${formatDate(end)}`:'Date: ____________________',doc.internal.pageSize.getWidth()/2,y,{align:'center'});
-    y+=18;
-    const body=activeResidents().map(r=>[residentName(r),chartState.chartData.laundry[r.id]?.checked?'X':'']);
-    doc.autoTable({startY:y,head:[['Resident','✓']],body,margin:{left:70,right:70},styles:{fontSize:10,cellPadding:5,valign:'middle'},headStyles:{halign:'center'},columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:48,halign:'center'}}});
-  } else {
-    const data=chartState.chartData[currentChart];
-    const body=activeResidents().map(r=>[residentName(r),...DAYS.map(day=>data[r.id]?.[day]||'')]);
+    doc.setFont('helvetica','bold'); doc.setFontSize(20);
+    doc.text('Resident Laundry Checklist',pageW/2,92,{align:'center'});
+    doc.setLineWidth(.8); doc.line(pageW/2-120,97,pageW/2+120,97);
+    doc.setFontSize(13);
+    const range=start?`${shortPdfDate(start)} - ${shortPdfDate(end)}`:'DATE: __________________';
+    doc.text(range,pageW/2,122,{align:'center'});
+    doc.line(pageW/2-78,127,pageW/2+78,127);
+    const body=residents.map(r=>[residentName(r),chartState.chartData.laundry[r.id]?.checked?'X':'']);
+    const tableWidth=238, left=(pageW-tableWidth)/2;
     doc.autoTable({
-      startY:y,
-      head:[['Resident',...DAYS]],
-      body,
-      margin:{left:18,right:18,bottom:18},
+      startY:164,
+      head:[], body,
       theme:'grid',
-      styles:{fontSize:7,cellPadding:2.2,overflow:'linebreak',valign:'middle',minCellHeight:18},
-      headStyles:{fontSize:7.5,halign:'center'},
-      columnStyles:{0:{cellWidth:96,fontStyle:'bold'},1:{cellWidth:64},2:{cellWidth:64},3:{cellWidth:64},4:{cellWidth:64},5:{cellWidth:64},6:{cellWidth:64},7:{cellWidth:64}},
-      pageBreak:'avoid',
-      rowPageBreak:'avoid'
+      margin:{left,right:left},
+      tableWidth,
+      styles:{font:'helvetica',fontSize:12,cellPadding:{top:4,right:5,bottom:4,left:5},textColor:[0,0,0],lineColor:[0,0,0],lineWidth:.65,minCellHeight:23,valign:'middle'},
+      columnStyles:{0:{cellWidth:190,halign:'left'},1:{cellWidth:48,halign:'center',fontSize:15}},
+      pageBreak:'avoid',rowPageBreak:'avoid'
+    });
+  } else {
+    const isDevices=currentChart==='electronics';
+    const title=isDevices?'ELECTRONIC DEVICES':'CLOSED AA/NA MEETINGS ATTENDED';
+    doc.setFont('helvetica','bold'); doc.setFontSize(isDevices?15:16);
+    doc.text(title,pageW/2,42,{align:'center'});
+    if(isDevices){
+      doc.setFontSize(8.5); doc.setFont('helvetica','normal');
+      doc.text("(MARK TWO X'S FOR MULTIPLE DEVICES)",pageW/2,55,{align:'center'});
+    }
+    const data=chartState.chartData[currentChart];
+    const body=residents.map(r=>[residentName(r),...DAYS.map(day=>data[r.id]?.[day]||'')]);
+    const head=[['Resident',...DAYS.map((day,i)=>{
+      const d=dayLabel(day).toUpperCase();
+      if(isDevices) return `${d}\nin`;
+      const dt=meetingDate(i);
+      return dt?`${d}\n${shortPdfDate(dt)}`:d;
+    })]];
+    const startY=isDevices?68:58;
+    const availableW=pageW-72;
+    const residentW=170;
+    const dayW=(availableW-residentW)/7;
+    const col={0:{cellWidth:residentW,halign:'left',fontStyle:'normal'}};
+    for(let i=1;i<=7;i++) col[i]={cellWidth:dayW,halign:'center'};
+    doc.autoTable({
+      startY,head,body,
+      theme:'grid',
+      margin:{left:36,right:36,bottom:28},
+      tableWidth:availableW,
+      styles:{font:'helvetica',fontSize:8.5,cellPadding:2,textColor:[0,0,0],lineColor:[0,0,0],lineWidth:.55,valign:'middle',minCellHeight:24,overflow:'linebreak'},
+      headStyles:{fillColor:[255,255,255],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:8,lineColor:[0,0,0],lineWidth:.55,minCellHeight:31},
+      columnStyles:col,
+      pageBreak:'avoid',rowPageBreak:'avoid',
+      didParseCell(dataCell){
+        // Keep the form black-and-white like the paper originals.
+        if(dataCell.section==='body') dataCell.cell.styles.fillColor=[255,255,255];
+      }
     });
   }
   doc.save(pdfFileName());
 }
-
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('chartSelector').addEventListener('change',e=>{currentChart=e.target.value;renderChart();});
   document.getElementById('chartContainer').addEventListener('change',e=>{if(e.target.matches('input'))updateFromInput(e.target);});
