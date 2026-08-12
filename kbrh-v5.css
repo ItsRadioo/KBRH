@@ -380,3 +380,13 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 
 /* v5.2.1 chart refinements */
 .laundry-sheet-heading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:4px 0 20px;text-align:center}.laundry-sheet-heading h2{margin:0;font-size:1.35rem}.laundry-date-label{display:flex;align-items:center;gap:10px;font-weight:800}.laundry-date-label input{width:170px}.laundry-chart th:first-child,.laundry-chart td:first-child{width:auto}.laundry-chart th:nth-child(2),.laundry-chart td:nth-child(2){width:72px;text-align:center}@media print{.laundry-sheet-heading{margin-bottom:16px}.laundry-sheet-heading input{border:0;background:transparent}}
+
+/* Charts v5.2.2 */
+.laundry-date-range{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}.laundry-date-label input[readonly]{background:var(--surface-muted);cursor:default}
+@media print{
+  body.page-charts{zoom:.92}
+  body.page-charts .weekly-chart{width:100%!important;table-layout:fixed!important;font-size:7.5pt!important}
+  body.page-charts .weekly-chart th,body.page-charts .weekly-chart td{padding:2px!important}
+  body.page-charts .weekly-chart th:first-child,body.page-charts .weekly-chart td:first-child{width:15%!important}
+  body.page-charts .weekly-chart input{font-size:7pt!important;min-width:0!important;width:100%!important}
+}
