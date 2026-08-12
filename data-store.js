@@ -276,6 +276,7 @@ function normalizeAppState(state) {
   const rawChartData = merged.chartData && typeof merged.chartData === "object" ? merged.chartData : {};
   merged.chartData = {
     laundry: rawChartData.laundry && typeof rawChartData.laundry === "object" ? rawChartData.laundry : {},
+    laundryDate: typeof rawChartData.laundryDate === "string" ? rawChartData.laundryDate : "",
     electronics: rawChartData.electronics && typeof rawChartData.electronics === "object" ? rawChartData.electronics : {},
     meetings: rawChartData.meetings && typeof rawChartData.meetings === "object" ? rawChartData.meetings : {}
   };
