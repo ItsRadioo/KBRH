@@ -104,3 +104,11 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 - Added Resident Incident Reports to primary navigation.
 - Incident reports are populated from the active roster and stored in the shared `incidentReports` application-state array.
 - Added printable resident incident report view and Executive Director review/follow-up fields.
+
+## v5.0 UI overhaul
+- Desktop application shell now uses a fixed left navigation workspace.
+- Responsive top navigation is retained for smaller screens.
+- Added contextual page heroes and KPI summaries.
+- Redesigned cards, data grids, forms, buttons, settings panels, and modal workflows.
+- Preserved existing page IDs, Firebase wiring, and JavaScript data logic.
+- Existing print-only pages are intentionally left visually isolated from the app shell.
