@@ -22,9 +22,12 @@ function formatPhoneNumber(value) {
 async function saveRoster() {
   try {
     await saveAppState(rosterState);
+    return true;
   } catch (error) {
     console.error("Roster save failed:", error);
-    alert("Could not save roster. Check Console for details.");
+    const code = error?.code ? ` (${error.code})` : "";
+    alert(`Could not save roster${code}. Your account is signed in, but Firestore rejected the roster update. Ensure the current firestore.rules file is deployed.`);
+    return false;
   }
 }
 
@@ -586,29 +589,47 @@ function moveToPhase(clientId, phase) {
   saveRoster();
 }
 
-function archiveClient(clientId) {
+async function archiveClient(clientId) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
   const reason = prompt("Archive / discharge reason:", "Discharged");
   if (reason === null) return;
-
   if (!confirm(`Archive ${client.firstName} ${client.lastName}?`)) return;
 
+  // Every authenticated staff account is permitted to archive.  Staff role is
+  // intentionally not checked here; Firestore authentication is the access gate.
+  const previous = JSON.parse(JSON.stringify(client));
+  const archivedAt = new Date().toISOString();
+  const staffName = typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Staff User");
+  const staffUid = auth.currentUser?.uid || "";
+  const staffEmail = auth.currentUser?.email || "";
+
   client.archived = true;
-  client.archivedAt = new Date().toISOString();
+  client.archivedAt = archivedAt;
   client.archiveReason = reason.trim();
+  client.archivedBy = staffName;
+  client.archivedByUid = staffUid;
+  client.archivedByEmail = staffEmail;
 
   client.notes = Array.isArray(client.notes) ? client.notes : [];
   client.notes.unshift({
     id: crypto.randomUUID(),
-    author: "System",
-    text: `Archived from roster on ${new Date().toLocaleDateString("en-CA")}. Reason: ${client.archiveReason || "Not specified"}.`,
-    createdAt: new Date().toISOString()
+    author: staffName,
+    authorUid: staffUid,
+    authorEmail: staffEmail,
+    text: `Archived from roster on ${new Date(archivedAt).toLocaleDateString("en-CA")}. Reason: ${client.archiveReason || "Not specified"}.`,
+    createdAt: archivedAt
   });
 
   renderRoster();
-  saveRoster();
+  const saved = await saveRoster();
+  if (!saved) {
+    // Do not leave the UI showing an archive that Firestore did not accept.
+    Object.keys(client).forEach(key => delete client[key]);
+    Object.assign(client, previous);
+    renderRoster();
+  }
 }
 
 function restoreClient(clientId) {

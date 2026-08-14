@@ -170,6 +170,9 @@ function normalizeAppState(state) {
         archived: client.archived || false,
         archivedAt: client.archivedAt || "",
         archiveReason: client.archiveReason || "",
+        archivedBy: client.archivedBy || "",
+        archivedByUid: client.archivedByUid || "",
+        archivedByEmail: client.archivedByEmail || "",
         notes: normalizeNotes(client.notes)
       }))
     : [];
@@ -393,7 +396,11 @@ async function saveAppState(state) {
     const snap = await APP_DOC_REF().get();
     before = snap.exists ? normalizeAppState(snap.data()) : null;
   }
-  const identity = typeof getCurrentStaffIdentity === "function" ? await getCurrentStaffIdentity() : {uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||"",name:auth.currentUser?.email||"Staff User"};
+  let identity = {uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||"",name:auth.currentUser?.displayName||auth.currentUser?.email||"Staff User",position:""};
+  if (typeof getCurrentStaffIdentity === "function") {
+    try { identity = await getCurrentStaffIdentity(); }
+    catch (error) { console.warn("Staff identity lookup failed; continuing save with authenticated Firebase identity.", error); }
+  }
   stampNewNoteAuthors(before, state, identity);
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
