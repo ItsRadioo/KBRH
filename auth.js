@@ -87,10 +87,14 @@ async function requireLogin() {
     }
 
     const profile = await loadCurrentStaffProfile();
-    if (!profile || profile.missing || !profile.name || profile.active === false) {
+    // Do not block a valid Firebase login if the staff profile has not been
+    // configured yet. When a profile exists, its name is used for auditing.
+    // Otherwise the app temporarily falls back to the authenticated account
+    // display name/email so staff can continue working.
+    if (profile && profile.active === false) {
       sessionStorage.removeItem(KBRH_SESSION_KEY);
       try { await auth.signOut(); } catch (_) {}
-      if (page !== "login.html") window.location.replace("login.html?profile=missing");
+      if (page !== "login.html") window.location.replace("login.html?profile=inactive");
     }
   });
 }

@@ -1,13 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /kbrh/choreTracker {
-      allow read, write: if request.auth != null;
+    // Existing KBRH application documents remain available to authenticated staff.
+    match /kbrh/{docId} {
+      allow read, write: if request.auth != null && docId != 'staffProfiles';
     }
+
+    // Staff identity mapping can be read by authenticated staff but is managed
+    // manually/admin-side, not from the client application.
     match /kbrh/staffProfiles {
       allow read: if request.auth != null;
       allow write: if false;
     }
+
+    // Append-only audit log.
     match /kbrhAudit/{entryId} {
       allow read, create: if request.auth != null;
       allow update, delete: if false;

@@ -43,13 +43,21 @@
         await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
         const credential = await auth.signInWithEmailAndPassword(email, password);
         sessionStorage.setItem(SESSION_KEY, credential.user.uid);
-        const profileDoc = await db.collection("kbrh").doc("staffProfiles").get();
-        const profile = profileDoc.exists ? profileDoc.data()?.profiles?.[credential.user.uid] : null;
-        if (!profile || !String(profile.name || "").trim() || profile.active === false) {
-          sessionStorage.removeItem(SESSION_KEY);
-          await auth.signOut();
-          error.textContent = "Your login is valid, but no active KBRH staff profile is assigned to this account. Contact the administrator.";
-          return;
+        // A valid Firebase Authentication login is enough to enter the system.
+        // If a staff profile exists in kbrh/staffProfiles it will be used for
+        // names/auditing. Missing profiles temporarily fall back to the user's
+        // Firebase display name/email so existing accounts are never locked out.
+        try {
+          const profileDoc = await db.collection("kbrh").doc("staffProfiles").get();
+          const profile = profileDoc.exists ? profileDoc.data()?.profiles?.[credential.user.uid] : null;
+          if (profile && profile.active === false) {
+            sessionStorage.removeItem(SESSION_KEY);
+            await auth.signOut();
+            error.textContent = "This staff account is inactive. Contact the administrator.";
+            return;
+          }
+        } catch (profileError) {
+          console.warn("Staff profile lookup failed; continuing with authenticated Firebase identity.", profileError);
         }
         window.location.replace("index.html");
       } catch (err) {
@@ -58,8 +66,8 @@
       }
     }
 
-    if (new URLSearchParams(location.search).get("profile") === "missing") {
-      document.getElementById("errorMessage").textContent = "This account does not have an active KBRH staff profile. Contact the administrator.";
+    if (new URLSearchParams(location.search).get("profile") === "inactive") {
+      document.getElementById("errorMessage").textContent = "This staff account is inactive. Contact the administrator.";
     }
     document.getElementById("loginBtn").onclick = handleLogin;
     document.getElementById("password").addEventListener("keyup", event => {
