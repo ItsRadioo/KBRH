@@ -106,7 +106,7 @@ function populateResidentDropdowns() {
 
 function addCounselingNote() {
   const residentId = getInputValue("residentSelect");
-  const author = getInputValue("staffName");
+  const author = typeof currentStaffName === "function" ? currentStaffName() : getInputValue("staffName");
   const note = getInputValue("counselingNoteText");
 
   if (!residentId) {
@@ -305,3 +305,5 @@ auth.onAuthStateChanged(user => {
     renderCounselingNotes();
   });
 });
+
+window.addEventListener("kbrhStaffProfileReady",()=>{const f=document.getElementById("staffName");if(f){f.value=currentStaffName();f.readOnly=true;}});

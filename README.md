@@ -112,3 +112,18 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 - Redesigned cards, data grids, forms, buttons, settings panels, and modal workflows.
 - Preserved existing page IDs, Firebase wiring, and JavaScript data logic.
 - Existing print-only pages are intentionally left visually isolated from the app shell.
+
+
+## v5.3 Staff accountability
+- Session-only Firebase authentication; staff must sign in again after the browser session ends.
+- Required staff profile name mapped to each Firebase UID.
+- Automatic audit log entries include staff name, email, page, timestamp, and change summary.
+- New notes and staff-authored records use the signed-in staff identity.
+- Completed pre-screenings include a printable summary.
+- Deploy the included firestore.rules before using staff profiles/audit log.
+
+
+## Staff identity setup (v5.3.1)
+Staff identities are stored in the existing Firestore document `kbrh/staffProfiles`. Create a map field named `profiles`. Inside `profiles`, create one map keyed by each Firebase Authentication UID. Each UID map should contain `name` (string), `email` (string), `role` (string), and `active` (boolean). The website reads the authenticated UID and resolves the staff name from this map. Users cannot edit their own identity in the website.
+
+Pre-Screening includes a printable summary on the Summary step after the questionnaire is completed.

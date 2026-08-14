@@ -14,16 +14,13 @@ function getRecord(applicantId){
   return (prescreenState?.preScreenings || []).find(r => r.applicantId === applicantId);
 }
 function applicantName(a){ return `${a.firstName||""} ${a.lastName||""}`.trim() || "Unnamed Applicant"; }
-function staffDisplayName(){
-  const email = auth.currentUser?.email || "Staff Member";
-  const local = email.split("@")[0].replace(/[._-]+/g," ");
-  return local.replace(/\b\w/g, c => c.toUpperCase());
+function staffDisplayName(){ return typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.displayName || auth.currentUser?.email || "Staff Member");
 }
 function formatDateTime(value){ if(!value) return "—"; const d=new Date(value); return isNaN(d)?"—":d.toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}); }
 function calculateDays(dateString){ if(!dateString)return null; const d=new Date(dateString+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0); return Math.max(0,Math.floor((today-d)/86400000)); }
 function addWaitlistNote(applicant,text){
   applicant.notes=Array.isArray(applicant.notes)?applicant.notes:[];
-  applicant.notes.unshift({id:crypto.randomUUID(),author:auth.currentUser?.email||"Unknown",text,createdAt:new Date().toISOString()});
+  applicant.notes.unshift({id:crypto.randomUUID(),author:typeof currentStaffName==="function"?currentStaffName():(auth.currentUser?.email||"Unknown"),text,createdAt:new Date().toISOString()});
 }
 
 function renderList(){
@@ -40,7 +37,7 @@ function renderList(){
 function emptyRecord(a){
   return {
     id:crypto.randomUUID(), applicantId:a.id, applicantName:applicantName(a), status:"In Progress",
-    workflowStatus:"Opening Script", staffUser:auth.currentUser?.email||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(),
+    workflowStatus:"Opening Script", staffUser:staffDisplayName(), staffEmail:auth.currentUser?.email||"", staffUid:auth.currentUser?.uid||"", startedAt:new Date().toISOString(), completedAt:"", updatedAt:new Date().toISOString(),
     step:"opening", answers:{}, outcome:"", overallNotes:""
   };
 }
@@ -166,7 +163,7 @@ function collectCurrentStep(){
   document.querySelectorAll('#prescreenForm input:not([type="radio"]):not([type="checkbox"]), #prescreenForm textarea').forEach(el=>{ if(el.id) x[el.id]=el.value; });
   x.legalTypes=[...document.querySelectorAll('#prescreenForm input[name="legalTypes"]:checked')].map(el=>el.value);
   if($("overallNotes")) currentRecord.overallNotes=$("overallNotes").value;
-  currentRecord.step=currentStep; currentRecord.updatedAt=new Date().toISOString(); currentRecord.staffUser=auth.currentUser?.email||currentRecord.staffUser||"";
+  currentRecord.step=currentStep; currentRecord.updatedAt=new Date().toISOString(); currentRecord.staffUser=staffDisplayName(); currentRecord.staffEmail=auth.currentUser?.email||currentRecord.staffEmail||""; currentRecord.staffUid=auth.currentUser?.uid||currentRecord.staffUid||"";
 }
 
 function validateStep(step,r){
@@ -203,7 +200,8 @@ function updateFooter(){
   const steps=determineSteps(currentRecord); const i=steps.indexOf(currentStep);
   $("backPrescreenBtn").disabled=i<=0;
   $("nextPrescreenBtn").classList.toggle("hidden",currentStep==="summary");
-  $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary");
+  $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status==="Completed");
+  $("printPrescreenBtn")?.classList.toggle("hidden",currentStep!=="summary");
   $("nextPrescreenBtn").textContent=i===steps.length-2?"Review Summary":"Continue";
 }
 
@@ -235,7 +233,17 @@ async function completePrescreen(){
   } else if(result.code==="approved"){
     addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
   }
-  await saveAppState(prescreenState); renderList(); alert(result.title); closePrescreen();
+  await saveAppState(prescreenState); renderList(); alert(result.title); currentStep="summary"; renderForm();
+}
+
+function printPrescreenSummary(record=currentRecord){
+  if(!record)return;
+  const a=(prescreenState?.waitlist||[]).find(x=>x.id===record.applicantId) || {firstName:record.applicantName||"",lastName:""};
+  const x=record.answers||{}; const days=calculateDays(x.lastUseDate); const result=suggestedOutcome(record);
+  const row=(label,value)=>`<tr><th>${esc(label)}</th><td>${esc(value||"—")}</td></tr>`;
+  const legalTypes=Array.isArray(x.legalTypes)&&x.legalTypes.length?x.legalTypes.join(", "):"—";
+  const win=window.open("","_blank"); if(!win){alert("Allow pop-ups to print the summary.");return;}
+  win.document.write(`<!doctype html><html><head><title>Pre-Screening Summary - ${esc(applicantName(a))}</title><style>@page{size:letter portrait;margin:.55in}body{font-family:Arial,sans-serif;color:#111;font-size:11pt;margin:0}h1{text-align:center;margin:0 0 4px;font-size:20pt}h2{text-align:center;margin:0 0 18px;font-size:13pt}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{border:1px solid #555;padding:7px;text-align:left;vertical-align:top}th{width:32%;background:#eee}h3{margin:16px 0 6px}.outcome{border:2px solid #333;padding:10px;margin:14px 0}.meta{display:flex;justify-content:space-between;gap:20px;font-size:10pt}.notes{white-space:pre-wrap;border:1px solid #777;padding:9px;min-height:45px}button{margin-top:18px}@media print{button{display:none}}</style></head><body><h1>Ken Brown Recovery Home</h1><h2>Pre-Screening Summary</h2><div class="meta"><span><strong>Applicant:</strong> ${esc(applicantName(a))}</span><span><strong>Completed:</strong> ${esc(formatDateTime(record.completedAt||record.updatedAt))}</span></div><table>${row("Staff Member",record.staffUser||"—")}${row("Interest",x.interested==="yes"?"Interested":x.interested==="no"?"Not interested":"Not answered")}${row("Available to Complete Call",x.permission==="yes"?"Yes":x.permission==="no"?"No":"Not answered")}${row("Last Use",x.lastUseDate||"—")}${row("Substance",x.lastUseSubstance||"—")}${row("Days Clean",days===null?"—":String(days))}${row("Admission Expectations",x.expectationsReviewed||"—")}${row("Legal Status Changed",x.legalChanged||"—")}${row("Legal Factors",legalTypes)}${row("Legal Participation Conflict",x.legalConflict||"—")}${row("Health Participation Conflict",x.healthConflict||"—")}${row("Medication",x.takesMedication||"—")}${row("Pharmacy",x.pharmacy||"—")}${row("Allergies",x.hasAllergies==="yes"?(x.allergies||"Yes"):(x.hasAllergies||"—"))}${row("Previous Treatment",x.priorTreatment||"—")}${row("Housing Goal",x.goalHousing||"—")}${row("Employment Goal",x.goalEmployment||"—")}${row("Outside Counselling",x.goalCounselling||"—")}</table><div class="outcome"><strong>Outcome: ${esc(result.title)}</strong><div>${esc(result.detail)}</div></div><h3>Overall Notes</h3><div class="notes">${esc(record.overallNotes||"No additional notes.")}</div><button onclick="window.print()">Print Summary</button></body></html>`); win.document.close();
 }
 
 function openPrescreen(id){
@@ -261,6 +269,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("nextPrescreenBtn").onclick=nextStep;
   $("backPrescreenBtn").onclick=previousStep;
   $("completePrescreenBtn").onclick=completePrescreen;
+  $("printPrescreenBtn").onclick=()=>printPrescreenSummary(currentRecord);
   $("prescreenModal").addEventListener("click",e=>{if(e.target===$("prescreenModal"))closePrescreen();});
 });
 auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{prescreenState=state;prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];renderList();});});

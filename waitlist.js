@@ -331,6 +331,7 @@ function saveInlineEdit(applicantId) {
     applicant.notes = normalizeWaitlistNotes(applicant.notes);
     applicant.notes.unshift({
       id: crypto.randomUUID(),
+      author: typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Unknown"),
       text: `Offer Given: ${offerNote.trim()}`,
       createdAt: new Date().toISOString()
     });
@@ -612,6 +613,7 @@ function addWaitlistNote() {
 
   applicant.notes.unshift({
     id: crypto.randomUUID(),
+    author: typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Unknown"),
     text,
     createdAt: new Date().toISOString()
   });

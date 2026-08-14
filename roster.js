@@ -658,7 +658,8 @@ function openNotes(clientId) {
   document.getElementById("notesModalTitle").textContent =
     `Notes — ${client.firstName || ""} ${client.lastName || ""}`.trim();
 
-  document.getElementById("noteAuthor").value = "";
+  document.getElementById("noteAuthor").value = typeof currentStaffName === "function" ? currentStaffName() : "";
+  document.getElementById("noteAuthor").readOnly = true;
   document.getElementById("newNoteText").value = "";
 
   renderNotesModal(client);
@@ -674,7 +675,7 @@ function addClientNote() {
   const client = rosterState.roster.find(item => item.id === notesClientId);
   if (!client) return;
 
-  const author = getInputValue("noteAuthor");
+  const author = typeof currentStaffName === "function" ? currentStaffName() : getInputValue("noteAuthor");
   const text = getInputValue("newNoteText");
 
   if (!author) {

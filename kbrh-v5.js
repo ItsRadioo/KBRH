@@ -12,7 +12,9 @@
     "page-chore-checks": ["Operations", "Chore Check Tracker", "Complete daily area and resident-room inspections and review history."],
     "page-prescreening": ["Admissions", "Pre-Screening", "Guide offer-ready applicants through the admission pre-screening workflow."],
     "page-incident-report": ["Safety & Compliance", "Incident Reports", "Document, review, and retain confidential resident incident reports."],
-    "page-counseling-notes": ["Case Management", "Counseling Notes", "Record resident counselling interactions and review archived notes."]
+    "page-counseling-notes": ["Case Management", "Counseling Notes", "Record resident counselling interactions and review archived notes."],
+    "page-audit-log": ["Administration", "Audit Log", "Review authenticated staff activity across the system."],
+    "page-staff-profile": ["Administration", "Staff Profile", "Manage the staff identity attached to your account activity."]
   };
 
   function currentPageClass() {
@@ -33,7 +35,7 @@
         <h1>${title}</h1>
         <p>${description}</p>
       </div>
-      <div class="v5-page-hero-badge">Secure staff workspace</div>
+      <div class="v5-page-hero-badge" id="v5StaffBadge">Signed in</div>
     `;
     main.prepend(hero);
   }
@@ -126,6 +128,8 @@
     modernizeTables();
     addWaitlistKpis();
     addRosterKpis();
+    const updateStaffBadge=()=>{const badge=document.getElementById("v5StaffBadge");if(badge&&typeof currentStaffName==="function")badge.textContent=`Signed in: ${currentStaffName()}`;};
+    updateStaffBadge(); window.addEventListener("kbrhStaffProfileReady",updateStaffBadge);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

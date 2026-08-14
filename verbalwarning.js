@@ -136,7 +136,7 @@ async function saveWarningFromModal() {
     if (!existing) return;
     Object.assign(existing, record, {updatedAt:new Date().toISOString()});
   } else {
-    warningState.verbalWarnings.unshift({...record,id:crypto.randomUUID(),staffUser:auth.currentUser?.email || '',createdAt:new Date().toISOString()});
+    warningState.verbalWarnings.unshift({...record,id:crypto.randomUUID(),staffUser:typeof currentStaffName==='function'?currentStaffName():(auth.currentUser?.email || ''),createdAt:new Date().toISOString()});
   }
   renderWarnings();
   await saveWarnings();

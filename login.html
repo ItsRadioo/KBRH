@@ -26,17 +26,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        window.location.href = "index.html";
-      }
-    });
+    const SESSION_KEY = "kbrh.activeStaffSession";
 
     async function handleLogin() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
       const error = document.getElementById("errorMessage");
-
       error.textContent = "";
 
       if (!email || !password) {
@@ -45,14 +40,27 @@
       }
 
       try {
-        await auth.signInWithEmailAndPassword(email, password);
-        window.location.href = "index.html";
+        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        const credential = await auth.signInWithEmailAndPassword(email, password);
+        sessionStorage.setItem(SESSION_KEY, credential.user.uid);
+        const profileDoc = await db.collection("kbrh").doc("staffProfiles").get();
+        const profile = profileDoc.exists ? profileDoc.data()?.profiles?.[credential.user.uid] : null;
+        if (!profile || !String(profile.name || "").trim() || profile.active === false) {
+          sessionStorage.removeItem(SESSION_KEY);
+          await auth.signOut();
+          error.textContent = "Your login is valid, but no active KBRH staff profile is assigned to this account. Contact the administrator.";
+          return;
+        }
+        window.location.replace("index.html");
       } catch (err) {
         console.error(err);
         error.textContent = "Login failed. Check the email and password.";
       }
     }
 
+    if (new URLSearchParams(location.search).get("profile") === "missing") {
+      document.getElementById("errorMessage").textContent = "This account does not have an active KBRH staff profile. Contact the administrator.";
+    }
     document.getElementById("loginBtn").onclick = handleLogin;
     document.getElementById("password").addEventListener("keyup", event => {
       if (event.key === "Enter") handleLogin();

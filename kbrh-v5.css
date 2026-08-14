@@ -404,3 +404,44 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 .page-charts .meetings-week-label{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:.78rem;font-weight:800}.page-charts .meetings-week-label input{width:160px}
 .page-charts .weekly-chart th:first-child,.page-charts .weekly-chart td:first-child{width:220px!important}.page-charts .weekly-chart th:not(:first-child),.page-charts .weekly-chart td:not(:first-child){width:auto!important}
 .page-charts .weekly-chart-input{border:0!important;border-radius:0!important;background:transparent!important;min-width:0!important;height:34px!important;padding:4px!important}
+
+/* v5.2.5 Chore check mobile modal scrolling */
+.page-chore-checks #checkModal .chore-check-modal{
+  display:flex;
+  flex-direction:column;
+  width:min(760px,calc(100vw - 32px));
+  max-height:calc(100dvh - 32px)!important;
+  overflow:hidden!important;
+}
+.page-chore-checks #checkModal .chore-check-modal>.modal-title-row{flex:0 0 auto;}
+.page-chore-checks #checkModal .chore-modal-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:0 22px 22px!important;
+}
+.page-chore-checks #checkModal .chore-check-modal>.modal-actions{
+  position:static!important;
+  flex:0 0 auto;
+}
+@media(max-width:700px){
+  .page-chore-checks #checkModal{align-items:stretch!important;padding:8px!important;}
+  .page-chore-checks #checkModal .chore-check-modal{
+    width:100%;
+    max-width:none;
+    height:calc(100dvh - 16px);
+    max-height:calc(100dvh - 16px)!important;
+    margin:0;
+  }
+  .page-chore-checks #checkModal .chore-modal-scroll{padding:0 14px 18px!important;}
+  .page-chore-checks #checkModal .chore-check-modal>.modal-actions{
+    display:flex;
+    gap:8px;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom))!important;
+  }
+}
+
+/* v5.3 authenticated staff identity */
+#v5StaffBadge{white-space:nowrap}.page-staff-profile main{max-width:1100px}.page-staff-profile .card{margin-inline:auto}

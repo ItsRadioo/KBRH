@@ -50,6 +50,8 @@ function normalizeNotes(notes) {
     return notes.map(note => ({
       id: note.id || crypto.randomUUID(),
       author: note.author || "Unknown",
+      authorUid: note.authorUid || "",
+      authorEmail: note.authorEmail || "",
       text: note.text || "",
       createdAt: note.createdAt || new Date().toISOString()
     }));
@@ -76,6 +78,8 @@ function normalizeCounselingNotes(notes) {
           residentId: note.residentId || "",
           residentName: note.residentName || "Unknown Resident",
           author: note.author || "Unknown",
+          authorUid: note.authorUid || "",
+          authorEmail: note.authorEmail || "",
           note: note.note || "",
           archivedResident: note.archivedResident || false,
           createdAt: note.createdAt || new Date().toISOString()
@@ -300,35 +304,116 @@ function normalizeMealSchedule(mealSchedule) {
   return merged;
 }
 
+
+let KBRH_LAST_STATE = null;
+
+function kbrhPageName() {
+  return window.location.pathname.split("/").pop() || "index.html";
+}
+function kbrhEntityName(item, fallback="Record") {
+  return `${item?.firstName||""} ${item?.lastName||""}`.trim() || item?.residentName || item?.applicantName || item?.name || fallback;
+}
+function kbrhShort(value, max=90) {
+  const text=String(value||"").replace(/\s+/g," ").trim(); return text.length>max?text.slice(0,max-1)+"…":text;
+}
+function kbrhMapById(list){ return new Map((Array.isArray(list)?list:[]).filter(Boolean).map(x=>[x.id,x])); }
+function kbrhChanged(a,b,key){ return JSON.stringify(a?.[key]??null)!==JSON.stringify(b?.[key]??null); }
+function kbrhDiffCollection(before,after,key,label,fields=[]) {
+  const changes=[]; const bm=kbrhMapById(before?.[key]); const am=kbrhMapById(after?.[key]);
+  for(const [id,item] of am){
+    const old=bm.get(id); const name=kbrhEntityName(item,label);
+    if(!old){changes.push(`Added ${label}: ${name}`); continue;}
+    const changed=fields.filter(f=>kbrhChanged(old,item,f));
+    if(changed.length) changes.push(`Updated ${label}: ${name} (${changed.join(", ")})`);
+    const oldNotes=kbrhMapById(old.notes), newNotes=kbrhMapById(item.notes);
+    for(const [nid,note] of newNotes){if(!oldNotes.has(nid))changes.push(`Added note for ${name}: ${kbrhShort(note.text||note.note)}`);}
+    for(const nid of oldNotes.keys()){if(!newNotes.has(nid))changes.push(`Deleted note from ${name}`);}
+  }
+  for(const [id,item] of bm){if(!am.has(id))changes.push(`Removed ${label}: ${kbrhEntityName(item,label)}`);}
+  return changes;
+}
+function describeAppStateChanges(before,after){
+  if(!before) return ["Initialized shared application data"];
+  let changes=[];
+  changes.push(...kbrhDiffCollection(before,after,"roster","resident",["roomNumber","phase","archived","entryDate","expectedDischargeDate","opocCompleted"]));
+  changes.push(...kbrhDiffCollection(before,after,"waitlist","applicant",["status","callPriority","archived","dateApplied","callInHistory"]));
+  changes.push(...kbrhDiffCollection(before,after,"residents","chore assignment",["choreIndex","lockedChore","exceptions","status","awayUntil"]));
+  const simple=[
+    ["counselingNotes","counseling note"],["verbalWarnings","verbal warning"],["writeUps","write-up"],["choreChecks","chore check"],["preScreenings","pre-screening"],["incidentReports","incident report"]
+  ];
+  for(const [key,label] of simple){
+    const bm=kbrhMapById(before?.[key]), am=kbrhMapById(after?.[key]);
+    for(const [id,item] of am){const old=bm.get(id);const name=kbrhEntityName(item,label);if(!old)changes.push(`Added ${label}: ${name}`);else if(JSON.stringify(old)!==JSON.stringify(item))changes.push(`Updated ${label}: ${name}`);}
+    for(const [id,item] of bm){if(!am.has(id))changes.push(`Deleted ${label}: ${kbrhEntityName(item,label)}`);}
+  }
+  if(JSON.stringify(before.mealSchedule)!==JSON.stringify(after.mealSchedule)) changes.push("Updated meal chore schedule");
+  if(JSON.stringify(before.chartData)!==JSON.stringify(after.chartData)) changes.push("Updated charts");
+  if(JSON.stringify(before.chores)!==JSON.stringify(after.chores)) changes.push("Updated chore list");
+  return [...new Set(changes)].slice(0,30);
+}
+function stampNewNoteAuthors(before,state,identity){
+  for(const key of ["waitlist","roster"]){
+    const bm=kbrhMapById(before?.[key]);
+    for(const item of (state?.[key]||[])){
+      const oldNotes=kbrhMapById(bm.get(item.id)?.notes);
+      if(!Array.isArray(item.notes)) continue;
+      for(const note of item.notes){
+        if(!oldNotes.has(note.id) && (!note.author || note.author==="Unknown")){
+          note.author=identity.name; note.authorUid=identity.uid; note.authorEmail=identity.email;
+        }
+      }
+    }
+  }
+  const simple=[
+    ["counselingNotes","author"],["writeUps","issuedBy"],["choreChecks","checkedBy"],["verbalWarnings","staffUser"],["incidentReports","staffName"]
+  ];
+  for(const [key,field] of simple){const old=kbrhMapById(before?.[key]);for(const rec of (state?.[key]||[])){if(!old.has(rec.id))rec[field]=identity.name;}}
+  const psOld=kbrhMapById(before?.preScreenings);for(const rec of (state?.preScreenings||[])){if(!psOld.has(rec.id)||rec.status!==psOld.get(rec.id)?.status){rec.staffUser=identity.name;rec.staffEmail=identity.email;rec.staffUid=identity.uid;}}
+}
+async function writeAuditEntry(changes,identity){
+  if(!changes.length||!identity?.uid)return;
+  try{await db.collection("kbrhAudit").add({staffUid:identity.uid,staffName:identity.name,staffEmail:identity.email,page:kbrhPageName(),changes,summary:changes[0]||"Updated application data",timestamp:firebase.firestore.FieldValue.serverTimestamp(),timestampIso:new Date().toISOString()});}
+  catch(error){console.warn("Audit log write failed",error);}
+}
 async function loadAppState() {
   const snap = await APP_DOC_REF().get();
-
   if (!snap.exists) {
     const initial = defaultAppState();
-    await saveAppState(initial);
-    return initial;
+    await APP_DOC_REF().set(initial, { merge: true });
+    KBRH_LAST_STATE = normalizeAppState(initial);
+    return KBRH_LAST_STATE;
   }
-
-  return normalizeAppState(snap.data());
+  KBRH_LAST_STATE = normalizeAppState(snap.data());
+  return KBRH_LAST_STATE;
 }
 
 async function saveAppState(state) {
+  let before = KBRH_LAST_STATE;
+  if (!before) {
+    const snap = await APP_DOC_REF().get();
+    before = snap.exists ? normalizeAppState(snap.data()) : null;
+  }
+  const identity = typeof getCurrentStaffIdentity === "function" ? await getCurrentStaffIdentity() : {uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||"",name:auth.currentUser?.email||"Staff User"};
+  stampNewNoteAuthors(before, state, identity);
   const cleaned = normalizeAppState(state);
   cleaned.updatedAt = new Date().toISOString();
-
+  const changes = describeAppStateChanges(before, cleaned);
   await APP_DOC_REF().set(cleaned, { merge: true });
+  KBRH_LAST_STATE = normalizeAppState(cleaned);
+  await writeAuditEntry(changes, identity);
 }
 
 function listenToAppState(callback) {
   return APP_DOC_REF().onSnapshot(async snap => {
     if (!snap.exists) {
       const initial = defaultAppState();
-      await saveAppState(initial);
-      callback(initial);
+      await APP_DOC_REF().set(initial, { merge: true });
+      KBRH_LAST_STATE = normalizeAppState(initial);
+      callback(KBRH_LAST_STATE);
       return;
     }
-
-    callback(normalizeAppState(snap.data()));
+    KBRH_LAST_STATE = normalizeAppState(snap.data());
+    callback(KBRH_LAST_STATE);
   });
 }
 
