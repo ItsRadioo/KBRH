@@ -590,44 +590,99 @@ function moveToPhase(clientId, phase) {
 }
 
 async function archiveClient(clientId) {
-  const client = rosterState.roster.find(item => item.id === clientId);
-  if (!client) return;
+  const localClient = rosterState.roster.find(item => item.id === clientId);
+  if (!localClient) return;
 
   const reason = prompt("Archive / discharge reason:", "Discharged");
   if (reason === null) return;
-  if (!confirm(`Archive ${client.firstName} ${client.lastName}?`)) return;
+  if (!confirm(`Archive ${localClient.firstName} ${localClient.lastName}?`)) return;
 
-  // Every authenticated staff account is permitted to archive.  Staff role is
-  // intentionally not checked here; Firestore authentication is the access gate.
-  const previous = JSON.parse(JSON.stringify(client));
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Your login session has ended. Please sign in again before archiving a resident.");
+    window.location.replace("login.html");
+    return;
+  }
+
+  let identity = {
+    uid: user.uid || "",
+    email: user.email || "",
+    name: typeof currentStaffName === "function" ? currentStaffName() : (user.email || "Staff User")
+  };
+  if (typeof getCurrentStaffIdentity === "function") {
+    try { identity = await getCurrentStaffIdentity(); }
+    catch (error) { console.warn("Staff profile lookup failed during archive; using authenticated identity.", error); }
+  }
+
   const archivedAt = new Date().toISOString();
-  const staffName = typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Staff User");
-  const staffUid = auth.currentUser?.uid || "";
-  const staffEmail = auth.currentUser?.email || "";
+  const archiveReason = reason.trim();
+  const appRef = APP_DOC_REF();
 
-  client.archived = true;
-  client.archivedAt = archivedAt;
-  client.archiveReason = reason.trim();
-  client.archivedBy = staffName;
-  client.archivedByUid = staffUid;
-  client.archivedByEmail = staffEmail;
+  try {
+    // Archive against the latest Firestore roster instead of saving the entire
+    // locally cached application state. This prevents a stale browser snapshot
+    // or another open page from silently restoring the resident afterwards.
+    await db.runTransaction(async transaction => {
+      const snap = await transaction.get(appRef);
+      if (!snap.exists) throw new Error("Shared KBRH application record was not found.");
 
-  client.notes = Array.isArray(client.notes) ? client.notes : [];
-  client.notes.unshift({
-    id: crypto.randomUUID(),
-    author: staffName,
-    authorUid: staffUid,
-    authorEmail: staffEmail,
-    text: `Archived from roster on ${new Date(archivedAt).toLocaleDateString("en-CA")}. Reason: ${client.archiveReason || "Not specified"}.`,
-    createdAt: archivedAt
-  });
+      const current = normalizeAppState(snap.data());
+      const roster = Array.isArray(current.roster) ? current.roster : [];
+      const index = roster.findIndex(item => item && item.id === clientId);
+      if (index < 0) throw new Error("Resident was not found in the current shared roster.");
 
-  renderRoster();
-  const saved = await saveRoster();
-  if (!saved) {
-    // Do not leave the UI showing an archive that Firestore did not accept.
-    Object.keys(client).forEach(key => delete client[key]);
-    Object.assign(client, previous);
+      const resident = { ...roster[index] };
+      resident.archived = true;
+      resident.archivedAt = archivedAt;
+      resident.archiveReason = archiveReason;
+      resident.archivedBy = identity.name || identity.email || "Staff User";
+      resident.archivedByUid = identity.uid || "";
+      resident.archivedByEmail = identity.email || "";
+      resident.notes = Array.isArray(resident.notes) ? [...resident.notes] : [];
+      resident.notes.unshift({
+        id: crypto.randomUUID(),
+        author: resident.archivedBy,
+        authorUid: resident.archivedByUid,
+        authorEmail: resident.archivedByEmail,
+        text: `Archived from roster on ${new Date(archivedAt).toLocaleDateString("en-CA")}. Reason: ${archiveReason || "Not specified"}.`,
+        createdAt: archivedAt
+      });
+
+      roster[index] = resident;
+      transaction.update(appRef, {
+        roster: roster,
+        updatedAt: archivedAt
+      });
+    });
+
+    // Read the server-backed document again and verify that the archive actually
+    // persisted before showing the operation as successful.
+    const verifySnap = await appRef.get({ source: "server" });
+    const verified = verifySnap.exists ? normalizeAppState(verifySnap.data()) : null;
+    const verifiedClient = verified?.roster?.find(item => item.id === clientId);
+    if (!verifiedClient?.archived) {
+      throw new Error("Archive was not confirmed by Firestore.");
+    }
+
+    rosterState = verified;
+    KBRH_LAST_STATE = normalizeAppState(verified);
+    renderRoster();
+
+    if (typeof writeAuditEntry === "function") {
+      writeAuditEntry(
+        [`Archived resident: ${verifiedClient.firstName || ""} ${verifiedClient.lastName || ""}`.trim()],
+        identity
+      ).catch(error => console.warn("Archive audit entry failed, but the resident archive was saved.", error));
+    }
+  } catch (error) {
+    console.error("Resident archive failed:", error);
+    const code = error?.code ? ` (${error.code})` : "";
+    alert(`Could not archive resident${code}. The resident was NOT removed from the active roster. Please try again or check Firestore permissions/connectivity.`);
+    // Re-sync the UI from Firestore so it never displays an unsaved archive.
+    try {
+      const latest = await appRef.get({ source: "server" });
+      if (latest.exists) rosterState = normalizeAppState(latest.data());
+    } catch (_) {}
     renderRoster();
   }
 }
