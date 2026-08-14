@@ -9,8 +9,10 @@ function activeResidents(){
   return (chartState?.roster||[])
     .filter(r => r && !r.archived && (r.phase || "phase1") === "phase1")
     .sort((a,b)=>{
-      const ra=Number(a.roomNumber)||999, rb=Number(b.roomNumber)||999;
-      return ra-rb || `${a.lastName||""} ${a.firstName||""}`.localeCompare(`${b.lastName||""} ${b.firstName||""}`);
+      // Match the Phase 1 roster display order exactly: earliest entry/admission date first.
+      const aDate = a.entryDate || "9999-12-31";
+      const bDate = b.entryDate || "9999-12-31";
+      return aDate.localeCompare(bDate);
     });
 }
 
