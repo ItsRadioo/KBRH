@@ -555,3 +555,120 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
     min-width: 180px !important;
   }
 }
+
+/* v5.3.9: collapsed-sidebar wide-table mode
+   Use the reclaimed width to compress columns intelligently instead of pushing
+   the Actions column off-screen. The Actions column remains pinned on the right
+   if a very wide table still needs horizontal scrolling. */
+@media (min-width: 901px) {
+  body.kbrh-v5.v5-sidebar-collapsed > main {
+    width: calc(100vw - 24px) !important;
+    max-width: 1920px !important;
+    margin: 0 auto !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed > main > .card,
+  body.kbrh-v5.v5-sidebar-collapsed > main > section,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap {
+    overflow-x: auto !important;
+    scrollbar-gutter: stable;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap table,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .roster-table-full,
+  body.kbrh-v5.v5-sidebar-collapsed.page-waitlist .waitlist-table-full,
+  body.kbrh-v5.v5-sidebar-collapsed.page-waitlist .archived-waitlist-table-full {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+    margin-inline: auto !important;
+  }
+
+  /* Compact the full desktop tables enough to use the reclaimed sidebar width. */
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full th,
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full th,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full td,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full th,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full td {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 7px 6px !important;
+    font-size: clamp(10px, .68vw, 12px) !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  /* Let flexible columns take spare room instead of forcing every column wide. */
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full th:nth-child(7),
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td:nth-child(7) { min-width: 105px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full th:nth-child(15),
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td:nth-child(15) { min-width: 105px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full th:nth-child(16),
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td:nth-child(16) { min-width: 72px !important; }
+
+  /* Phone fields keep enough room to remain readable, but no longer claim 125px+ by force. */
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full .phone-col,
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full .phone-cell {
+    min-width: 96px !important;
+    width: auto !important;
+  }
+
+  /* Controls should shrink with their cells rather than forcing table overflow. */
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full input,
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full select,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full input,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full select {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 5px 5px !important;
+    font-size: inherit !important;
+  }
+
+  /* Never lose the Actions column. If horizontal scrolling is still necessary,
+     keep it visible on the right edge of the table viewport. */
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full td:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full td:last-child {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 5 !important;
+    width: 86px !important;
+    min-width: 86px !important;
+    max-width: 86px !important;
+    text-align: center !important;
+    background: var(--surface, #fff) !important;
+    box-shadow: -6px 0 10px -10px rgba(15, 23, 42, .65) !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full thead th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full thead th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full thead th:last-child {
+    z-index: 8 !important;
+    background: var(--surface-muted, #eef2f6) !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full td:last-child button,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full td:last-child button,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full td:last-child button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px 5px !important;
+    white-space: nowrap !important;
+  }
+}
