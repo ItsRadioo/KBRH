@@ -490,3 +490,68 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 
 /* v5.3 authenticated staff identity */
 #v5StaffBadge{white-space:nowrap}.page-staff-profile main{max-width:1100px}.page-staff-profile .card{margin-inline:auto}
+
+/* v5.3.8: use reclaimed sidebar space for full-width data tables */
+@media (min-width: 901px) {
+  body.kbrh-v5.v5-sidebar-collapsed > main {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed > main > .card,
+  body.kbrh-v5.v5-sidebar-collapsed > main > section {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    overflow-x: auto !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap table,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .roster-table,
+  body.kbrh-v5.v5-sidebar-collapsed.page-waitlist .waitlist-table {
+    width: 100% !important;
+    min-width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap th,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap td,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .roster-table th,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .roster-table td {
+    width: auto !important;
+    min-width: max-content !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    text-overflow: clip !important;
+  }
+
+  /* Keep controls usable without forcing their labels onto multiple lines. */
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap button,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap .button-link,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap select {
+    white-space: nowrap !important;
+    width: auto !important;
+    min-width: max-content !important;
+  }
+
+  /* Let long free-text/note fields wrap; these are the exception to no-wrap data cells. */
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap textarea,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap .notes-cell,
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap .note-cell {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    min-width: 180px !important;
+  }
+}

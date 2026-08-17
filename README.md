@@ -127,3 +127,8 @@ Adds Write-Up Tracker and Chore Check Tracker. The chore checks include Washroom
 Staff identities are stored in the existing Firestore document `kbrh/staffProfiles`. Create a map field named `profiles`. Inside `profiles`, create one map keyed by each Firebase Authentication UID. Each UID map should contain `name` (string), `email` (string), `role` (string), and `active` (boolean). The website reads the authenticated UID and resolves the staff name from this map. Users cannot edit their own identity in the website.
 
 Pre-Screening includes a printable summary on the Summary step after the questionnaire is completed.
+
+## v5.3.8
+- Collapsing the desktop sidebar now gives tables the full reclaimed viewport width.
+- Desktop table cells switch to no-wrap while the sidebar is hidden, reducing unnecessary word wrapping.
+- Tables remain horizontally scrollable only when their actual content is wider than the full screen.
