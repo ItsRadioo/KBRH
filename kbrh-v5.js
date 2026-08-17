@@ -119,9 +119,44 @@
     document.querySelectorAll(".table-wrap").forEach(wrap => wrap.setAttribute("role","region"));
   }
 
+
+  function addSidebarToggle() {
+    if (document.querySelector(".v5-sidebar-toggle")) return;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "v5-sidebar-toggle";
+    button.setAttribute("aria-label", "Hide navigation menu");
+    button.setAttribute("aria-expanded", "true");
+    button.title = "Hide menu";
+    button.textContent = "‹";
+    document.body.appendChild(button);
+
+    const key = "kbrh.sidebarCollapsed";
+    const applyState = collapsed => {
+      document.body.classList.toggle("v5-sidebar-collapsed", collapsed);
+      button.textContent = collapsed ? "›" : "‹";
+      button.title = collapsed ? "Show menu" : "Hide menu";
+      button.setAttribute("aria-label", collapsed ? "Show navigation menu" : "Hide navigation menu");
+      button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    };
+
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(key) === "true"; } catch (_) {}
+    applyState(collapsed);
+
+    button.addEventListener("click", () => {
+      collapsed = !document.body.classList.contains("v5-sidebar-collapsed");
+      applyState(collapsed);
+      try { localStorage.setItem(key, String(collapsed)); } catch (_) {}
+      window.dispatchEvent(new Event("resize"));
+    });
+  }
+
   function init() {
     if (document.body.classList.contains("page-login") || document.body.classList.contains("page-print") || document.body.classList.contains("page-meal-print")) return;
     document.body.classList.add("kbrh-v5");
+    addSidebarToggle();
     buildHero();
     classifyCards();
     enhanceActionCard();

@@ -151,6 +151,49 @@ body:not(.page-login):not(.page-print):not(.page-meal-print)>main{
 body:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card,
 body:not(.page-login):not(.page-print):not(.page-meal-print)>main>section:not(.v5-page-hero):not(.roster-summary){grid-column:1/-1;}
 
+
+/* ----- Collapsible desktop sidebar ----- */
+body.kbrh-v5 > header,
+body.kbrh-v5 > main,
+.v5-sidebar-toggle{
+  transition:transform .2s ease, margin-left .2s ease, left .2s ease, background .15s ease, color .15s ease;
+}
+.v5-sidebar-toggle{
+  position:fixed;
+  z-index:1100;
+  top:50%;
+  left:var(--v5-sidebar);
+  transform:translate(-1px,-50%);
+  width:30px;
+  height:58px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:1px solid #c7d3df;
+  border-left:0;
+  border-radius:0 9px 9px 0;
+  background:#ffffff;
+  color:#17324c;
+  box-shadow:4px 2px 14px rgba(11,31,51,.12);
+  font:800 18px/1 Inter,Aptos,"Segoe UI",Arial,sans-serif;
+  cursor:pointer;
+}
+.v5-sidebar-toggle:hover{background:#f2f7fb;color:var(--v5-teal);}
+.v5-sidebar-toggle:focus-visible{outline:none;box-shadow:var(--v5-focus),4px 2px 14px rgba(11,31,51,.12);}
+body.kbrh-v5.v5-sidebar-collapsed > header{
+  transform:translateX(-100%);
+  pointer-events:none;
+}
+body.kbrh-v5.v5-sidebar-collapsed > main{
+  margin-left:0!important;
+}
+body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle{
+  left:0;
+}
+body.kbrh-v5.v5-sidebar-collapsed .table-wrap{
+  max-width:100%;
+}
+
 /* ----- Page hero ----- */
 .v5-page-hero{
   grid-column:1/-1;
@@ -331,6 +374,7 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 /* ----- Responsive shell ----- */
 @media(max-width:1180px){
   :root{--v5-sidebar:0px;}
+  .v5-sidebar-toggle{display:none!important;}
   body:not(.page-login):not(.page-print):not(.page-meal-print)>header{
     position:sticky!important;inset:0!important;width:100%!important;height:auto!important;min-height:0!important;
     display:grid!important;grid-template-columns:auto 1fr auto!important;grid-template-rows:auto auto!important;
@@ -371,6 +415,7 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
   .roster-stat-card{width:320px!important;min-width:320px!important;max-width:320px!important;}
 }
 @media print{
+  .v5-sidebar-toggle{display:none!important;}
   .v5-page-hero,.v5-kpi-strip{display:none!important;}
 }
 
