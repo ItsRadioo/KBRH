@@ -132,3 +132,11 @@ Pre-Screening includes a printable summary on the Summary step after the questio
 - Collapsing the desktop sidebar now gives tables the full reclaimed viewport width.
 - Desktop table cells switch to no-wrap while the sidebar is hidden, reducing unnecessary word wrapping.
 - Tables remain horizontally scrollable only when their actual content is wider than the full screen.
+
+## v5.3.10 layout fix
+- Collapsed sidebar now fully removes the desktop shell offset and recenters the roster across the viewport.
+- Phase 1 roster uses reclaimed width with no-wrap desktop cells.
+- OPOC has reserved width for checkbox/status text.
+- Actions remains a normal fully visible column instead of overlapping/pinning over OPOC.
+
+v5.3.11: Repaired Resident Incident Report modal overflow and checkbox/label layout. Incident type and immediate-action choices now stay fully inside their bordered cards, labels align beside checkboxes, and the modal no longer scrolls horizontally.

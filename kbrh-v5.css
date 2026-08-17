@@ -672,3 +672,257 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
     white-space: nowrap !important;
   }
 }
+
+/* v5.3.10: true full-width collapsed roster layout
+   The base application-shell selector is intentionally very specific, so this
+   override matches/exceeds it to fully remove the desktop sidebar offset. */
+@media (min-width: 901px) {
+  body.kbrh-v5.v5-sidebar-collapsed:not(.page-login):not(.page-print):not(.page-meal-print) > main {
+    margin: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    padding-left: clamp(20px, 2vw, 36px) !important;
+    padding-right: clamp(20px, 2vw, 36px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Keep the entire page visually centered after the sidebar disappears. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster > main > .v5-page-hero,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster > main > .roster-summary,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster > main > .v5-kpi-strip,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster > main > .card,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster > main > section {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .table-wrap,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase2-roster-section .table-wrap,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .archived-roster-section .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+    overflow-x: auto !important;
+  }
+
+  /* Use the reclaimed sidebar width for the roster instead of crushing cells. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .phase1-roster-section .roster-table-full {
+    width: 100% !important;
+    min-width: 1500px !important;
+    table-layout: auto !important;
+    margin-inline: auto !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .phase1-roster-section .roster-table-full th,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .phase1-roster-section .roster-table-full td {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    padding: 8px 7px !important;
+    font-size: clamp(10px, .66vw, 12px) !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Short data columns stay compact so descriptive columns can breathe. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(1),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(1) { min-width: 48px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(2),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(2) { min-width: 76px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(3),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(3) { min-width: 86px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(4),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(4) { min-width: 66px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(5),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(5) { min-width: 84px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(6),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(6),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(10),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(10) { min-width: 102px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(7),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(7) { min-width: 142px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(8),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(8) { min-width: 92px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(9),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(9) { min-width: 116px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(11),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(11),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(12),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(12) { min-width: 92px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(13),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(13) { min-width: 92px !important; }
+
+  /* OPOC must always have enough room for checkbox + status text. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(14),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(14) {
+    min-width: 118px !important;
+    width: 118px !important;
+    text-align: center !important;
+  }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .opoc-cell {
+    width: 100% !important;
+    min-width: 104px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .opoc-cell input[type="checkbox"] {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    flex: 0 0 20px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(15),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(15) { min-width: 116px !important; }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:nth-child(16),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:nth-child(16) { min-width: 76px !important; }
+
+  /* Actions remain a normal table column: visible, sized, and never overlapped. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full th:last-child,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:last-child {
+    position: static !important;
+    right: auto !important;
+    z-index: auto !important;
+    min-width: 82px !important;
+    width: 82px !important;
+    max-width: none !important;
+    text-align: center !important;
+    box-shadow: none !important;
+  }
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:last-child .actions-button,
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .phase1-roster-section .roster-table-full td:last-child button {
+    width: auto !important;
+    min-width: 70px !important;
+    max-width: 100% !important;
+    padding: 7px 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep ordinary checkbox inputs from inheriting the 100%-width control rule. */
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster .roster-table-full input[type="checkbox"] {
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+  }
+}
+
+/* v5.3.11 — Resident Incident Report modal layout repair
+   Keep choice labels inside their cards and prevent horizontal overflow. */
+.page-incident-report .incident-modal{
+  width:min(1040px,calc(100vw - 32px)) !important;
+  max-width:1040px;
+  max-height:calc(100dvh - 32px) !important;
+  box-sizing:border-box;
+  overflow:hidden !important;
+}
+.page-incident-report .incident-modal .kbrh-edit-modal-form,
+.page-incident-report .incident-modal .kbrh-edit-modal-body,
+.page-incident-report .incident-form-stack,
+.page-incident-report .incident-section,
+.page-incident-report .incident-form-grid,
+.page-incident-report .incident-field{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.page-incident-report .incident-modal .kbrh-edit-modal-body{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding:18px 22px;
+}
+.page-incident-report .incident-form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;
+}
+.page-incident-report .incident-field.full{
+  grid-column:1 / -1;
+}
+.page-incident-report .incident-field input,
+.page-incident-report .incident-field select,
+.page-incident-report .incident-field textarea{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.page-incident-report .incident-choice-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px !important;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.page-incident-report .incident-choice{
+  display:grid !important;
+  grid-template-columns:22px minmax(0,1fr) !important;
+  align-items:start !important;
+  justify-content:start !important;
+  column-gap:10px !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:11px 12px !important;
+  box-sizing:border-box !important;
+  text-align:left !important;
+  overflow:hidden;
+}
+.page-incident-report .incident-choice input[type="checkbox"]{
+  display:block !important;
+  width:20px !important;
+  height:20px !important;
+  min-width:20px !important;
+  max-width:20px !important;
+  margin:1px 0 0 !important;
+  padding:0 !important;
+  justify-self:start;
+  align-self:start;
+}
+.page-incident-report .incident-choice > span{
+  display:block !important;
+  min-width:0 !important;
+  width:auto !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  color:#203548 !important;
+  font-size:.9rem !important;
+  font-weight:650 !important;
+  line-height:1.35 !important;
+  text-align:left !important;
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+  word-break:normal !important;
+}
+.page-incident-report .incident-section{
+  overflow:hidden;
+}
+
+@media (max-width:760px){
+  .page-incident-report .incident-modal{
+    width:calc(100vw - 16px) !important;
+    max-height:calc(100dvh - 16px) !important;
+  }
+  .page-incident-report .incident-modal .kbrh-edit-modal-body{
+    padding:14px;
+  }
+  .page-incident-report .incident-form-grid,
+  .page-incident-report .incident-choice-grid{
+    grid-template-columns:1fr !important;
+  }
+  .page-incident-report .incident-field.full{
+    grid-column:1;
+  }
+}
