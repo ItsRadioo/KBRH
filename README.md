@@ -140,3 +140,7 @@ Pre-Screening includes a printable summary on the Summary step after the questio
 - Actions remains a normal fully visible column instead of overlapping/pinning over OPOC.
 
 v5.3.11: Repaired Resident Incident Report modal overflow and checkbox/label layout. Incident type and immediate-action choices now stay fully inside their bordered cards, labels align beside checkboxes, and the modal no longer scrolls horizontally.
+
+
+## v5.3.12
+- Chore Check History modal now has a dedicated vertically scrollable history area while keeping the header and Close action accessible.

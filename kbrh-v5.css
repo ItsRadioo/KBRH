@@ -926,3 +926,35 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
     grid-column:1;
   }
 }
+
+/* v5.3.12 — Chore Check History: independently scrollable modal body */
+.page-chore-checks #historyModal .modal-card{
+  display:flex!important;
+  flex-direction:column!important;
+  width:min(900px,calc(100vw - 32px))!important;
+  max-height:min(88vh,900px)!important;
+  overflow:hidden!important;
+}
+.page-chore-checks #historyModal .modal-title-row{
+  flex:0 0 auto!important;
+}
+.page-chore-checks #historyModal #checkHistoryList{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  padding-top:16px!important;
+  padding-bottom:16px!important;
+  scrollbar-gutter:stable;
+}
+.page-chore-checks #historyModal .modal-actions{
+  flex:0 0 auto!important;
+  position:static!important;
+}
+@media(max-width:700px){
+  .page-chore-checks #historyModal .modal-card{
+    width:calc(100vw - 16px)!important;
+    max-height:94vh!important;
+  }
+}
