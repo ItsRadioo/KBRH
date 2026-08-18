@@ -144,6 +144,7 @@ function normalizeAppState(state) {
         archivedAt: item.archivedAt || "",
         archiveReason: item.archiveReason || "",
         callPriority: getWaitlistCallPriority(item),
+        waitlistPosition: Number.isFinite(Number(item.waitlistPosition)) ? Number(item.waitlistPosition) : null,
         notes: normalizeNotes(item.notes),
         callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
       }))

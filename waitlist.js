@@ -96,10 +96,26 @@ function formatPhoneNumber(value) {
 
 async function saveWaitlist() {
   try {
-    await saveAppState(waitlistState);
+    // Persist the waitlist directly instead of rewriting the entire shared app
+    // document. This prevents another live page/state snapshot from restoring
+    // an older array order while a manual position change is being saved.
+    const active = resequenceActiveWaitlist(getActiveWaitlist());
+    const archived = getArchivedWaitlist();
+    waitlistState.waitlist = [...active, ...archived];
+
+    const cleanedWaitlist = normalizeAppState({ waitlist: waitlistState.waitlist }).waitlist;
+    await APP_DOC_REF().update({
+      waitlist: cleanedWaitlist,
+      updatedAt: new Date().toISOString()
+    });
+
+    // Keep the shared in-memory baseline synchronized with the successful write.
+    if (typeof KBRH_LAST_STATE !== "undefined" && KBRH_LAST_STATE) {
+      KBRH_LAST_STATE = normalizeAppState({ ...KBRH_LAST_STATE, waitlist: cleanedWaitlist });
+    }
   } catch (error) {
     console.error("Waitlist save failed:", error);
-    alert("Could not save waitlist. Check Console for details.");
+    alert(`Could not save waitlist${error?.code ? ` (${error.code})` : ""}. Check Console for details.`);
   }
 }
 
@@ -118,15 +134,47 @@ function normalizeWaitlistNotes(notes) {
 }
 
 function getActiveWaitlist() {
-  return Array.isArray(waitlistState.waitlist)
+  const active = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
     : [];
+
+  // waitlistPosition is the persistent source of truth for manual ordering.
+  // Older records without a position keep their existing array order and are
+  // assigned positions the next time the waitlist is saved/resequenced.
+  return active
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const ap = Number(a.item.waitlistPosition);
+      const bp = Number(b.item.waitlistPosition);
+      const aValid = Number.isFinite(ap) && ap > 0;
+      const bValid = Number.isFinite(bp) && bp > 0;
+      if (aValid && bValid && ap !== bp) return ap - bp;
+      if (aValid !== bValid) return aValid ? -1 : 1;
+      return a.index - b.index;
+    })
+    .map(entry => entry.item);
 }
 
 function getArchivedWaitlist() {
   return Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && item.archived)
     : [];
+}
+
+function resequenceActiveWaitlist(activeList = getActiveWaitlist()) {
+  activeList.forEach((item, index) => {
+    item.waitlistPosition = index + 1;
+  });
+  return activeList;
+}
+
+function nextWaitlistPosition() {
+  const active = getActiveWaitlist();
+  if (!active.length) return 1;
+  return Math.max(...active.map((item, index) => {
+    const value = Number(item.waitlistPosition);
+    return Number.isFinite(value) && value > 0 ? value : index + 1;
+  })) + 1;
 }
 
 function getActiveOrderSnapshot() {
@@ -173,6 +221,7 @@ function getCallPriority(item) {
 }
 
 function rebuildWaitlist(activeList, archivedList) {
+  resequenceActiveWaitlist(activeList);
   waitlistState.waitlist = [...activeList, ...archivedList];
 }
 
@@ -269,6 +318,7 @@ function addWaitlistApplicant() {
     archivedAt: "",
     archiveReason: "",
     callPriority: "normal",
+    waitlistPosition: nextWaitlistPosition(),
     notes: initialNote
       ? [{
           id: crypto.randomUUID(),
@@ -709,6 +759,7 @@ function reinstateApplicant(applicantId) {
   applicant.archivedAt = "";
   applicant.archiveReason = "";
   applicant.callPriority = "normal";
+  applicant.waitlistPosition = nextWaitlistPosition();
 
   waitlistState.waitlist.splice(applicantIndex, 1);
   waitlistState.waitlist.push(applicant);
@@ -1107,6 +1158,7 @@ auth.onAuthStateChanged(user => {
           archivedAt: item.archivedAt || "",
           archiveReason: item.archiveReason || "",
           callPriority: item.callPriority || getCallPriority(item),
+          waitlistPosition: Number.isFinite(Number(item.waitlistPosition)) ? Number(item.waitlistPosition) : null,
           notes: normalizeWaitlistNotes(item.notes),
           callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
         }))
@@ -1116,9 +1168,9 @@ auth.onAuthStateChanged(user => {
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
-    // Preserve the exact saved waitlist order. Automatic call-in grouping is
-    // applied only when staff record a new Call In / Late Call / No Call
-    // result. This keeps manual position changes persistent across refreshes.
+    // waitlistPosition is authoritative for active ordering. For legacy
+    // applicants that predate this field, preserve their current stored order
+    // until the next explicit waitlist save assigns sequential positions.
     renderWaitlist();
   });
 });
