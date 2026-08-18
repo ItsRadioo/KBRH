@@ -470,8 +470,12 @@ function savePositionChange() {
   const [applicant] = active.splice(currentIndex, 1);
   active.splice(requestedPosition - 1, 0, applicant);
   rebuildWaitlist(active, archived);
-  enforceCallPriorityOrder();
 
+  // Manual positioning is an explicit staff override of the automatic
+  // call-in grouping. Do not immediately re-sort the list here; the exact
+  // order staff choose is persisted to Firestore. A later Call-In / Late
+  // Call / No Call update may move that applicant again according to the
+  // call-in workflow.
   closePositionModal();
   renderWaitlist();
   saveWaitlist();
@@ -1112,18 +1116,9 @@ auth.onAuthStateChanged(user => {
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
-    const priorityOrderChanged = enforceCallPriorityOrder();
+    // Preserve the exact saved waitlist order. Automatic call-in grouping is
+    // applied only when staff record a new Call In / Late Call / No Call
+    // result. This keeps manual position changes persistent across refreshes.
     renderWaitlist();
-
-    // Repair older or manually misordered records in Firestore. The guard
-    // prevents repeated writes while the corrected snapshot is returning.
-    if (priorityOrderChanged && !priorityOrderSavePending) {
-      priorityOrderSavePending = true;
-      saveAppState(waitlistState)
-        .catch(error => console.error("Could not save automatic waitlist order:", error))
-        .finally(() => {
-          priorityOrderSavePending = false;
-        });
-    }
   });
 });

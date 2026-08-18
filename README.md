@@ -144,3 +144,11 @@ v5.3.11: Repaired Resident Incident Report modal overflow and checkbox/label lay
 
 ## v5.3.12
 - Chore Check History modal now has a dedicated vertically scrollable history area while keeping the header and Close action accessible.
+
+
+## v5.3.13 — Waitlist Positioning
+- Restored persistent manual waitlist positioning.
+- Manual position changes are no longer immediately undone by automatic call-in sorting.
+- New applicants are appended to the bottom of the active waitlist.
+- Reinstated applicants continue to return to the bottom.
+- Call-In / Late Call / No Call updates still move the applicant into the appropriate status group in the order those updates are made.
