@@ -152,3 +152,18 @@ v5.3.11: Repaired Resident Incident Report modal overflow and checkbox/label lay
 - New applicants are appended to the bottom of the active waitlist.
 - Reinstated applicants continue to return to the bottom.
 - Call-In / Late Call / No Call updates still move the applicant into the appropriate status group in the order those updates are made.
+
+
+## Staff Directory
+The Staff List page reads active staff from `kbrh/staffProfiles`. Add a `primaryPhone` string to each staff UID map, for example:
+
+```text
+profiles
+  UID
+    name: "Greg"
+    role: "Executive Director"
+    primaryPhone: "705-555-0123"
+    active: true
+```
+
+The directory is read-only in the website; staff contact data remains managed in Firestore.

@@ -958,3 +958,17 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
     max-height:94vh!important;
   }
 }
+
+/* Staff directory */
+.staff-directory-card { max-width: 980px; margin-inline: auto; }
+.staff-directory-table { width: 100%; table-layout: fixed; }
+.staff-directory-table th:first-child, .staff-directory-table td:first-child { width: 62%; }
+.staff-directory-table th:last-child, .staff-directory-table td:last-child { width: 38%; }
+.staff-directory-table td { vertical-align: middle; }
+.staff-phone-link { font-weight: 700; text-decoration: none; white-space: nowrap; }
+.staff-phone-link:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .staff-directory-card { max-width: none; }
+  .staff-directory-table th:first-child, .staff-directory-table td:first-child { width: 56%; }
+  .staff-directory-table th:last-child, .staff-directory-table td:last-child { width: 44%; }
+}

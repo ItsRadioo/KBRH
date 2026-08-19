@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Staff Directory | KBRH</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-modern.css" rel="stylesheet"/>
+<link href="kbrh-v5.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script>requireLogin();</script>
+</head>
+<body class="page-staff-list">
+<header>
+  <div class="header-top">
+    <div class="brand-and-title">
+      <div aria-hidden="true" class="brand-mark">KB</div>
+      <div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Staff Directory</h1><p>Active staff contact information.</p></div>
+    </div>
+    <button class="logout-btn" onclick="logout()" type="button">Sign Out</button>
+  </div>
+  <nav aria-label="Primary navigation" class="app-nav">
+    <a class="app-nav-link" href="roster.html">Roster</a>
+    <a class="app-nav-link" href="waitlist.html">Waitlist</a>
+    <a class="app-nav-link" href="index.html">House Chores</a>
+    <a class="app-nav-link" href="meal-chores.html">Meal Chores</a>
+    <a class="app-nav-link" href="verbalwarning.html">Warnings</a>
+    <a class="app-nav-link" href="writeups.html">Write-Ups</a>
+    <a class="app-nav-link" href="chore-checks.html">Chore Checks</a>
+    <a class="app-nav-link" href="incident-report.html">Incident Reports</a>
+    <a class="app-nav-link" href="charts.html">Charts</a>
+    <a class="app-nav-link" href="prescreening.html">Pre-Screening</a>
+    <a aria-current="page" class="app-nav-link active" href="staff-list.html">Staff List</a>
+    <a class="app-nav-link" href="audit-log.html">Audit Log</a>
+    <a class="app-nav-link" href="staff-profile.html">My Profile</a>
+  </nav>
+</header>
+<main>
+<section class="card wide staff-directory-card">
+  <div class="card-heading-row">
+    <div>
+      <h2>Staff Contact List</h2>
+      <p class="hint">Shows active staff from <code>kbrh/staffProfiles</code>. Primary phone numbers are managed in Firestore.</p>
+    </div>
+    <button class="secondary" id="refreshStaffListBtn" type="button">Refresh</button>
+  </div>
+  <div class="form-row">
+    <input id="staffListSearch" type="search" placeholder="Search staff..." autocomplete="off"/>
+  </div>
+  <div class="table-wrap staff-directory-table-wrap">
+    <table class="staff-directory-table">
+      <thead><tr><th>Name</th><th>Primary Phone</th></tr></thead>
+      <tbody id="staffListBody"><tr><td colspan="2">Loading staff directory…</td></tr></tbody>
+    </table>
+  </div>
+  <p class="hint" id="staffListStatus"></p>
+</section>
+</main>
+<script src="staff-list.js"></script>
+<script src="kbrh-ui-upgrade.js"></script>
+<script src="kbrh-v5.js"></script>
+</body>
+</html>
