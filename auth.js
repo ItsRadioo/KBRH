@@ -30,26 +30,38 @@ async function loadCurrentStaffProfile(force = false) {
 
       // Preferred layout:
       // kbrh/staffProfiles -> profiles -> <Firebase UID> -> { name, email, role, active }
-      const profiles = root.profiles && typeof root.profiles === "object" && !Array.isArray(root.profiles)
-        ? root.profiles
-        : {};
+      //
+      // Firestore's console makes it easy to accidentally nest the UID map one
+      // level differently, so resolve the profile defensively. Exact UID always
+      // wins; authenticated email is only a fallback.
+      const isPlainObject = value => value && typeof value === "object" && !Array.isArray(value);
+      const profiles = isPlainObject(root.profiles) ? root.profiles : {};
 
-      // First resolve by exact Firebase UID. Also support UID maps placed directly
-      // on the staffProfiles document so an existing setup does not break.
-      let data = profiles[user.uid] || root[user.uid] || null;
+      function findProfileByUid(node, uid, depth = 0) {
+        if (!isPlainObject(node) || depth > 6) return null;
+        if (isPlainObject(node[uid])) return node[uid];
+        for (const value of Object.values(node)) {
+          const found = findProfileByUid(value, uid, depth + 1);
+          if (found) return found;
+        }
+        return null;
+      }
 
-      // If the UID was entered incorrectly in Firestore, fall back to the unique
-      // authenticated email match. This keeps the staff name usable while the UID
-      // mapping is corrected, without ever trusting a name typed into a form.
+      function findProfileByEmail(node, email, depth = 0) {
+        if (!isPlainObject(node) || depth > 6) return null;
+        if (String(node.email || "").trim().toLowerCase() === email &&
+            ("name" in node || "role" in node || "active" in node)) return node;
+        for (const value of Object.values(node)) {
+          const found = findProfileByEmail(value, email, depth + 1);
+          if (found) return found;
+        }
+        return null;
+      }
+
+      let data = profiles[user.uid] || root[user.uid] || findProfileByUid(root, user.uid);
+
       if (!data && user.email) {
-        const targetEmail = String(user.email).trim().toLowerCase();
-        const candidates = [
-          ...Object.values(profiles),
-          ...Object.entries(root)
-            .filter(([key, value]) => key !== "profiles" && value && typeof value === "object" && !Array.isArray(value))
-            .map(([, value]) => value)
-        ];
-        data = candidates.find(profile => String(profile?.email || "").trim().toLowerCase() === targetEmail) || null;
+        data = findProfileByEmail(root, String(user.email).trim().toLowerCase());
       }
 
       if (!data) {
