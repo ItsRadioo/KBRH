@@ -49,14 +49,35 @@
     });
   }
 
-  function cell(value, fallback = "—"){
-    return value ? esc(value) : `<span class="empty">${fallback}</span>`;
+  function valueHtml(value, fallback = "—"){
+    return value ? esc(value) : `<span class="document-empty">${fallback}</span>`;
+  }
+
+  function sectionHtml(label, value){
+    return `<section class="document-section"><div class="document-label">${esc(label)}</div><div class="document-value">${valueHtml(value)}</div></section>`;
   }
 
   function generate(){
     const rows = collect();
     if (!rows.length){ addDay(); return; }
-    body.innerHTML = rows.map(r => `<tr><th>${esc(r.day)}</th><td>${cell(r.lunch)}</td><td>${cell(r.supper)}</td><td>${r.day === "Sunday" ? cell(r.dessert) : '<span class="empty">—</span>'}</td><td>${cell(r.chore)}</td></tr>`).join("");
+    body.innerHTML = rows.map(r => {
+      const mealCount = r.day === "Sunday" ? 3 : 2;
+      const dessert = r.day === "Sunday" ? sectionHtml("Dessert", r.dessert) : "";
+      return `<section class="document-day meals-${mealCount}">
+        <div class="document-day-title">${esc(r.day)}</div>
+        <div class="document-day-content">
+          <div class="document-meals">
+            ${sectionHtml("Lunch", r.lunch)}
+            ${sectionHtml("Supper", r.supper)}
+            ${dessert}
+          </div>
+          <div class="document-chore">
+            <div class="document-label">Chore</div>
+            <div class="document-value">${valueHtml(r.chore)}</div>
+          </div>
+        </div>
+      </section>`;
+    }).join("");
     output.hidden = false;
     output.scrollIntoView({behavior:"smooth", block:"start"});
   }

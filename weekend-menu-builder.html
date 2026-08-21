@@ -23,22 +23,49 @@
   .menu-day-fields textarea,.menu-day-fields select{width:100%;box-sizing:border-box}
   .menu-day-fields textarea{min-height:78px;resize:vertical}
   .dessert-field[hidden]{display:none!important}
-  .generated-menu{margin-top:24px}
-  .generated-menu table{width:100%;border-collapse:collapse;background:#fff}
-  .generated-menu th,.generated-menu td{border:1px solid #222;padding:10px;vertical-align:top;text-align:left;white-space:pre-line}
-  .generated-menu th{font-weight:700}
-  .generated-menu .day-col{width:12%}
-  .generated-menu .empty{opacity:.45;font-style:italic}
-  @media(max-width:760px){.menu-day-fields{grid-template-columns:1fr}.generated-menu{overflow:auto}.generated-menu table{min-width:760px}}
+
+  .generated-menu{margin:28px auto 0;max-width:900px}
+  .generated-menu-title{text-align:center;margin:0 0 16px;font-size:1.35rem}
+  .document-menu{border:1.5px solid #222;background:#fff;color:#111;font-family:"Times New Roman",Times,serif}
+  .document-day + .document-day{border-top:1.5px solid #222}
+  .document-day-title{font-family:"Times New Roman",Times,serif;font-size:28px;font-weight:700;line-height:1.05;text-align:center;padding:4px 10px 5px;border-bottom:1px solid #555}
+  .document-day-content{display:grid;grid-template-columns:1fr 1fr;min-height:190px}
+  .document-day.meals-3 .document-day-content{min-height:300px}
+  .document-meals,.document-chore{padding:10px 18px 14px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
+  .document-chore{border-left:1.5px solid #222}
+  .document-section{margin:0 0 28px}
+  .document-section:last-child{margin-bottom:0}
+  .document-label{font-size:27px;font-weight:700;text-decoration:underline;text-underline-offset:3px;line-height:1.05;margin:0 0 7px}
+  .document-value{font-size:21px;line-height:1.22;white-space:pre-line;overflow-wrap:anywhere}
+  .document-chore .document-label{font-size:27px}
+  .document-chore .document-value{margin-top:28px}
+  .document-empty{opacity:.42;font-style:italic}
+
+  @media(max-width:760px){
+    .menu-day-fields{grid-template-columns:1fr}
+    .generated-menu{overflow-x:auto}
+    .document-menu{min-width:660px}
+  }
   @media print{
-    header,.builder-controls,.menu-builder-grid,.no-print{display:none!important}
-    body{background:#fff!important}
+    @page{size:letter portrait;margin:.55in}
+    header,.builder-controls,.menu-builder-grid,.no-print,.generated-menu-title{display:none!important}
+    html,body{background:#fff!important}
+    body{margin:0!important}
     main{max-width:none!important;margin:0!important;padding:0!important}
-    .card{box-shadow:none!important;border:0!important;padding:0!important}
-    .generated-menu{margin:0!important}
-    .generated-menu h2{text-align:center;margin:0 0 14px}
-    .generated-menu table{font-size:12pt}
-    .generated-menu th,.generated-menu td{padding:12px}
+    .card{box-shadow:none!important;border:0!important;padding:0!important;margin:0!important;background:#fff!important}
+    .generated-menu{display:block!important;max-width:none!important;margin:0!important;overflow:visible!important}
+    .document-menu{width:100%;border:1px solid #111}
+    .document-day{break-inside:avoid;page-break-inside:avoid}
+    .document-day + .document-day{border-top:1px solid #111}
+    .document-day-title{font-size:20pt;padding:2px 8px 3px;border-bottom:1px solid #555}
+    .document-day-content{min-height:135px}
+    .document-day.meals-3 .document-day-content{min-height:220px}
+    .document-meals,.document-chore{padding:6px 12px 9px}
+    .document-chore{border-left:1px solid #111}
+    .document-section{margin-bottom:18px}
+    .document-label,.document-chore .document-label{font-size:19pt;margin-bottom:4px}
+    .document-value{font-size:15.5pt;line-height:1.15}
+    .document-chore .document-value{margin-top:20px}
   }
 </style>
 </head>
@@ -64,13 +91,8 @@
   </div>
   <div id="dayCards" class="menu-builder-grid"></div>
   <div id="generatedMenu" class="generated-menu" hidden>
-    <h2>Weekend Menu & Chores</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th class="day-col">Day</th><th>Lunch</th><th>Supper</th><th>Dessert</th><th>Chore</th></tr></thead>
-        <tbody id="generatedMenuBody"></tbody>
-      </table>
-    </div>
+    <h2 class="generated-menu-title">Weekend Menu &amp; Chores</h2>
+    <div id="generatedMenuBody" class="document-menu" aria-label="Generated weekend menu and chore schedule"></div>
   </div>
 </section>
 </main>
