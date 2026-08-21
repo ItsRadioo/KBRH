@@ -972,3 +972,17 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
   .staff-directory-table th:first-child, .staff-directory-table td:first-child { width: 56%; }
   .staff-directory-table th:last-child, .staff-directory-table td:last-child { width: 44%; }
 }
+
+/* Bus pass tracking */
+.page-bus-passes .bus-pass-kpis{grid-column:1/-1!important;}
+.page-bus-passes .bus-pass-filter-row{align-items:flex-end;}
+.page-bus-passes .bus-pass-filter-row .field-group{min-width:180px;flex:1;}
+.page-bus-passes .bus-pass-filter-row .field-group:first-child{min-width:280px;flex:2;}
+.page-bus-passes .bus-pass-clear-filter{flex:0 0 auto!important;min-width:auto!important;}
+.page-bus-passes .bus-pass-table th:nth-child(4),
+.page-bus-passes .bus-pass-table td:nth-child(4){text-align:center;white-space:nowrap;}
+.page-bus-passes .bus-pass-table th:nth-child(1),
+.page-bus-passes .bus-pass-table td:nth-child(1),
+.page-bus-passes .bus-pass-table th:nth-child(5),
+.page-bus-passes .bus-pass-table td:nth-child(5){white-space:nowrap;}
+@media(max-width:800px){.page-bus-passes .bus-pass-filter-row .field-group{min-width:100%;}.page-bus-passes .bus-pass-clear-filter{min-width:100%!important;}}

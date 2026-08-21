@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bus Pass Tracking</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/>
+<link href="kbrh-modern.css" rel="stylesheet"/>
+<link href="kbrh-v5.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="data-store.js"></script>
+<script>requireLogin();</script>
+<script src="kbrh-nav.js"></script>
+</head>
+<body class="page-bus-passes">
+<header>
+  <div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Bus Pass Tracking</h1><p>Issue and reconcile resident transportation passes.</p></div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div>
+  <nav aria-label="Primary navigation" class="app-nav"></nav>
+</header>
+<main>
+<section class="card wide page-action-card">
+  <div class="card-heading-row"><div><h2>Bus Pass Distribution</h2><p class="hint">Record each issue at the time passes are provided.</p></div><button class="primary-action-btn" id="openBusPassModalBtn" type="button">+ Issue Bus Pass</button></div>
+</section>
+<section class="v5-kpi-strip bus-pass-kpis" aria-label="Bus pass summary">
+  <article class="v5-kpi"><span class="v5-kpi-label">Passes This Month</span><strong class="v5-kpi-value" id="passesThisMonth">0</strong><span class="v5-kpi-detail">Total individual passes issued</span></article>
+  <article class="v5-kpi"><span class="v5-kpi-label">Trips This Month</span><strong class="v5-kpi-value" id="tripsThisMonth">0</strong><span class="v5-kpi-detail">Distribution records</span></article>
+  <article class="v5-kpi"><span class="v5-kpi-label">Passes All Time</span><strong class="v5-kpi-value" id="passesAllTime">0</strong><span class="v5-kpi-detail">Recorded in this system</span></article>
+</section>
+<section class="card wide">
+  <div class="card-heading-row"><div><h2>Distribution History</h2><p class="hint">Search or filter previous bus pass issues. Records are retained for accountability.</p></div><button class="secondary" id="exportBusPassCsvBtn" type="button">Export CSV</button></div>
+  <div class="form-row bus-pass-filter-row">
+    <div class="field-group"><label for="busPassSearch">Search</label><input id="busPassSearch" type="search" placeholder="Resident, destination, staff, notes..." autocomplete="off"/></div>
+    <div class="field-group"><label for="busPassMonthFilter">Month</label><input id="busPassMonthFilter" type="month"/></div>
+    <div class="field-group"><label for="busPassTripFilter">Trip Type</label><select id="busPassTripFilter"><option value="">All trip types</option><option>One-way</option><option>Round trip</option><option>Other</option></select></div>
+    <div class="field-group bus-pass-clear-filter"><button class="secondary" id="clearBusPassFiltersBtn" type="button">Clear Filters</button></div>
+  </div>
+  <div class="table-wrap"><table class="bus-pass-table"><thead><tr><th>Date</th><th>Resident / Recipient</th><th>Destination / Purpose</th><th>Passes</th><th>Trip Type</th><th>Issued By</th><th>Notes</th></tr></thead><tbody id="busPassBody"><tr><td colspan="7">Loading bus pass records…</td></tr></tbody></table></div>
+  <p class="hint" id="busPassRecordCount"></p>
+</section>
+</main>
+
+<div class="modal-backdrop hidden" id="busPassModal">
+  <div class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="busPassModalTitle">
+    <div class="modal-title-row"><div><h2 id="busPassModalTitle">Issue Bus Pass</h2><p class="hint">Complete this record before providing the passes.</p></div><button aria-label="Close" class="secondary modal-close-button" id="closeBusPassModalX" type="button">×</button></div>
+    <form id="busPassForm">
+      <div class="form-row">
+        <div class="field-group"><label for="busPassDate">Date Issued</label><input id="busPassDate" type="date" required/></div>
+        <div class="field-group"><label for="busPassRecipient">Resident / Recipient</label><input id="busPassRecipient" list="busPassResidentOptions" autocomplete="off" placeholder="Start typing a resident name" required/><datalist id="busPassResidentOptions"></datalist></div>
+        <div class="field-group"><label for="busPassCount"># of Passes Issued</label><input id="busPassCount" type="number" min="1" max="20" step="1" value="2" required/></div>
+      </div>
+      <div class="form-row">
+        <div class="field-group"><label for="busPassDestination">Destination / Purpose</label><input id="busPassDestination" type="text" maxlength="180" placeholder="e.g. Doctor appointment — Group Health Centre" required/></div>
+        <div class="field-group"><label for="busPassTripType">Trip Type</label><select id="busPassTripType" required><option value="Round trip">Round trip</option><option value="One-way">One-way</option><option value="Other">Other</option></select></div>
+      </div>
+      <div class="field-group"><label for="busPassNotes">Notes</label><textarea id="busPassNotes" class="notes-box" maxlength="500" placeholder="Optional relevant notes"></textarea></div>
+      <div class="field-group"><label>Issued By</label><input id="busPassStaff" type="text" disabled/></div>
+      <p class="hint" id="busPassFormStatus"></p>
+      <div class="button-row modal-actions"><button class="success" type="submit">Save & Issue Passes</button><button class="secondary" id="cancelBusPassModalBtn" type="button">Cancel</button></div>
+    </form>
+  </div>
+</div>
+<script src="bus-passes.js"></script>
+<script src="kbrh-ui-upgrade.js"></script>
+<script src="kbrh-v5.js"></script>
+</body>
+</html>

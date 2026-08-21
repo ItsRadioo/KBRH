@@ -167,3 +167,10 @@ profiles
 ```
 
 The directory is read-only in the website; staff contact data remains managed in Firestore.
+
+
+## Bus Pass Tracking
+
+The authenticated application includes `bus-passes.html` for recording transportation pass distributions. Records are stored in the existing `kbrh/choreTracker` Firestore document under `busPasses`, are included in the existing audit log, and can be filtered or exported to CSV.
+
+Navigation is centralized by `kbrh-nav.js`. Every authenticated/utility HTML page uses the same canonical navigation list so active pages remain reachable from one another. Update that file when adding or retiring application pages.
