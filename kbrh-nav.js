@@ -15,8 +15,6 @@
     ["staff-list.html", "Staff List"],
     ["audit-log.html", "Audit Log"],
     ["staff-profile.html", "My Profile"],
-    ["print.html", "Print Chores"],
-    ["meal-print.html", "Print Meals"]
   ];
 
   function installNavigation() {
