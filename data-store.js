@@ -28,7 +28,6 @@ function defaultAppState() {
     choreChecks: [],
     preScreenings: [],
     incidentReports: [],
-    busPasses: [],
     chartData: { laundry: {}, electronics: {}, meetings: {} },
     updatedAt: new Date().toISOString()
   };
@@ -282,23 +281,6 @@ function normalizeAppState(state) {
       }))
     : [];
 
-  merged.busPasses = Array.isArray(merged.busPasses)
-    ? merged.busPasses.filter(item => item && item !== "temp").map(item => ({
-        id: item.id || crypto.randomUUID(),
-        dateIssued: item.dateIssued || "",
-        residentId: item.residentId || "",
-        recipientName: item.recipientName || "Unknown Recipient",
-        destinationPurpose: item.destinationPurpose || "",
-        passesIssued: Number.isFinite(Number(item.passesIssued)) ? Number(item.passesIssued) : 0,
-        tripType: item.tripType || "Other",
-        staffName: item.staffName || "",
-        staffUid: item.staffUid || "",
-        staffEmail: item.staffEmail || "",
-        notes: item.notes || "",
-        createdAt: item.createdAt || new Date().toISOString()
-      }))
-    : [];
-
   const rawChartData = merged.chartData && typeof merged.chartData === "object" ? merged.chartData : {};
   merged.chartData = {
     laundry: rawChartData.laundry && typeof rawChartData.laundry === "object" ? rawChartData.laundry : {},
@@ -333,7 +315,7 @@ function kbrhPageName() {
   return window.location.pathname.split("/").pop() || "index.html";
 }
 function kbrhEntityName(item, fallback="Record") {
-  return `${item?.firstName||""} ${item?.lastName||""}`.trim() || item?.residentName || item?.recipientName || item?.applicantName || item?.name || fallback;
+  return `${item?.firstName||""} ${item?.lastName||""}`.trim() || item?.residentName || item?.applicantName || item?.name || fallback;
 }
 function kbrhShort(value, max=90) {
   const text=String(value||"").replace(/\s+/g," ").trim(); return text.length>max?text.slice(0,max-1)+"…":text;
@@ -361,7 +343,7 @@ function describeAppStateChanges(before,after){
   changes.push(...kbrhDiffCollection(before,after,"waitlist","applicant",["status","callPriority","archived","dateApplied","callInHistory"]));
   changes.push(...kbrhDiffCollection(before,after,"residents","chore assignment",["choreIndex","lockedChore","exceptions","status","awayUntil"]));
   const simple=[
-    ["counselingNotes","counseling note"],["verbalWarnings","verbal warning"],["writeUps","write-up"],["choreChecks","chore check"],["preScreenings","pre-screening"],["incidentReports","incident report"],["busPasses","bus pass record"]
+    ["counselingNotes","counseling note"],["verbalWarnings","verbal warning"],["writeUps","write-up"],["choreChecks","chore check"],["preScreenings","pre-screening"],["incidentReports","incident report"]
   ];
   for(const [key,label] of simple){
     const bm=kbrhMapById(before?.[key]), am=kbrhMapById(after?.[key]);

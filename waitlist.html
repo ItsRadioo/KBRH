@@ -15,13 +15,12 @@
 <script src="data-store.js"></script>
 <script>requireLogin();</script>
 <link href="kbrh-v5.css" rel="stylesheet"/>
-<script src="kbrh-nav.js"></script>
 </head>
 <body class="page-waitlist">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Waitlist</h1>
 <p>Manage applicants, call-in status, notes, and archived applicants.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="staff-list.html">Staff List</a><a class="app-nav-link" href="audit-log.html">Audit Log</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a class="app-nav-link" href="audit-log.html">Audit Log</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
 <main>
 <section class="card wide page-action-card">
 <div class="card-heading-row">
@@ -167,10 +166,29 @@
 <button aria-label="Close" class="secondary modal-close-button" id="closeCallInModalBtn" type="button">×</button>
 </div>
 <p class="call-in-instruction">Select the applicant's call-in status</p>
-<div aria-label="Available call-in statuses" class="call-in-action-list">
+<div aria-label="Available call-in statuses" class="call-in-action-list" id="callInStatusChoices">
 <button class="call-in-choice call-in-choice-success" data-call-in-status="Call In" type="button">Call In</button>
 <button class="call-in-choice call-in-choice-warning" data-call-in-status="Late Call" type="button">Late Call</button>
 <button class="call-in-choice call-in-choice-danger" data-call-in-status="No Call" type="button">No Call</button>
+</div>
+<div class="call-in-datetime-panel hidden" id="callInDateTimePanel">
+  <h3 id="callInDateTimeTitle">Call-In Date &amp; Time</h3>
+  <p class="hint">Record when the applicant actually called.</p>
+  <div class="call-in-datetime-grid">
+    <label>
+      <span>Date</span>
+      <input id="callInDateInput" type="date"/>
+    </label>
+    <label>
+      <span>Time</span>
+      <input id="callInTimeInput" type="time"/>
+    </label>
+  </div>
+  <p class="form-error hidden" id="callInDateTimeError">Select both a date and time.</p>
+  <div class="button-row">
+    <button id="saveCallInDateTimeBtn" type="button">Save Call-In</button>
+    <button class="secondary" id="backCallInStatusBtn" type="button">Back</button>
+  </div>
 </div>
 <div class="button-row modal-actions">
 <button class="secondary" id="cancelCallInModalBtn" type="button">Cancel</button>

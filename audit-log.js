@@ -16,7 +16,7 @@ function auditPageLabel(page) {
     "roster.html":"Roster", "waitlist.html":"Waitlist", "index.html":"House Chores",
     "meal-chores.html":"Meal Chores", "verbalwarning.html":"Warnings", "writeups.html":"Write-Ups",
     "chore-checks.html":"Chore Checks", "incident-report.html":"Incident Reports", "charts.html":"Charts",
-    "prescreening.html":"Pre-Screening", "counseling-notes.html":"Counseling Notes", "bus-passes.html":"Bus Passes"
+    "prescreening.html":"Pre-Screening", "counseling-notes.html":"Counseling Notes"
   };
   return labels[page] || page || "System";
 }

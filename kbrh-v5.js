@@ -13,10 +13,9 @@
     "page-prescreening": ["Admissions", "Pre-Screening", "Guide offer-ready applicants through the admission pre-screening workflow."],
     "page-incident-report": ["Safety & Compliance", "Incident Reports", "Document, review, and retain confidential resident incident reports."],
     "page-counseling-notes": ["Case Management", "Counseling Notes", "Record resident counselling interactions and review archived notes."],
-    "page-bus-passes": ["Operations", "Bus Pass Tracking", "Issue transportation passes and maintain an accountable distribution history."],
     "page-audit-log": ["Administration", "Audit Log", "Review authenticated staff activity across the system."],
     "page-staff-profile": ["Administration", "Staff Profile", "Manage the staff identity attached to your account activity."],
-    "page-staff-list": ["Administration", "Staff Directory", "Quick access to active staff names and primary phone numbers."]
+    "page-staff-list": ["Administration", "Staff Contacts", "Quick access to active staff names and primary phone numbers."]
   };
 
   function currentPageClass() {

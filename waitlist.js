@@ -2,6 +2,7 @@ let waitlistState = defaultAppState();
 let editingApplicantId = null;
 let notesApplicantId = null;
 let callInApplicantId = null;
+let pendingCallInStatus = null;
 let actionsApplicantId = null;
 let positionApplicantId = null;
 let priorityOrderSavePending = false;
@@ -577,11 +578,42 @@ function getConsecutiveNoCallCount(item) {
   return count;
 }
 
+function setDefaultCallInDateTime() {
+  const now = new Date();
+  const pad = value => String(value).padStart(2, "0");
+  const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const dateInput = document.getElementById("callInDateInput");
+  const timeInput = document.getElementById("callInTimeInput");
+  if (dateInput) dateInput.value = dateValue;
+  if (timeInput) timeInput.value = timeValue;
+}
+
+function showCallInDateTimeStep(selected) {
+  pendingCallInStatus = selected;
+  document.getElementById("callInStatusChoices")?.classList.add("hidden");
+  document.getElementById("callInDateTimePanel")?.classList.remove("hidden");
+  document.getElementById("callInDateTimeError")?.classList.add("hidden");
+  const title = document.getElementById("callInDateTimeTitle");
+  if (title) title.textContent = selected === "Late Call" ? "Late Call Date & Time" : "Call-In Date & Time";
+  const saveBtn = document.getElementById("saveCallInDateTimeBtn");
+  if (saveBtn) saveBtn.textContent = selected === "Late Call" ? "Save Late Call" : "Save Call-In";
+  setDefaultCallInDateTime();
+}
+
+function resetCallInModalStep() {
+  pendingCallInStatus = null;
+  document.getElementById("callInStatusChoices")?.classList.remove("hidden");
+  document.getElementById("callInDateTimePanel")?.classList.add("hidden");
+  document.getElementById("callInDateTimeError")?.classList.add("hidden");
+}
+
 function openCallInModal(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
   callInApplicantId = applicantId;
+  resetCallInModalStep();
   document.getElementById("callInApplicantName").textContent =
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
@@ -591,17 +623,21 @@ function openCallInModal(applicantId) {
 
 function closeCallInModal() {
   callInApplicantId = null;
+  pendingCallInStatus = null;
   document.getElementById("callInModal")?.classList.add("hidden");
   document.body.classList.remove("kbrh-modal-open");
 }
 
-function saveCallInStatus(selected) {
+function saveCallInStatus(selected, recordedAt = null) {
   const applicant = waitlistState.waitlist.find(item => item.id === callInApplicantId);
-  if (!applicant) return;
+  if (!applicant || !selected) return;
 
-  if (!selected) return;
-
+  const eventDate = recordedAt instanceof Date && !Number.isNaN(recordedAt.getTime())
+    ? recordedAt
+    : new Date();
+  const previousPosition = Number(applicant.waitlistPosition) || null;
   const previousActiveOrder = getActiveOrderSnapshot();
+
   applicant.callInHistory = Array.isArray(applicant.callInHistory) ? applicant.callInHistory : [];
   applicant.callInHistory.unshift({
     id: crypto.randomUUID(),
@@ -609,26 +645,47 @@ function saveCallInStatus(selected) {
     reason: "",
     details: "",
     previousActiveOrder,
-    timestamp: new Date().toLocaleString(),
-    createdAt: new Date().toISOString()
+    timestamp: eventDate.toLocaleString(),
+    createdAt: eventDate.toISOString()
   });
 
   if (selected === "Call In") {
     applicant.callPriority = "normal";
+    // A Call In is a status/history update only. It must NEVER change the
+    // applicant's manually assigned waitlist position, regardless of the
+    // day/time being recorded.
+    if (previousPosition !== null) applicant.waitlistPosition = previousPosition;
   } else if (selected === "Late Call") {
     applicant.callPriority = "late";
+    moveApplicantToEndOfPriorityGroup(applicant.id);
   } else {
     applicant.callPriority = "nocall";
+    moveApplicantToEndOfPriorityGroup(applicant.id);
   }
-
-  // Place the applicant at the end of the selected status group. This means
-  // called-in applicants stay first, late calls stay beneath them, and no
-  // calls stay at the bottom, while preserving the order staff send them down.
-  moveApplicantToEndOfPriorityGroup(applicant.id);
 
   closeCallInModal();
   renderWaitlist();
   saveWaitlist();
+}
+
+function savePendingCallInDateTime() {
+  if (!pendingCallInStatus) return;
+  const dateValue = document.getElementById("callInDateInput")?.value || "";
+  const timeValue = document.getElementById("callInTimeInput")?.value || "";
+  const error = document.getElementById("callInDateTimeError");
+
+  if (!dateValue || !timeValue) {
+    error?.classList.remove("hidden");
+    return;
+  }
+
+  const recordedAt = new Date(`${dateValue}T${timeValue}`);
+  if (Number.isNaN(recordedAt.getTime())) {
+    error?.classList.remove("hidden");
+    return;
+  }
+
+  saveCallInStatus(pendingCallInStatus, recordedAt);
 }
 
 function openNotes(applicantId) {
@@ -1093,8 +1150,17 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("addWaitlistNoteBtn")?.addEventListener("click", addWaitlistNote);
   document.getElementById("closeWaitlistNotesBtn")?.addEventListener("click", closeNotesModal);
   document.querySelectorAll("[data-call-in-status]").forEach(button => {
-    button.addEventListener("click", () => saveCallInStatus(button.dataset.callInStatus));
+    button.addEventListener("click", () => {
+      const selected = button.dataset.callInStatus;
+      if (selected === "Call In" || selected === "Late Call") {
+        showCallInDateTimeStep(selected);
+      } else {
+        saveCallInStatus(selected);
+      }
+    });
   });
+  document.getElementById("saveCallInDateTimeBtn")?.addEventListener("click", savePendingCallInDateTime);
+  document.getElementById("backCallInStatusBtn")?.addEventListener("click", resetCallInModalStep);
   document.getElementById("cancelCallInModalBtn")?.addEventListener("click", closeCallInModal);
   document.getElementById("closeCallInModalBtn")?.addEventListener("click", closeCallInModal);
   document.getElementById("cancelApplicantActionsModalBtn")?.addEventListener("click", closeApplicantActionsModal);
