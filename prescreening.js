@@ -18,6 +18,7 @@ function staffDisplayName(){ return typeof currentStaffName === "function" ? cur
 }
 function formatDateTime(value){ if(!value) return "—"; const d=new Date(value); return isNaN(d)?"—":d.toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}); }
 function calculateDays(dateString){ if(!dateString)return null; const d=new Date(dateString+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0); return Math.max(0,Math.floor((today-d)/86400000)); }
+function addCalendarDays(dateString,days){ if(!dateString)return ""; const parts=String(dateString).split("-").map(Number); if(parts.length!==3||parts.some(Number.isNaN))return ""; const d=new Date(Date.UTC(parts[0],parts[1]-1,parts[2])); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); }
 function addWaitlistNote(applicant,text){
   applicant.notes=Array.isArray(applicant.notes)?applicant.notes:[];
   applicant.notes.unshift({id:crypto.randomUUID(),author:typeof currentStaffName==="function"?currentStaffName():(auth.currentUser?.email||"Unknown"),text,createdAt:new Date().toISOString()});
@@ -78,6 +79,7 @@ function determineSteps(r){
   if(days!==null && days<5){
     steps.push("sobrietyFail");
     if(a.sobrietyAction==="detox") steps.push("detoxPlan");
+    if(a.sobrietyAction==="schedule") steps.push("intakeSchedule");
     steps.push("summary");
     return steps;
   }
@@ -88,7 +90,7 @@ function determineSteps(r){
 
 function renderProgress(r){
   const steps=determineSteps(r); const index=Math.max(0,steps.indexOf(currentStep));
-  const labels={opening:"Opening",interest:"Interest",remain:"Waitlist",removeConfirm:"Waitlist",permission:"Availability",callback:"Callback",sobriety:"Sobriety",sobrietyFail:"Decision",detoxPlan:"Detox",expectations:"Expectations",legal:"Legal",health:"Health",medication:"Medication",treatment:"Treatment",goals:"Goals",summary:"Summary"};
+  const labels={opening:"Opening",interest:"Interest",remain:"Waitlist",removeConfirm:"Waitlist",permission:"Availability",callback:"Callback",sobriety:"Sobriety",sobrietyFail:"Decision",detoxPlan:"Detox",intakeSchedule:"Intake Date",expectations:"Expectations",legal:"Legal",health:"Health",medication:"Medication",treatment:"Treatment",goals:"Goals",summary:"Summary"};
   $("prescreenProgress").innerHTML=steps.map((s,i)=>`<span class="prescreen-step-pill ${i<index?"done":i===index?"active":""}">${esc(labels[s])}</span>`).join("");
 }
 
@@ -110,8 +112,9 @@ function stepHtml(step,r,a){
       const badge=days===null?`<div class="eligibility-box neutral">Enter the last-use date to calculate days clean.</div>`:days>=5?`<div class="eligibility-box eligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Meets the five-day admission requirement.</span></div>`:`<div class="eligibility-box ineligible"><strong>${days} day${days===1?"":"s"} clean</strong><span>Does not meet the five-day admission requirement. There are no overrides.</span></div>`;
       return `<section class="prescreen-step"><h3>Sobriety Verification</h3><p class="prescreen-question-large">We require potential residents to have been clean/sober for a minimum of five days.</p><div class="prescreen-two-column">${field("lastUseDate","When was the last time you used?","date",x.lastUseDate||"","",true)}${field("lastUseSubstance","What was the substance?","text",x.lastUseSubstance||"","Substance disclosed",true)}</div>${badge}${optionalTextarea("sobrietyNotes","Notes",x.sobrietyNotes)}</section>`;
     }
-    case "sobrietyFail": return `<section class="prescreen-step"><h3>Applicant Does Not Meet Sobriety Requirement</h3><div class="eligibility-box ineligible"><strong>No exception is available.</strong><span>Choose the operational next step based on whether there is enough time to complete Detox before admission.</span></div>${radioGroup("sobrietyAction",[["detox","Arrange Detox and hold the offer","Use when there is enough time before the bed must be filled"],["return","Return to waitlist and call next eligible applicant","Use when the bed must be filled before this applicant can meet the requirement"]],x.sobrietyAction)}</section>`;
+    case "sobrietyFail": return `<section class="prescreen-step"><h3>Applicant Does Not Meet Sobriety Requirement</h3><div class="eligibility-box ineligible"><strong>No exception is available.</strong><span>Choose the operational next step. If the bed can be held, you may schedule admission for the earliest date the applicant reaches five days from last use.</span></div>${radioGroup("sobrietyAction",[["schedule","Schedule intake date and hold the offer","Set admission for the five-day sobriety date or later"],["detox","Arrange Detox and hold the offer","Use when Detox support is appropriate before admission"],["return","Return to waitlist and call next eligible applicant","Use when the bed must be filled before this applicant can meet the requirement"]],x.sobrietyAction)}</section>`;
     case "detoxPlan": return `<section class="prescreen-step"><h3>Detox Plan</h3><div class="prescreen-two-column">${field("detoxFacility","Detox facility","text",x.detoxFacility||"","Facility or service")}${field("detoxExpectedDate","Expected five-day completion date","date",x.detoxExpectedDate||"")}</div>${radioGroup("detoxContacted",[["yes","Detox contacted","Arrangements have been initiated"],["no","Not yet contacted","Follow-up is still required"]],x.detoxContacted)}${optionalTextarea("detoxNotes","Detox arrangements",x.detoxNotes,"Bed availability, contact person, transportation, follow-up")}</section>`;
+    case "intakeSchedule": { const earliest=addCalendarDays(x.lastUseDate,5); const scheduled=x.scheduledIntakeDate||earliest; return `<section class="prescreen-step"><h3>Schedule Intake</h3><div class="eligibility-box neutral"><strong>Earliest five-day eligibility date: ${esc(earliest||"—")}</strong><span>The scheduled intake cannot be earlier than five calendar days after the recorded last-use date.</span></div><div class="prescreen-two-column">${field("scheduledIntakeDate","Intake date","date",scheduled,"",true)}${field("scheduledIntakeTime","Intake time","time",x.scheduledIntakeTime||"")}</div>${optionalTextarea("scheduledIntakeNotes","Intake scheduling notes",x.scheduledIntakeNotes,"Transportation, arrival instructions, contact arrangements, or other details")}</section>`; }
     case "expectations": return `<section class="prescreen-step"><h3>Admission Expectations</h3><div class="prescreen-script-block"><p>Upon arrival, we will administer a urine screen and breathalyzer.</p><p>If a disclosed substance may still produce a positive result, we may establish a baseline and monitor it until the substance is out of the applicant’s system. The timeline is substance-specific.</p><p>If the substance takes longer than expected to clear, treatment may be suspended while the resident attends Detox and can return once a negative result is produced.</p><p>If a urine screen is positive for a substance that was not listed on the application or disclosed during this call, the applicant will not be permitted to enter the program.</p></div>${radioGroup("expectationsReviewed",[["yes","Reviewed","The applicant received the admission expectations"],["deferred","Deferred","The expectations were not reviewed during this call"]],x.expectationsReviewed)}${x.expectationsReviewed==="deferred"?optionalTextarea("expectationsNotes","Reason deferred",x.expectationsNotes,"Required when deferred"):optionalTextarea("expectationsNotes","Notes",x.expectationsNotes)}</section>`;
     case "legal": return `<section class="prescreen-step"><h3>Legal Status Verification</h3><div class="application-highlight"><span>Application information</span><p>${esc(applicationLegalText(a))}</p></div><p class="prescreen-question-large">Has your legal status changed since submitting your application?</p>${radioGroup("legalChanged",[["no","No","No changes disclosed"],["yes","Yes","Record the changes and assess possible conflicts"]],x.legalChanged)}${x.legalChanged==="yes"?`${optionalTextarea("legalChangeNotes","Describe the change",x.legalChangeNotes,"New charges, warrant, bail, probation, parole, court date, curfew, peace bond, or other obligation")}<fieldset class="prescreen-fieldset"><legend>Select all that apply</legend>${["New criminal charges","Outstanding warrant","Bail conditions","Probation","Parole","House arrest","Upcoming court date","Curfew","Peace bond","Other"].map(v=>`<label class="check-row"><input type="checkbox" name="legalTypes" value="${attr(v)}" ${(x.legalTypes||[]).includes(v)?"checked":""}> <span>${esc(v)}</span></label>`).join("")}</fieldset><p class="prescreen-question-large">Could any legal obligation interfere with full participation in the program?</p>${radioGroup("legalConflict",[["no","No","No participation conflict identified"],["yes","Yes","Executive Director or designated management review is required"],["unknown","Unsure","Further verification is required"]],x.legalConflict)}${x.legalConflict!=="no"?optionalTextarea("legalConflictNotes","Conflict details",x.legalConflictNotes,"Court dates, travel restrictions, curfew, reporting requirements, attendance restrictions, or other concerns"):""}`:""}</section>`;
     case "health": return `<section class="prescreen-step"><h3>Health Screen</h3><p class="prescreen-question-large">Are there any physical health problems that will prevent you from participating in the program?</p>${radioGroup("healthConflict",[["no","No","No health barrier disclosed"],["yes","Yes","Record the condition and required review"],["unknown","Unsure","Further information is required"]],x.healthConflict)}${x.healthConflict!=="no"?optionalTextarea("healthNotes","Health details",x.healthNotes,"Describe limitations, accommodation needs, or required follow-up"):optionalTextarea("healthNotes","Notes",x.healthNotes)}<p class="prescreen-question-large">Were Life Skills participation expectations explained?</p>${radioGroup("lifeSkillsReviewed",[["yes","Yes","Reviewed during this call"],["skipped","Skipped","Not required or deferred for this call"]],x.lifeSkillsReviewed)}</section>`;
@@ -131,7 +134,7 @@ function summaryHtml(r,a){
   if(x.interested==="no") rows.push(["Waitlist",x.remainWaitlist==="yes"?"Remain on waitlist":x.remainWaitlist==="no"?"Does not wish to remain":"Not answered"]);
   if(x.permission==="no") rows.push(["Callback",`${x.callbackDate||"Date not set"}${x.callbackTime?` at ${x.callbackTime}`:""}`]);
   if(days!==null) rows.push(["Sobriety",`${days} day${days===1?"":"s"} clean — ${days>=5?"Meets requirement":"Does not meet requirement"}`]);
-  if(x.sobrietyAction) rows.push(["Sobriety action",x.sobrietyAction==="detox"?"Arrange Detox and hold offer":"Return to waitlist and contact next applicant"]);
+  if(x.sobrietyAction) rows.push(["Sobriety action",x.sobrietyAction==="detox"?"Arrange Detox and hold offer":x.sobrietyAction==="schedule"?`Schedule intake${x.scheduledIntakeDate?` for ${x.scheduledIntakeDate}`:""}`:"Return to waitlist and contact next applicant"]);
   if(x.legalChanged) rows.push(["Legal status",x.legalChanged==="no"?"No change reported":x.legalConflict==="yes"?"Potential conflict — review required":x.legalConflict==="unknown"?"Verification required":"Change reported; no participation conflict identified"]);
   if(x.healthConflict) rows.push(["Health",x.healthConflict==="no"?"No barrier disclosed":x.healthConflict==="yes"?"Potential barrier — review required":"Further information required"]);
   if(x.takesMedication) rows.push(["Medication",x.takesMedication==="yes"?"Medication information reviewed":x.takesMedication==="no"?"No medication disclosed":"Skipped"]);
@@ -150,6 +153,7 @@ function suggestedOutcome(r){
   const days=calculateDays(x.lastUseDate);
   if(days!==null && days<5){
     if(x.sobrietyAction==="detox") return {code:"detox",title:"Detox Plan — Offer Held",detail:"Applicant must complete Detox and satisfy the five-day sobriety requirement before admission.",kind:"neutral"};
+    if(x.sobrietyAction==="schedule") return {code:"scheduled-intake",title:"Intake Scheduled — Offer Held",detail:`Applicant is scheduled for intake on ${x.scheduledIntakeDate||"the selected date"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}, after reaching the five-day sobriety requirement.`,kind:"neutral"};
     return {code:"returned-sobriety",title:"Return to Waitlist",detail:"Applicant does not meet the five-day sobriety requirement and the next eligible applicant should be contacted.",kind:"ineligible"};
   }
   if(x.legalConflict==="yes" || x.legalConflict==="unknown" || x.healthConflict==="yes" || x.healthConflict==="unknown") return {code:"review",title:"Further Review Required",detail:"A possible legal or health participation conflict requires review before admission.",kind:"neutral"};
@@ -175,7 +179,8 @@ function validateStep(step,r){
   if(step==="permission") return need(x.permission,"Select whether the applicant is available to continue.",'input[name="permission"]');
   if(step==="callback") return need(x.callbackDate && x.callbackTime,"Enter a callback date and time.","#callbackDate");
   if(step==="sobriety") return need(x.lastUseDate && x.lastUseSubstance?.trim(),"Enter both the last-use date and substance.","#lastUseDate");
-  if(step==="sobrietyFail") return need(x.sobrietyAction,"Choose whether to arrange Detox or return the applicant to the waitlist.",'input[name="sobrietyAction"]');
+  if(step==="sobrietyFail") return need(x.sobrietyAction,"Choose whether to schedule intake, arrange Detox, or return the applicant to the waitlist.",'input[name="sobrietyAction"]');
+  if(step==="intakeSchedule"){ const earliest=addCalendarDays(x.lastUseDate,5); return need(x.scheduledIntakeDate && (!earliest || x.scheduledIntakeDate>=earliest),`Choose an intake date on or after ${earliest||"the five-day sobriety date"}.`,"#scheduledIntakeDate"); }
   if(step==="expectations" && x.expectationsReviewed==="deferred") return need(x.expectationsNotes?.trim(),"Enter a reason when admission expectations are deferred.","#expectationsNotes");
   if(step==="legal" && x.legalChanged==="yes") return need(x.legalChangeNotes?.trim() && x.legalConflict,"Describe the legal change and indicate whether it may interfere with participation.","#legalChangeNotes");
   return true;
@@ -202,6 +207,7 @@ function updateFooter(){
   $("nextPrescreenBtn").classList.toggle("hidden",currentStep==="summary");
   $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status==="Completed");
   $("printPrescreenBtn")?.classList.toggle("hidden",currentStep!=="summary");
+  $("movePrescreenToRosterBtn")?.classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status!=="Completed");
   $("nextPrescreenBtn").textContent=i===steps.length-2?"Review Summary":"Continue";
 }
 
@@ -226,6 +232,9 @@ async function completePrescreen(){
     addWaitlistNote(a,`Pre-screening callback scheduled for ${x.callbackDate} at ${x.callbackTime}. ${x.callbackNotes||""}`.trim());
   } else if(result.code==="detox"){
     addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Detox plan initiated; offer remains active. ${x.detoxFacility||""} ${x.detoxExpectedDate?`Expected completion: ${x.detoxExpectedDate}.`:""} ${x.detoxNotes||""}`.trim());
+  } else if(result.code==="scheduled-intake"){
+    a.status="Offer Given";
+    addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Intake scheduled for ${x.scheduledIntakeDate||"date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}; offer remains active. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. ${x.scheduledIntakeNotes||""}`.trim());
   } else if(result.code==="returned-sobriety"){
     a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant did not meet the five-day sobriety requirement and was returned to the waitlist. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. Contact the next eligible applicant.`);
   } else if(result.code==="review"){
@@ -236,6 +245,74 @@ async function completePrescreen(){
   await saveAppState(prescreenState); renderList(); alert(result.title); currentStep="summary"; renderForm();
 }
 
+async function movePrescreenApplicantToRoster(){
+  collectCurrentStep();
+  const applicantIndex=(prescreenState?.waitlist||[]).findIndex(a=>a.id===currentApplicantId && !a.archived);
+  if(applicantIndex===-1){ alert("This applicant is no longer on the active waitlist."); return; }
+
+  const applicant=prescreenState.waitlist[applicantIndex];
+  const name=applicantName(applicant);
+  if(!confirm(`Move ${name} to the active Phase 1 roster? They will be removed from the waitlist, not archived.`)) return;
+
+  prescreenState.roster=Array.isArray(prescreenState.roster)?prescreenState.roster.filter(r=>r&&r!=="temp"):[];
+  const previousWaitlist=[...prescreenState.waitlist];
+  const previousRoster=[...prescreenState.roster];
+
+  const transferNote={
+    id:crypto.randomUUID(),
+    author:staffDisplayName(),
+    text:`Transferred from pre-screening/waitlist to Phase 1 roster on ${new Date().toLocaleDateString("en-CA")}.`,
+    createdAt:new Date().toISOString()
+  };
+
+  const newResident={
+    id:crypto.randomUUID(),
+    roomNumber:"",
+    clientId:"",
+    firstName:applicant.firstName||"",
+    lastName:applicant.lastName||"",
+    dob:applicant.dob||"",
+    phone:applicant.contact||applicant.phone||"",
+    address:applicant.address||"",
+    city:applicant.city||"",
+    contact:applicant.emergencyContact||"",
+    contactPhone:applicant.emergencyContactPhone||"",
+    entryDate:"",
+    expectedDischargeDate:"",
+    originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",
+    waitlistSourceId:applicant.id,
+    phase:"phase1",
+    phase2AdmissionDate:"",
+    archived:false,
+    archivedAt:"",
+    archiveReason:"",
+    notes:[transferNote,...(Array.isArray(applicant.notes)?applicant.notes:[])]
+  };
+
+  prescreenState.waitlist.splice(applicantIndex,1);
+  prescreenState.roster.push(newResident);
+
+  try{
+    const cleanedWaitlist=typeof normalizeAppState==="function"?normalizeAppState({waitlist:prescreenState.waitlist}).waitlist:prescreenState.waitlist;
+    const cleanedRoster=typeof normalizeAppState==="function"?normalizeAppState({roster:prescreenState.roster}).roster:prescreenState.roster;
+    await APP_DOC_REF().update({waitlist:cleanedWaitlist,roster:cleanedRoster,updatedAt:new Date().toISOString()});
+    prescreenState.waitlist=cleanedWaitlist;
+    prescreenState.roster=cleanedRoster;
+    if(typeof KBRH_LAST_STATE!=="undefined"&&KBRH_LAST_STATE){
+      KBRH_LAST_STATE=typeof normalizeAppState==="function"?normalizeAppState({...KBRH_LAST_STATE,waitlist:cleanedWaitlist,roster:cleanedRoster}):{...KBRH_LAST_STATE,waitlist:cleanedWaitlist,roster:cleanedRoster};
+    }
+    closePrescreen();
+    renderList();
+    alert(`${name} was moved to the active Phase 1 roster.`);
+  }catch(error){
+    console.error("Pre-screening move to roster failed:",error);
+    prescreenState.waitlist=previousWaitlist;
+    prescreenState.roster=previousRoster;
+    renderList();
+    alert(`Could not move ${name} to the roster${error?.code?` (${error.code})`:""}. No changes were saved.`);
+  }
+}
+
 function printPrescreenSummary(record=currentRecord){
   if(!record)return;
   const a=(prescreenState?.waitlist||[]).find(x=>x.id===record.applicantId) || {firstName:record.applicantName||"",lastName:""};
@@ -243,7 +320,7 @@ function printPrescreenSummary(record=currentRecord){
   const row=(label,value)=>`<tr><th>${esc(label)}</th><td>${esc(value||"—")}</td></tr>`;
   const legalTypes=Array.isArray(x.legalTypes)&&x.legalTypes.length?x.legalTypes.join(", "):"—";
   const win=window.open("","_blank"); if(!win){alert("Allow pop-ups to print the summary.");return;}
-  win.document.write(`<!doctype html><html><head><title>Pre-Screening Summary - ${esc(applicantName(a))}</title><style>@page{size:letter portrait;margin:.55in}body{font-family:Arial,sans-serif;color:#111;font-size:11pt;margin:0}h1{text-align:center;margin:0 0 4px;font-size:20pt}h2{text-align:center;margin:0 0 18px;font-size:13pt}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{border:1px solid #555;padding:7px;text-align:left;vertical-align:top}th{width:32%;background:#eee}h3{margin:16px 0 6px}.outcome{border:2px solid #333;padding:10px;margin:14px 0}.meta{display:flex;justify-content:space-between;gap:20px;font-size:10pt}.notes{white-space:pre-wrap;border:1px solid #777;padding:9px;min-height:45px}button{margin-top:18px}@media print{button{display:none}}</style></head><body><h1>Ken Brown Recovery Home</h1><h2>Pre-Screening Summary</h2><div class="meta"><span><strong>Applicant:</strong> ${esc(applicantName(a))}</span><span><strong>Completed:</strong> ${esc(formatDateTime(record.completedAt||record.updatedAt))}</span></div><table>${row("Staff Member",record.staffUser||"—")}${row("Interest",x.interested==="yes"?"Interested":x.interested==="no"?"Not interested":"Not answered")}${row("Available to Complete Call",x.permission==="yes"?"Yes":x.permission==="no"?"No":"Not answered")}${row("Last Use",x.lastUseDate||"—")}${row("Substance",x.lastUseSubstance||"—")}${row("Days Clean",days===null?"—":String(days))}${row("Admission Expectations",x.expectationsReviewed||"—")}${row("Legal Status Changed",x.legalChanged||"—")}${row("Legal Factors",legalTypes)}${row("Legal Participation Conflict",x.legalConflict||"—")}${row("Health Participation Conflict",x.healthConflict||"—")}${row("Medication",x.takesMedication||"—")}${row("Pharmacy",x.pharmacy||"—")}${row("Allergies",x.hasAllergies==="yes"?(x.allergies||"Yes"):(x.hasAllergies||"—"))}${row("Previous Treatment",x.priorTreatment||"—")}${row("Housing Goal",x.goalHousing||"—")}${row("Employment Goal",x.goalEmployment||"—")}${row("Outside Counselling",x.goalCounselling||"—")}</table><div class="outcome"><strong>Outcome: ${esc(result.title)}</strong><div>${esc(result.detail)}</div></div><h3>Overall Notes</h3><div class="notes">${esc(record.overallNotes||"No additional notes.")}</div><button onclick="window.print()">Print Summary</button></body></html>`); win.document.close();
+  win.document.write(`<!doctype html><html><head><title>Pre-Screening Summary - ${esc(applicantName(a))}</title><style>@page{size:letter portrait;margin:.55in}body{font-family:Arial,sans-serif;color:#111;font-size:11pt;margin:0}h1{text-align:center;margin:0 0 4px;font-size:20pt}h2{text-align:center;margin:0 0 18px;font-size:13pt}table{width:100%;border-collapse:collapse;margin:12px 0 18px}th,td{border:1px solid #555;padding:7px;text-align:left;vertical-align:top}th{width:32%;background:#eee}h3{margin:16px 0 6px}.outcome{border:2px solid #333;padding:10px;margin:14px 0}.meta{display:flex;justify-content:space-between;gap:20px;font-size:10pt}.notes{white-space:pre-wrap;border:1px solid #777;padding:9px;min-height:45px}button{margin-top:18px}@media print{button{display:none}}</style></head><body><h1>Ken Brown Recovery Home</h1><h2>Pre-Screening Summary</h2><div class="meta"><span><strong>Applicant:</strong> ${esc(applicantName(a))}</span><span><strong>Completed:</strong> ${esc(formatDateTime(record.completedAt||record.updatedAt))}</span></div><table>${row("Staff Member",record.staffUser||"—")}${row("Interest",x.interested==="yes"?"Interested":x.interested==="no"?"Not interested":"Not answered")}${row("Available to Complete Call",x.permission==="yes"?"Yes":x.permission==="no"?"No":"Not answered")}${row("Last Use",x.lastUseDate||"—")}${row("Substance",x.lastUseSubstance||"—")}${row("Days Clean",days===null?"—":String(days))}${row("Sobriety Action",x.sobrietyAction==="schedule"?"Scheduled intake":x.sobrietyAction==="detox"?"Detox plan":x.sobrietyAction==="return"?"Returned to waitlist":"—")}${row("Scheduled Intake",x.scheduledIntakeDate?`${x.scheduledIntakeDate}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}`:"—")}${row("Admission Expectations",x.expectationsReviewed||"—")}${row("Legal Status Changed",x.legalChanged||"—")}${row("Legal Factors",legalTypes)}${row("Legal Participation Conflict",x.legalConflict||"—")}${row("Health Participation Conflict",x.healthConflict||"—")}${row("Medication",x.takesMedication||"—")}${row("Pharmacy",x.pharmacy||"—")}${row("Allergies",x.hasAllergies==="yes"?(x.allergies||"Yes"):(x.hasAllergies||"—"))}${row("Previous Treatment",x.priorTreatment||"—")}${row("Housing Goal",x.goalHousing||"—")}${row("Employment Goal",x.goalEmployment||"—")}${row("Outside Counselling",x.goalCounselling||"—")}</table><div class="outcome"><strong>Outcome: ${esc(result.title)}</strong><div>${esc(result.detail)}</div></div><h3>Overall Notes</h3><div class="notes">${esc(record.overallNotes||"No additional notes.")}</div><button onclick="window.print()">Print Summary</button></body></html>`); win.document.close();
 }
 
 function openPrescreen(id){
@@ -270,6 +347,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("backPrescreenBtn").onclick=previousStep;
   $("completePrescreenBtn").onclick=completePrescreen;
   $("printPrescreenBtn").onclick=()=>printPrescreenSummary(currentRecord);
+  $("movePrescreenToRosterBtn").onclick=movePrescreenApplicantToRoster;
   $("prescreenModal").addEventListener("click",e=>{if(e.target===$("prescreenModal"))closePrescreen();});
 });
 auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{prescreenState=state;prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];renderList();});});

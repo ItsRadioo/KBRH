@@ -172,3 +172,9 @@ The directory is read-only in the website; staff contact data remains managed in
 ## v5.3.17
 - Renamed the navigation entry from Staff List to Staff Contacts so it is clearly visible as the contact page.
 - Staff Contacts page remains staff-list.html and uses kbrh/staffProfiles.
+
+## v5.3.20
+- Pre-Screening sobriety decision now includes Schedule Intake Date as a third option alongside Detox and Return to Waitlist.
+- Scheduled intake defaults to five calendar days after the recorded last-use date and cannot be set earlier.
+- Optional intake time and scheduling notes are supported.
+- Scheduled-intake outcome keeps the offer active and writes the scheduled admission details into the waitlist note and printable pre-screening summary.
