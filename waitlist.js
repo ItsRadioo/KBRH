@@ -393,9 +393,11 @@ function saveInlineEdit(applicantId) {
   saveWaitlist();
 }
 
-function moveToRoster(applicantId) {
-  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
-  if (!applicant) return;
+async function moveToRoster(applicantId) {
+  const applicantIndex = waitlistState.waitlist.findIndex(item => item.id === applicantId);
+  if (applicantIndex === -1) return;
+
+  const applicant = waitlistState.waitlist[applicantIndex];
 
   waitlistState.roster = Array.isArray(waitlistState.roster)
     ? waitlistState.roster.filter(client => client && client !== "temp")
@@ -405,11 +407,12 @@ function moveToRoster(applicantId) {
 
   const transferNote = {
     id: crypto.randomUUID(),
+    author: typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Unknown"),
     text: `Transferred from waitlist on ${new Date().toLocaleDateString("en-CA")}.`,
     createdAt: new Date().toISOString()
   };
 
-  waitlistState.roster.push({
+  const newResident = {
     id: crypto.randomUUID(),
     roomNumber: "",
     clientId: "",
@@ -431,14 +434,47 @@ function moveToRoster(applicantId) {
     archivedAt: "",
     archiveReason: "",
     notes: [transferNote, ...normalizeWaitlistNotes(applicant.notes)]
-  });
+  };
 
-  applicant.archived = true;
-  applicant.archivedAt = new Date().toISOString();
-  applicant.archiveReason = "Moved to Current Roster";
+  const previousWaitlist = [...waitlistState.waitlist];
+  const previousRoster = [...waitlistState.roster];
 
-  renderWaitlist();
-  saveWaitlist();
+  // Moving to roster is a transfer, not an archive. Remove the applicant from
+  // the waitlist entirely so they do not appear under Archived Applicants.
+  waitlistState.waitlist.splice(applicantIndex, 1);
+  waitlistState.roster.push(newResident);
+
+  try {
+    const active = resequenceActiveWaitlist(getActiveWaitlist());
+    const archived = getArchivedWaitlist();
+    const cleanedWaitlist = normalizeAppState({ waitlist: [...active, ...archived] }).waitlist;
+    const cleanedRoster = normalizeAppState({ roster: waitlistState.roster }).roster;
+
+    await APP_DOC_REF().update({
+      waitlist: cleanedWaitlist,
+      roster: cleanedRoster,
+      updatedAt: new Date().toISOString()
+    });
+
+    waitlistState.waitlist = cleanedWaitlist;
+    waitlistState.roster = cleanedRoster;
+
+    if (typeof KBRH_LAST_STATE !== "undefined" && KBRH_LAST_STATE) {
+      KBRH_LAST_STATE = normalizeAppState({
+        ...KBRH_LAST_STATE,
+        waitlist: cleanedWaitlist,
+        roster: cleanedRoster
+      });
+    }
+
+    renderWaitlist();
+  } catch (error) {
+    console.error("Move to roster failed:", error);
+    waitlistState.waitlist = previousWaitlist;
+    waitlistState.roster = previousRoster;
+    renderWaitlist();
+    alert(`Could not move applicant to roster${error?.code ? ` (${error.code})` : ""}. No changes were saved.`);
+  }
 }
 
 function openApplicantActionsModal(applicantId) {
