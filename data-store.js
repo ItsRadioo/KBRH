@@ -26,6 +26,7 @@ function defaultAppState() {
     verbalWarnings: [],
     writeUps: [],
     choreChecks: [],
+    choreCheckAssignments: { weekKey: "", refreshedAt: "", choreAssignments: {}, roomAssignments: {} },
     preScreenings: [],
     incidentReports: [],
     chartData: { laundry: {}, electronics: {}, meetings: {} },
@@ -226,6 +227,21 @@ function normalizeAppState(state) {
         updatedAt: item.updatedAt || ""
       }))
     : [];
+
+  const assignmentSnapshot = merged.choreCheckAssignments && typeof merged.choreCheckAssignments === "object"
+    ? merged.choreCheckAssignments
+    : {};
+
+  merged.choreCheckAssignments = {
+    weekKey: assignmentSnapshot.weekKey || "",
+    refreshedAt: assignmentSnapshot.refreshedAt || "",
+    choreAssignments: assignmentSnapshot.choreAssignments && typeof assignmentSnapshot.choreAssignments === "object"
+      ? assignmentSnapshot.choreAssignments
+      : {},
+    roomAssignments: assignmentSnapshot.roomAssignments && typeof assignmentSnapshot.roomAssignments === "object"
+      ? assignmentSnapshot.roomAssignments
+      : {}
+  };
 
   merged.preScreenings = Array.isArray(merged.preScreenings)
     ? merged.preScreenings.filter(item => item && item !== "temp").map(item => ({

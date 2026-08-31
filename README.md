@@ -178,3 +178,10 @@ The directory is read-only in the website; staff contact data remains managed in
 - Scheduled intake defaults to five calendar days after the recorded last-use date and cannot be set earlier.
 - Optional intake time and scheduling notes are supported.
 - Scheduled-intake outcome keeps the offer active and writes the scheduled admission details into the waitlist note and printable pre-screening summary.
+
+
+## v5.3.23
+- Chore Check assigned resident names are now captured in a shared weekly snapshot.
+- Snapshot rolls over every Monday at 12:01 a.m. Eastern Time (America/Toronto).
+- Chore/room names stay static for the full week even if House Chore assignments or roster room assignments change mid-week.
+- If the Chore Checks page is open at rollover, it refreshes automatically; otherwise the snapshot refreshes the next time an authenticated user opens the page after rollover.
