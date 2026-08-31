@@ -34,6 +34,23 @@
 <section class="card wide">
 <h2>Current Waitlist</h2>
 <p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. Two consecutive No Calls highlight the applicant for follow-up.</p>
+<div class="waitlist-callin-summary" aria-label="Call-in summary">
+  <article class="waitlist-callin-card waitlist-callin-card-success">
+    <span class="waitlist-callin-label">Call Ins</span>
+    <strong class="waitlist-callin-value" id="callInCount">0</strong>
+    <span class="waitlist-callin-detail">Current active waitlist</span>
+  </article>
+  <article class="waitlist-callin-card waitlist-callin-card-late">
+    <span class="waitlist-callin-label">Late Calls</span>
+    <strong class="waitlist-callin-value" id="lateCallCount">0</strong>
+    <span class="waitlist-callin-detail">Current active waitlist</span>
+  </article>
+  <article class="waitlist-callin-card waitlist-callin-card-nocall">
+    <span class="waitlist-callin-label">No Calls</span>
+    <strong class="waitlist-callin-value" id="noCallCount">0</strong>
+    <span class="waitlist-callin-detail"><strong id="noCallTwiceCount">0</strong> have missed 2+ consecutive call-ins</span>
+  </article>
+</div>
 <div class="compact-column-toolbar">
 <button class="secondary" id="toggleCompactColumnsBtn" type="button">Choose Compact Columns</button>
 </div>

@@ -882,8 +882,41 @@ function getLastCallText(item) {
   return dateText ? `${status} — ${dateText}` : status;
 }
 
+function renderCallInCounters() {
+  const active = Array.isArray(waitlistState.waitlist)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
+    : [];
+
+  let callIns = 0;
+  let lateCalls = 0;
+  let noCalls = 0;
+  let noCallTwice = 0;
+
+  for (const item of active) {
+    const latest = Array.isArray(item.callInHistory) && item.callInHistory.length
+      ? normalizeCallInStatus(item.callInHistory[0])
+      : "";
+
+    if (latest === "Call In") callIns += 1;
+    if (latest === "Late Call") lateCalls += 1;
+    if (latest === "No Call") noCalls += 1;
+    if (getConsecutiveNoCallCount(item) >= 2) noCallTwice += 1;
+  }
+
+  const callInEl = document.getElementById("callInCount");
+  const lateEl = document.getElementById("lateCallCount");
+  const noCallEl = document.getElementById("noCallCount");
+  const twiceEl = document.getElementById("noCallTwiceCount");
+
+  if (callInEl) callInEl.textContent = String(callIns);
+  if (lateEl) lateEl.textContent = String(lateCalls);
+  if (noCallEl) noCallEl.textContent = String(noCalls);
+  if (twiceEl) twiceEl.textContent = String(noCallTwice);
+}
+
 function renderWaitlist() {
   document.body.classList.toggle("waitlist-editing-active", Boolean(editingApplicantId));
+  renderCallInCounters();
   renderActiveWaitlist();
   renderCompactActiveWaitlist();
   renderArchivedWaitlist();

@@ -396,3 +396,16 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 .page-prescreening .summary-list{border:1px solid #d8dee8;border-radius:10px;overflow:hidden;margin-bottom:16px}.page-prescreening .summary-list>div{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:11px 14px;border-bottom:1px solid #e8edf3}.page-prescreening .summary-list>div:last-child{border-bottom:0}.page-prescreening .summary-list span{color:#64748b}
 .page-prescreening .prescreen-footer{align-items:center}.page-prescreening .prescreen-footer-spacer{flex:1}
 @media(max-width:700px){.page-prescreening .prescreen-two-column{grid-template-columns:1fr}.page-prescreening .prescreen-choice-grid{grid-template-columns:1fr}.page-prescreening .summary-list>div{grid-template-columns:1fr;gap:3px}.page-prescreening .prescreen-footer{flex-wrap:wrap}.page-prescreening .prescreen-footer-spacer{display:none}}
+
+
+/* Waitlist call-in counters */
+.page-waitlist .waitlist-callin-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 20px;}
+.page-waitlist .waitlist-callin-card{min-width:0;padding:16px 18px;border:1px solid #d8e0e8;border-left:5px solid #64748b;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(15,23,42,.05);}
+.page-waitlist .waitlist-callin-card-success{border-left-color:#217a55;background:#f3faf7;}
+.page-waitlist .waitlist-callin-card-late{border-left-color:#a86712;background:#fff9ed;}
+.page-waitlist .waitlist-callin-card-nocall{border-left-color:#b63a43;background:#fff3f4;}
+.page-waitlist .waitlist-callin-label{display:block;color:#526173;font-size:.76rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.page-waitlist .waitlist-callin-value{display:block;margin-top:3px;color:#172434;font-size:2rem;line-height:1;font-weight:850;}
+.page-waitlist .waitlist-callin-detail{display:block;margin-top:7px;color:#657487;font-size:.84rem;font-weight:650;}
+.page-waitlist .waitlist-callin-card-nocall .waitlist-callin-detail strong{color:#9e2f38;}
+@media(max-width:800px){.page-waitlist .waitlist-callin-summary{grid-template-columns:1fr;}.page-waitlist .waitlist-callin-card{padding:14px 16px;}}
