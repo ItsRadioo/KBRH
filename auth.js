@@ -10,8 +10,14 @@ function isKbrhAdmin(user=auth.currentUser){
 function applyAdminVisibility(user=auth.currentUser){
   const allowed=isKbrhAdmin(user);
   document.querySelectorAll("[data-admin-only]").forEach(el=>{
-    el.hidden=!allowed;
-    el.setAttribute("aria-hidden",allowed?"false":"true");
+    if (allowed) {
+      el.hidden = false;
+      el.removeAttribute("aria-hidden");
+    } else {
+      // Do not merely hide admin navigation with CSS. Remove it from the
+      // rendered document so non-admin staff cannot see or focus the link.
+      el.remove();
+    }
   });
 }
 

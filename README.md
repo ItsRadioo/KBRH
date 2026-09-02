@@ -199,3 +199,9 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - Settings include standard call-in day, consecutive No Call threshold, and chore-check assignment rollover day/time.
 - Chore Check weekly snapshots now use the configured rollover day/time in America/Toronto.
 - Updated Firestore rules so only admin@kbrh.local can write /kbrh/settings.
+
+
+## v5.4.1
+- Settings navigation is rendered only for admin@kbrh.local. For all other authenticated accounts, admin-only navigation elements are removed from the DOM.
+- Direct access to settings.html remains blocked for non-admin users.
+- Firestore settings writes remain restricted to admin@kbrh.local.
