@@ -185,3 +185,6 @@ The directory is read-only in the website; staff contact data remains managed in
 - Snapshot rolls over every Monday at 12:01 a.m. Eastern Time (America/Toronto).
 - Chore/room names stay static for the full week even if House Chore assignments or roster room assignments change mid-week.
 - If the Chore Checks page is open at rollover, it refreshes automatically; otherwise the snapshot refreshes the next time an authenticated user opens the page after rollover.
+
+## v5.3.24
+Waitlist ordering update: applicants with no call-in history are ordered automatically by Application Date (oldest first). Once an applicant has any call-in record, their persisted waitlist position becomes authoritative. Recording the first call-in locks the applicant's currently displayed position before applying any Call In/Late Call/No Call workflow movement. Manual position changes are available only after call-in history exists, preventing manual edits from fighting the application-date ordering rule.

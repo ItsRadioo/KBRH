@@ -134,16 +134,50 @@ function normalizeWaitlistNotes(notes) {
   return [];
 }
 
+function hasCallInRecord(item) {
+  return Array.isArray(item?.callInHistory) && item.callInHistory.length > 0;
+}
+
+function applicationDateSortValue(item) {
+  const value = String(item?.dateApplied || "").trim();
+  if (!value) return Number.POSITIVE_INFINITY;
+
+  const parsed = Date.parse(`${value}T00:00:00`);
+  return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+}
+
 function getActiveWaitlist() {
   const active = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
     : [];
 
-  // waitlistPosition is the persistent source of truth for manual ordering.
-  // Older records without a position keep their existing array order and are
-  // assigned positions the next time the waitlist is saved/resequenced.
-  return active
-    .map((item, index) => ({ item, index }))
+  if (!active.length) return [];
+
+  /*
+   * Ordering rules:
+   *  - Applicants with NO call-in history are ordered by Application Date,
+   *    oldest first. Their add/import order is only used as a tie-breaker.
+   *  - Once an applicant has any call-in record, their saved
+   *    waitlistPosition becomes authoritative and is no longer recalculated
+   *    from Application Date.
+   *
+   * Called applicants therefore occupy their saved positions, while never-
+   * called applicants fill the remaining positions in application-date order.
+   */
+  const indexed = active.map((item, index) => ({ item, index }));
+  const called = indexed.filter(entry => hasCallInRecord(entry.item));
+  const uncalled = indexed
+    .filter(entry => !hasCallInRecord(entry.item))
+    .sort((a, b) => {
+      const dateDiff = applicationDateSortValue(a.item) - applicationDateSortValue(b.item);
+      if (dateDiff !== 0) return dateDiff;
+      return a.index - b.index;
+    });
+
+  const slots = new Array(active.length).fill(null);
+  const overflowCalled = [];
+
+  called
     .sort((a, b) => {
       const ap = Number(a.item.waitlistPosition);
       const bp = Number(b.item.waitlistPosition);
@@ -153,7 +187,25 @@ function getActiveWaitlist() {
       if (aValid !== bValid) return aValid ? -1 : 1;
       return a.index - b.index;
     })
-    .map(entry => entry.item);
+    .forEach(entry => {
+      const position = Number(entry.item.waitlistPosition);
+      const target = Number.isFinite(position) && position > 0
+        ? Math.min(active.length - 1, Math.max(0, Math.round(position) - 1))
+        : -1;
+
+      if (target >= 0 && slots[target] === null) {
+        slots[target] = entry.item;
+      } else {
+        overflowCalled.push(entry.item);
+      }
+    });
+
+  const fillQueue = [...uncalled.map(entry => entry.item), ...overflowCalled];
+  for (let i = 0; i < slots.length; i += 1) {
+    if (slots[i] === null) slots[i] = fillQueue.shift() || null;
+  }
+
+  return slots.filter(Boolean);
 }
 
 function getArchivedWaitlist() {
@@ -545,6 +597,12 @@ function savePositionChange() {
   const currentIndex = active.findIndex(item => item.id === positionApplicantId);
   if (currentIndex === -1) return;
 
+  const targetApplicant = active[currentIndex];
+  if (!hasCallInRecord(targetApplicant)) {
+    alert("Applicants without a call-in record are ordered automatically by Application Date. Record a call-in first before manually changing their position.");
+    return;
+  }
+
   const input = document.getElementById("positionNumberInput");
   const requestedPosition = Number.parseInt(input.value, 10);
 
@@ -671,6 +729,11 @@ function saveCallInStatus(selected, recordedAt = null) {
   const eventDate = recordedAt instanceof Date && !Number.isNaN(recordedAt.getTime())
     ? recordedAt
     : new Date();
+
+  // Before the first call-in record is created, make the currently displayed
+  // application-date order concrete. That exact displayed position becomes
+  // the applicant's persistent starting position once call-in history exists.
+  resequenceActiveWaitlist(getActiveWaitlist());
   const previousPosition = Number(applicant.waitlistPosition) || null;
   const previousActiveOrder = getActiveOrderSnapshot();
 
@@ -1303,9 +1366,8 @@ auth.onAuthStateChanged(user => {
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
-    // waitlistPosition is authoritative for active ordering. For legacy
-    // applicants that predate this field, preserve their current stored order
-    // until the next explicit waitlist save assigns sequential positions.
+    // Never-called applicants are displayed by Application Date. Applicants
+    // with call-in history retain their persisted waitlistPosition.
     renderWaitlist();
   });
 });
