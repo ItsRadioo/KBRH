@@ -189,7 +189,7 @@ async function downloadFilledExcelTemplate() {
   const response = await fetch(TEMPLATE_FILE);
 
   if (!response.ok) {
-    alert("Could not find Resident_Chore_Schedule.xlsx. Make sure it is uploaded to the same folder as index.html.");
+    alert("Could not find Resident_Chore_Schedule.xlsx. Make sure it is uploaded to the same folder as house-chores.html.");
     return;
   }
 

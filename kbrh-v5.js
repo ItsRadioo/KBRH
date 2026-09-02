@@ -176,18 +176,18 @@
 (() => {
   "use strict";
   const NAV_GROUPS = [
-    ["Residents", ["dashboard.html","roster.html","waitlist.html","prescreening.html"]],
-    ["Daily Operations", ["index.html","meal-chores.html","chore-checks.html","charts.html"]],
+    ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html"]],
+    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
   ];
-  const labels={"dashboard.html":"Dashboard"};
+  const labels={"index.html":"Dashboard"};
   function basename(h){try{return new URL(h,location.href).pathname.split('/').pop()||'index.html';}catch(_){return h;}}
   function groupNavigation(){
     const nav=document.querySelector('.app-nav'); if(!nav||nav.dataset.v55Grouped) return;
     nav.dataset.v55Grouped='1';
-    if(![...nav.querySelectorAll('a')].some(a=>basename(a.href)==='dashboard.html')){
-      const a=document.createElement('a'); a.className='app-nav-link'; a.href='dashboard.html'; a.textContent='Dashboard'; nav.prepend(a);
+    if(![...nav.querySelectorAll('a')].some(a=>basename(a.href)==='index.html')){
+      const a=document.createElement('a'); a.className='app-nav-link'; a.href='index.html'; a.textContent='Dashboard'; nav.prepend(a);
     }
     const links=[...nav.querySelectorAll(':scope > a.app-nav-link')];
     const map=new Map(links.map(a=>[basename(a.getAttribute('href')||a.href),a]));

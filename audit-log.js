@@ -13,7 +13,7 @@ function auditEscape(value) {
 
 function auditPageLabel(page) {
   const labels = {
-    "roster.html":"Roster", "waitlist.html":"Waitlist", "index.html":"House Chores",
+    "roster.html":"Roster", "waitlist.html":"Waitlist", "house-chores.html":"House Chores",
     "meal-chores.html":"Meal Chores", "verbalwarning.html":"Warnings", "writeups.html":"Write-Ups",
     "chore-checks.html":"Chore Checks", "incident-report.html":"Incident Reports", "charts.html":"Charts",
     "prescreening.html":"Pre-Screening", "counseling-notes.html":"Counseling Notes"

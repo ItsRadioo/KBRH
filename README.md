@@ -212,3 +212,10 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - Added global resident/applicant search in the header.
 - Added sticky table headers and standardized modal overflow behavior.
 - Existing workflows and Firestore schema are preserved.
+
+
+## v5.5.1 Home routing
+- `index.html` is now the Dashboard and is the application home page.
+- House Chores moved to `house-chores.html`.
+- Successful login opens the Dashboard.
+- Navigation links were updated accordingly.
