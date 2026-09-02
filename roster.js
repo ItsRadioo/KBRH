@@ -580,6 +580,7 @@ function moveToPhase(clientId, phase) {
   if (!client) return;
 
   client.phase = phase;
+  appendPersonActivity(client,"Phase",phase==="phase2"?"Moved to Phase 2":"Moved to Phase 1","");
 
   if (phase === "phase2") {
     client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
@@ -633,6 +634,7 @@ async function archiveClient(clientId) {
 
       const resident = { ...roster[index] };
       resident.archived = true;
+      appendPersonActivity(resident,"Archive","Resident archived / discharged",archiveReason,identity,archivedAt);
       resident.archivedAt = archivedAt;
       resident.archiveReason = archiveReason;
       resident.archivedBy = identity.name || identity.email || "Staff User";
@@ -694,6 +696,7 @@ function restoreClient(clientId) {
   if (!confirm(`Restore ${client.firstName} ${client.lastName} to the active roster?`)) return;
 
   client.archived = false;
+  appendPersonActivity(client,"Restore","Resident restored to active roster","");
   client.archivedAt = "";
   client.archiveReason = "";
 
@@ -772,6 +775,7 @@ function addClientNote() {
     text,
     createdAt: new Date().toISOString()
   });
+  appendPersonActivity(client,"Note","Resident note added",text);
 
   document.getElementById("noteAuthor").value = "";
   document.getElementById("newNoteText").value = "";
@@ -999,6 +1003,8 @@ function openResidentInfoModal(clientId) {
   html += residentInfoItem("Admission Status", client.admissionCompleted ? "Complete" : "Incomplete");
   html += residentInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
   html += `</div></section>`;
+  const activity=[...normalizeActivityHistory(client.activityHistory),...(Array.isArray(client.notes)?client.notes.map(note=>({id:`note-${note.id}`,summary:"Note",detail:note.text||"",staffName:note.author||"Unknown",createdAt:note.createdAt||""})):[])].filter(x=>x.createdAt).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  html += `<section class="resident-info-section"><h3>Activity History</h3><div class="person-activity-list">${activity.length?activity.map(entry=>`<article class="person-activity-item"><div><strong>${escapeHtml(entry.summary||entry.type||"Activity")}</strong><span>${escapeHtml(entry.detail||"")}</span></div><small>${escapeHtml(formatDateTime(entry.createdAt))} · ${escapeHtml(entry.staffName||"System")}</small></article>`).join(""):`<p class="empty">No activity recorded yet.</p>`}</div></section>`;
 
   body.innerHTML = html;
   modal.classList.remove("hidden");

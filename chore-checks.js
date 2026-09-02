@@ -4,6 +4,7 @@ let currentRoom='';
 let editingCheckId='';
 let snapshotRefreshInFlight=false;
 let snapshotTimer=null;
+let choreSettings=defaultKbrhSettings();
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
@@ -31,14 +32,18 @@ function easternDateParts(date=new Date()){
 }
 
 function effectiveAssignmentWeekKey(date=new Date()){
-  // Shift one minute backward so the new week begins exactly at Monday 12:01 a.m. Eastern Time.
-  const shifted=new Date(date.getTime()-60000);
-  const p=easternDateParts(shifted);
-  const utcDate=new Date(Date.UTC(p.year,p.month-1,p.day));
-  const day=utcDate.getUTCDay();
-  const daysSinceMonday=(day+6)%7;
-  utcDate.setUTCDate(utcDate.getUTCDate()-daysSinceMonday);
-  return `${utcDate.getUTCFullYear()}-${String(utcDate.getUTCMonth()+1).padStart(2,'0')}-${String(utcDate.getUTCDate()).padStart(2,'0')}`;
+  const p=easternDateParts(date);
+  const targetDayName=choreSettings?.choreRolloverDay||"Monday";
+  const dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const targetDay=Math.max(0,dayNames.indexOf(targetDayName));
+  const [targetHour,targetMinute]=String(choreSettings?.choreRolloverTime||"00:01").split(":").map(Number);
+  const currentDate=new Date(Date.UTC(p.year,p.month-1,p.day));
+  const currentDow=currentDate.getUTCDay();
+  let daysSince=(currentDow-targetDay+7)%7;
+  const beforeTodayRollover=daysSince===0 && (p.hour<(targetHour||0) || (p.hour===(targetHour||0) && p.minute<(targetMinute||0)));
+  if(beforeTodayRollover) daysSince=7;
+  currentDate.setUTCDate(currentDate.getUTCDate()-daysSince);
+  return `${currentDate.getUTCFullYear()}-${String(currentDate.getUTCMonth()+1).padStart(2,'0')}-${String(currentDate.getUTCDate()).padStart(2,'0')}`;
 }
 
 function liveAssignedName(areaId){
@@ -105,7 +110,8 @@ function updateAssignmentWeekLabel(){
   const start=new Date(`${snap.weekKey}T12:00:00`);
   const end=new Date(start);end.setDate(end.getDate()+6);
   const fmt=d=>d.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
-  el.textContent=`Assigned names locked for ${fmt(start)} – ${fmt(end)}. Refreshes Mondays at 12:01 a.m. Eastern Time.`;
+  const day=choreSettings?.choreRolloverDay||'Monday'; const time=choreSettings?.choreRolloverTime||'00:01';
+  el.textContent=`Assigned names locked for ${fmt(start)} – ${fmt(end)}. Refreshes ${day}s at ${time} Eastern Time.`;
 }
 
 function latestRecord(areaId,room=''){return (checkState.choreChecks||[]).filter(x=>x.date===today()&&x.areaId===areaId&&String(x.roomNumber||'')===String(room||'')).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''))[0];}
@@ -125,8 +131,9 @@ function closeHistory(){$('historyModal').classList.add('hidden');document.body.
 
 document.addEventListener('DOMContentLoaded',()=>{$('closeRoomPickerX').onclick=$('closeRoomPickerBtn').onclick=closeRoomPicker;$('closeCheckModalX').onclick=$('cancelCheckBtn').onclick=closeCheck;$('saveCheckBtn').onclick=saveCheck;$('backToRoomsBtn').onclick=()=>{closeCheck();openRoomPicker();};$('generateChoreReportBtn').onclick=generateChoreReport;$('viewCheckHistoryBtn').onclick=openHistory;$('closeHistoryX').onclick=$('closeHistoryBtn').onclick=closeHistory;});
 
-auth.onAuthStateChanged(u=>{
+auth.onAuthStateChanged(async u=>{
   if(!u)return;
+  choreSettings=await loadKbrhSettings();
   listenToAppState(async s=>{
     checkState=s;
     await ensureWeeklyAssignmentSnapshot();

@@ -2,6 +2,19 @@ const KBRH_SESSION_KEY = "kbrh.activeStaffSession";
 let kbrhStaffProfile = null;
 let kbrhStaffProfilePromise = null;
 
+
+function isKbrhAdmin(user=auth.currentUser){
+  return String(user?.email||"").trim().toLowerCase()==="admin@kbrh.local";
+}
+
+function applyAdminVisibility(user=auth.currentUser){
+  const allowed=isKbrhAdmin(user);
+  document.querySelectorAll("[data-admin-only]").forEach(el=>{
+    el.hidden=!allowed;
+    el.setAttribute("aria-hidden",allowed?"false":"true");
+  });
+}
+
 async function ensureSessionPersistence() {
   try {
     await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
@@ -149,6 +162,7 @@ async function requireLogin() {
       return;
     }
 
+    applyAdminVisibility(user);
     const profile = await loadCurrentStaffProfile();
     // Do not block a valid Firebase login if the staff profile has not been
     // configured yet. When a profile exists, its name is used for auditing.

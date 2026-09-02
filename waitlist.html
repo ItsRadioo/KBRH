@@ -20,7 +20,7 @@
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Waitlist</h1>
 <p>Manage applicants, call-in status, notes, and archived applicants.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a class="app-nav-link" href="audit-log.html">Audit Log</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a aria-current="page" class="app-nav-link active" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="index.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a class="app-nav-link" href="audit-log.html">Audit Log</a><a class="app-nav-link" data-admin-only hidden href="settings.html">Settings</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
 <main>
 <section class="card wide page-action-card">
 <div class="card-heading-row">
@@ -31,9 +31,17 @@
 <button class="primary-action-btn" id="openAddWaitlistModalBtn" type="button">+ Add Applicant</button>
 </div>
 </section>
+<section class="card wide operational-overview-card">
+<div class="section-title-row"><div><h2>Upcoming Intakes</h2><p class="hint">Scheduled pre-screening intakes are shown here until the applicant is moved to the roster or the schedule is changed.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Scheduled</th><th>Status</th><th>Action</th></tr></thead><tbody id="upcomingIntakesBody"></tbody></table></div>
+</section>
+<section class="card wide operational-overview-card">
+<div class="section-title-row"><div><h2>Recent Transfers</h2><p class="hint">Recent waitlist-to-roster transfers can be reversed if the resident has not been archived or otherwise removed.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Transferred</th><th>By</th><th>Action</th></tr></thead><tbody id="recentTransfersBody"></tbody></table></div>
+</section>
 <section class="card wide">
 <h2>Current Waitlist</h2>
-<p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. Two consecutive No Calls highlight the applicant for follow-up.</p>
+<p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. <span id="callInDayHint"></span> Consecutive No Calls are flagged using the admin-defined threshold.</p>
 <div class="waitlist-callin-summary" aria-label="Call-in summary">
   <article class="waitlist-callin-card waitlist-callin-card-success">
     <span class="waitlist-callin-label">Call Ins</span>
@@ -48,7 +56,7 @@
   <article class="waitlist-callin-card waitlist-callin-card-nocall">
     <span class="waitlist-callin-label">No Calls</span>
     <strong class="waitlist-callin-value" id="noCallCount">0</strong>
-    <span class="waitlist-callin-detail"><strong id="noCallTwiceCount">0</strong> have missed 2+ consecutive call-ins</span>
+    <span class="waitlist-callin-detail"><strong id="noCallTwiceCount">0</strong> have missed <span id="noCallThresholdLabel">2+</span> consecutive call-ins</span>
   </article>
 </div>
 <div class="compact-column-toolbar">
@@ -222,6 +230,7 @@
 <button aria-label="Close" class="secondary modal-close-button" id="closeApplicantActionsModalBtn" type="button">×</button>
 </div>
 <div aria-label="Available applicant actions" class="applicant-action-list">
+<button data-applicant-action="viewRecord" type="button">View Record / Activity</button>
 <button data-applicant-action="edit" type="button">Edit</button>
 <button data-applicant-action="changePosition" type="button">Change Position</button>
 <button data-applicant-action="moveToRoster" type="button">Move to Roster</button>
@@ -254,6 +263,14 @@
 </div>
 </div>
 </div>
+
+<div class="modal-backdrop hidden" id="moveRosterModal">
+<div aria-labelledby="moveRosterModalTitle" aria-modal="true" class="modal-card move-roster-modal" role="dialog">
+<div class="modal-title-row"><div><h2 id="moveRosterModalTitle">Move to Current Roster</h2><p class="hint" id="moveRosterApplicantName"></p></div><button aria-label="Close" class="secondary modal-close-button" id="closeMoveRosterModalBtn" type="button">×</button></div>
+<div class="transfer-confirmation-box"><strong>Confirm admission details</strong><p>This transfers the applicant to the active Phase 1 roster and removes them from the waitlist. It does not archive the applicant.</p></div>
+<label class="position-field"><span>Admission / Entry Date</span><input id="moveRosterEntryDate" type="date" required><small>This date becomes the resident's roster entry date.</small></label>
+<div class="button-row modal-actions"><button class="secondary" id="cancelMoveRosterModalBtn" type="button">Cancel</button><button id="confirmMoveRosterBtn" type="button">Confirm Move to Roster</button></div>
+</div></div>
 <script src="waitlist.js"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js"></script>

@@ -2,6 +2,7 @@ let prescreenState = null;
 let currentApplicantId = null;
 let currentRecord = null;
 let currentStep = "opening";
+let pendingPrescreenMoveApplicantId = null;
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
@@ -242,75 +243,35 @@ async function completePrescreen(){
   } else if(result.code==="approved"){
     addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
   }
+  appendPersonActivity(a,"Pre-Screening","Pre-screening completed",result.title);
+  if(result.code==="scheduled-intake") appendPersonActivity(a,"Intake","Intake scheduled",`${x.scheduledIntakeDate||"Date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}`);
   await saveAppState(prescreenState); renderList(); alert(result.title); currentStep="summary"; renderForm();
 }
 
 async function movePrescreenApplicantToRoster(){
   collectCurrentStep();
-  const applicantIndex=(prescreenState?.waitlist||[]).findIndex(a=>a.id===currentApplicantId && !a.archived);
-  if(applicantIndex===-1){ alert("This applicant is no longer on the active waitlist."); return; }
-
-  const applicant=prescreenState.waitlist[applicantIndex];
-  const name=applicantName(applicant);
-  if(!confirm(`Move ${name} to the active Phase 1 roster? They will be removed from the waitlist, not archived.`)) return;
-
-  prescreenState.roster=Array.isArray(prescreenState.roster)?prescreenState.roster.filter(r=>r&&r!=="temp"):[];
-  const previousWaitlist=[...prescreenState.waitlist];
-  const previousRoster=[...prescreenState.roster];
-
-  const transferNote={
-    id:crypto.randomUUID(),
-    author:staffDisplayName(),
-    text:`Transferred from pre-screening/waitlist to Phase 1 roster on ${new Date().toLocaleDateString("en-CA")}.`,
-    createdAt:new Date().toISOString()
-  };
-
-  const newResident={
-    id:crypto.randomUUID(),
-    roomNumber:"",
-    clientId:"",
-    firstName:applicant.firstName||"",
-    lastName:applicant.lastName||"",
-    dob:applicant.dob||"",
-    phone:applicant.contact||applicant.phone||"",
-    address:applicant.address||"",
-    city:applicant.city||"",
-    contact:applicant.emergencyContact||"",
-    contactPhone:applicant.emergencyContactPhone||"",
-    entryDate:"",
-    expectedDischargeDate:"",
-    originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",
-    waitlistSourceId:applicant.id,
-    phase:"phase1",
-    phase2AdmissionDate:"",
-    archived:false,
-    archivedAt:"",
-    archiveReason:"",
-    notes:[transferNote,...(Array.isArray(applicant.notes)?applicant.notes:[])]
-  };
-
-  prescreenState.waitlist.splice(applicantIndex,1);
-  prescreenState.roster.push(newResident);
-
-  try{
-    const cleanedWaitlist=typeof normalizeAppState==="function"?normalizeAppState({waitlist:prescreenState.waitlist}).waitlist:prescreenState.waitlist;
-    const cleanedRoster=typeof normalizeAppState==="function"?normalizeAppState({roster:prescreenState.roster}).roster:prescreenState.roster;
-    await APP_DOC_REF().update({waitlist:cleanedWaitlist,roster:cleanedRoster,updatedAt:new Date().toISOString()});
-    prescreenState.waitlist=cleanedWaitlist;
-    prescreenState.roster=cleanedRoster;
-    if(typeof KBRH_LAST_STATE!=="undefined"&&KBRH_LAST_STATE){
-      KBRH_LAST_STATE=typeof normalizeAppState==="function"?normalizeAppState({...KBRH_LAST_STATE,waitlist:cleanedWaitlist,roster:cleanedRoster}):{...KBRH_LAST_STATE,waitlist:cleanedWaitlist,roster:cleanedRoster};
-    }
-    closePrescreen();
-    renderList();
-    alert(`${name} was moved to the active Phase 1 roster.`);
-  }catch(error){
-    console.error("Pre-screening move to roster failed:",error);
-    prescreenState.waitlist=previousWaitlist;
-    prescreenState.roster=previousRoster;
-    renderList();
-    alert(`Could not move ${name} to the roster${error?.code?` (${error.code})`:""}. No changes were saved.`);
-  }
+  const applicant=(prescreenState?.waitlist||[]).find(a=>a.id===currentApplicantId&&!a.archived);
+  if(!applicant){alert("This applicant is no longer on the active waitlist.");return;}
+  pendingPrescreenMoveApplicantId=applicant.id;
+  $("prescreenMoveRosterName").textContent=applicantName(applicant);
+  $("prescreenMoveEntryDate").value=new Date().toISOString().slice(0,10);
+  $("prescreenMoveRosterModal").classList.remove("hidden");document.body.classList.add("kbrh-modal-open");
+}
+function closePrescreenMoveRoster(){pendingPrescreenMoveApplicantId=null;$("prescreenMoveRosterModal").classList.add("hidden");}
+async function confirmPrescreenMoveRoster(){
+  const applicantIndex=(prescreenState?.waitlist||[]).findIndex(a=>a.id===pendingPrescreenMoveApplicantId&&!a.archived);
+  if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closePrescreenMoveRoster();return;}
+  const applicant=prescreenState.waitlist[applicantIndex];const name=applicantName(applicant);const entryDate=$("prescreenMoveEntryDate").value;
+  if(!entryDate){alert("Select the admission / entry date.");return;}
+  if(!confirm(`Confirm admission of ${name} on ${entryDate}?`))return;
+  prescreenState.roster=Array.isArray(prescreenState.roster)?prescreenState.roster.filter(r=>r&&r!=="temp"):[];prescreenState.transferHistory=Array.isArray(prescreenState.transferHistory)?prescreenState.transferHistory:[];
+  const prevW=structuredClone(prescreenState.waitlist),prevR=structuredClone(prescreenState.roster),prevT=structuredClone(prescreenState.transferHistory);
+  const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:staffDisplayName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+  appendPersonActivity(applicant,"Transfer","Moved to active Phase 1 roster",`Admission date: ${entryDate}`,identity);
+  const note={id:crypto.randomUUID(),author:identity.name||staffDisplayName(),authorUid:identity.uid||"",authorEmail:identity.email||"",text:`Transferred from pre-screening/waitlist to Phase 1 roster. Admission date: ${entryDate}.`,createdAt:new Date().toISOString()};
+  const resident={id:crypto.randomUUID(),roomNumber:"",clientId:"",firstName:applicant.firstName||"",lastName:applicant.lastName||"",dob:applicant.dob||"",phone:applicant.contact||applicant.phone||"",address:applicant.address||"",city:applicant.city||"",contact:applicant.emergencyContact||"",contactPhone:applicant.emergencyContactPhone||"",entryDate,expectedDischargeDate:"",originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",waitlistSourceId:applicant.id,phase:"phase1",phase2AdmissionDate:"",archived:false,archivedAt:"",archiveReason:"",notes:[note,...(Array.isArray(applicant.notes)?applicant.notes:[])],activityHistory:normalizeActivityHistory(applicant.activityHistory)};
+  prescreenState.waitlist.splice(applicantIndex,1);prescreenState.roster.push(resident);prescreenState.transferHistory.unshift({id:crypto.randomUUID(),applicantId:applicant.id,residentId:resident.id,applicantName:name,transferredAt:new Date().toISOString(),transferredBy:identity.name||identity.email||"Staff User",undone:false,undoneAt:"",applicantSnapshot:structuredClone(applicant)});
+  try{const n=normalizeAppState({waitlist:prescreenState.waitlist,roster:prescreenState.roster,transferHistory:prescreenState.transferHistory});await APP_DOC_REF().update({waitlist:n.waitlist,roster:n.roster,transferHistory:n.transferHistory,updatedAt:new Date().toISOString()});prescreenState.waitlist=n.waitlist;prescreenState.roster=n.roster;prescreenState.transferHistory=n.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved pre-screened applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);closePrescreenMoveRoster();closePrescreen();renderList();alert(`${name} was moved to the active Phase 1 roster.`);}catch(error){console.error(error);prescreenState.waitlist=prevW;prescreenState.roster=prevR;prescreenState.transferHistory=prevT;alert(`Could not move ${name} to the roster. No changes were saved.`);}
 }
 
 function printPrescreenSummary(record=currentRecord){
@@ -348,6 +309,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("completePrescreenBtn").onclick=completePrescreen;
   $("printPrescreenBtn").onclick=()=>printPrescreenSummary(currentRecord);
   $("movePrescreenToRosterBtn").onclick=movePrescreenApplicantToRoster;
+  $("confirmPrescreenMoveRosterBtn").onclick=confirmPrescreenMoveRoster;
+  $("cancelPrescreenMoveRosterBtn").onclick=$("closePrescreenMoveRosterBtn").onclick=closePrescreenMoveRoster;
   $("prescreenModal").addEventListener("click",e=>{if(e.target===$("prescreenModal"))closePrescreen();});
 });
 auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{prescreenState=state;prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];renderList();});});

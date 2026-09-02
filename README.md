@@ -188,3 +188,14 @@ The directory is read-only in the website; staff contact data remains managed in
 
 ## v5.3.24
 Waitlist ordering update: applicants with no call-in history are ordered automatically by Application Date (oldest first). Once an applicant has any call-in record, their persisted waitlist position becomes authoritative. Recording the first call-in locks the applicant's currently displayed position before applying any Call In/Late Call/No Call workflow movement. Manual position changes are available only after call-in history exists, preventing manual edits from fighting the application-date ordering rule.
+
+## v5.4.0 workflow update
+- Added Upcoming Intakes to the Waitlist page, driven by completed pre-screening records with a scheduled intake date.
+- Strengthened consecutive No Call follow-up with an admin-configurable threshold and visible row warning.
+- Added admission-date validation before Move to Roster from both Waitlist and Pre-Screening.
+- Added person-level Activity History to Applicant Information and Resident Information.
+- Added persistent Recent Transfers with Undo Transfer protection.
+- Added admin-only System Settings for admin@kbrh.local.
+- Settings include standard call-in day, consecutive No Call threshold, and chore-check assignment rollover day/time.
+- Chore Check weekly snapshots now use the configured rollover day/time in America/Toronto.
+- Updated Firestore rules so only admin@kbrh.local can write /kbrh/settings.

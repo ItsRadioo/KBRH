@@ -1,4 +1,56 @@
 const APP_DOC_REF = () => db.collection("kbrh").doc("choreTracker");
+const SETTINGS_DOC_REF = () => db.collection("kbrh").doc("settings");
+
+function defaultKbrhSettings(){
+  return {
+    callInDay: "Monday",
+    noCallWarningThreshold: 2,
+    choreRolloverDay: "Monday",
+    choreRolloverTime: "00:01",
+    timeZone: "America/Toronto"
+  };
+}
+
+async function loadKbrhSettings(){
+  try{
+    const snap=await SETTINGS_DOC_REF().get();
+    const merged={...defaultKbrhSettings(),...(snap.exists?snap.data():{})};
+    window.KBRH_SETTINGS=merged;
+    return merged;
+  }catch(error){
+    console.warn("Could not load KBRH settings; using defaults.",error);
+    const fallback=defaultKbrhSettings();
+    window.KBRH_SETTINGS=fallback;
+    return fallback;
+  }
+}
+
+function normalizeActivityHistory(history){
+  return Array.isArray(history)?history.filter(Boolean).map(item=>({
+    id:item.id||crypto.randomUUID(),
+    type:item.type||"Activity",
+    summary:item.summary||item.text||"Activity recorded",
+    detail:item.detail||"",
+    staffName:item.staffName||item.author||"System",
+    staffUid:item.staffUid||item.authorUid||"",
+    staffEmail:item.staffEmail||item.authorEmail||"",
+    createdAt:item.createdAt||new Date().toISOString()
+  })):[];
+}
+
+function appendPersonActivity(person,type,summary,detail="",identity=null,createdAt=null){
+  if(!person)return;
+  const user=auth.currentUser;
+  const staffName=identity?.name||(typeof currentStaffName==="function"?currentStaffName():(user?.email||"System"));
+  person.activityHistory=normalizeActivityHistory(person.activityHistory);
+  person.activityHistory.unshift({
+    id:crypto.randomUUID(),type,summary,detail,staffName,
+    staffUid:identity?.uid||user?.uid||"",
+    staffEmail:identity?.email||user?.email||"",
+    createdAt:createdAt||new Date().toISOString()
+  });
+}
+
 
 const STANDARD_CHORES = [
   "Bathroom",
@@ -30,6 +82,7 @@ function defaultAppState() {
     preScreenings: [],
     incidentReports: [],
     chartData: { laundry: {}, electronics: {}, meetings: {} },
+    transferHistory: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -147,7 +200,8 @@ function normalizeAppState(state) {
         callPriority: getWaitlistCallPriority(item),
         waitlistPosition: Number.isFinite(Number(item.waitlistPosition)) ? Number(item.waitlistPosition) : null,
         notes: normalizeNotes(item.notes),
-        callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
+        callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : [],
+        activityHistory: normalizeActivityHistory(item.activityHistory)
       }))
     : [];
 
@@ -175,9 +229,14 @@ function normalizeAppState(state) {
         archivedBy: client.archivedBy || "",
         archivedByUid: client.archivedByUid || "",
         archivedByEmail: client.archivedByEmail || "",
-        notes: normalizeNotes(client.notes)
+        notes: normalizeNotes(client.notes),
+        activityHistory: normalizeActivityHistory(client.activityHistory)
       }))
     : [];
+
+  merged.transferHistory = Array.isArray(merged.transferHistory) ? merged.transferHistory.filter(Boolean).map(item => ({
+    id:item.id||crypto.randomUUID(), applicantId:item.applicantId||"", residentId:item.residentId||"", applicantName:item.applicantName||"", transferredAt:item.transferredAt||new Date().toISOString(), transferredBy:item.transferredBy||"", undone:Boolean(item.undone), undoneAt:item.undoneAt||"", applicantSnapshot:item.applicantSnapshot&&typeof item.applicantSnapshot==="object"?item.applicantSnapshot:null
+  })) : [];
 
   merged.counselingNotes = normalizeCounselingNotes(merged.counselingNotes);
 

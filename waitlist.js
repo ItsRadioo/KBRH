@@ -6,6 +6,8 @@ let pendingCallInStatus = null;
 let actionsApplicantId = null;
 let positionApplicantId = null;
 let priorityOrderSavePending = false;
+let operationalSettings = defaultKbrhSettings();
+let pendingMoveToRosterApplicantId = null;
 
 const COMPACT_WAITLIST_COLUMNS_STORAGE_KEY = "kbrh.waitlist.compactColumns.v1";
 const ACTIVE_COMPACT_COLUMN_DEFS = [
@@ -379,7 +381,8 @@ function addWaitlistApplicant() {
           createdAt: new Date().toISOString()
         }]
       : [],
-    callInHistory: []
+    callInHistory: [],
+    activityHistory: []
   };
 
   if (!applicant.lastName || !applicant.firstName) {
@@ -387,6 +390,7 @@ function addWaitlistApplicant() {
     return;
   }
 
+  appendPersonActivity(applicant,"Application","Application added to waitlist",`Application date: ${applicant.dateApplied || "Not recorded"}`);
   waitlistState.waitlist.push(applicant);
   clearWaitlistForm();
   renderWaitlist();
@@ -438,6 +442,7 @@ function saveInlineEdit(applicantId) {
       text: `Offer Given: ${offerNote.trim()}`,
       createdAt: new Date().toISOString()
     });
+    appendPersonActivity(applicant,"Offer","Offer Given",offerNote.trim());
   }
 
   editingApplicantId = null;
@@ -446,87 +451,79 @@ function saveInlineEdit(applicantId) {
 }
 
 async function moveToRoster(applicantId) {
-  const applicantIndex = waitlistState.waitlist.findIndex(item => item.id === applicantId);
-  if (applicantIndex === -1) return;
+  openMoveToRosterModal(applicantId);
+}
 
-  const applicant = waitlistState.waitlist[applicantIndex];
+function openMoveToRosterModal(applicantId){
+  const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);
+  if(!applicant)return;
+  pendingMoveToRosterApplicantId=applicantId;
+  document.getElementById("moveRosterApplicantName").textContent=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
+  const dateInput=document.getElementById("moveRosterEntryDate");
+  if(dateInput) dateInput.value=new Date().toISOString().slice(0,10);
+  document.getElementById("moveRosterModal")?.classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+}
 
-  waitlistState.roster = Array.isArray(waitlistState.roster)
-    ? waitlistState.roster.filter(client => client && client !== "temp")
-    : [];
+function closeMoveToRosterModal(){
+  pendingMoveToRosterApplicantId=null;
+  document.getElementById("moveRosterModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
 
-  if (!confirm(`Move ${applicant.firstName} ${applicant.lastName} to Current Roster?`)) return;
+async function confirmMoveToRoster(){
+  const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
+  if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
+  const entryDate=document.getElementById("moveRosterEntryDate")?.value||"";
+  if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return;}
+  const applicant=waitlistState.waitlist[applicantIndex];
+  const name=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
+  if(!confirm(`Confirm admission of ${name} on ${entryDate}? This will remove them from the waitlist and add them to the active Phase 1 roster.`))return;
 
-  const transferNote = {
-    id: crypto.randomUUID(),
-    author: typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.email || "Unknown"),
-    text: `Transferred from waitlist on ${new Date().toLocaleDateString("en-CA")}.`,
-    createdAt: new Date().toISOString()
+  waitlistState.roster=Array.isArray(waitlistState.roster)?waitlistState.roster.filter(client=>client&&client!=="temp"):[];
+  waitlistState.transferHistory=Array.isArray(waitlistState.transferHistory)?waitlistState.transferHistory:[];
+  const previousWaitlist=structuredClone(waitlistState.waitlist);
+  const previousRoster=structuredClone(waitlistState.roster);
+  const previousTransfers=structuredClone(waitlistState.transferHistory);
+  const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+  appendPersonActivity(applicant,"Transfer","Moved to active Phase 1 roster",`Admission date: ${entryDate}`,identity);
+  const transferNote={id:crypto.randomUUID(),author:identity.name||"Staff User",authorUid:identity.uid||"",authorEmail:identity.email||"",text:`Transferred from waitlist to Phase 1 roster. Admission date: ${entryDate}.`,createdAt:new Date().toISOString()};
+  const newResident={
+    id:crypto.randomUUID(),roomNumber:"",clientId:"",firstName:applicant.firstName||"",lastName:applicant.lastName||"",dob:applicant.dob||"",
+    phone:formatPhoneNumber(applicant.contact||""),address:applicant.address||"",city:applicant.city||"",contact:applicant.emergencyContact||"",contactPhone:applicant.emergencyContactPhone||"",
+    entryDate,expectedDischargeDate:"",originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",waitlistSourceId:applicant.id,phase:"phase1",phase2AdmissionDate:"",
+    archived:false,archivedAt:"",archiveReason:"",notes:[transferNote,...normalizeWaitlistNotes(applicant.notes)],activityHistory:normalizeActivityHistory(applicant.activityHistory)
   };
-
-  const newResident = {
-    id: crypto.randomUUID(),
-    roomNumber: "",
-    clientId: "",
-    firstName: applicant.firstName || "",
-    lastName: applicant.lastName || "",
-    dob: "",
-    phone: formatPhoneNumber(applicant.contact || ""),
-    address: "",
-    city: applicant.city || "",
-    contact: "",
-    contactPhone: "",
-    entryDate: "",
-    expectedDischargeDate: "",
-    originalApplicationDate: applicant.originalApplicationDate || applicant.dateApplied || "",
-    waitlistSourceId: applicant.id,
-    phase: "phase1",
-    phase2AdmissionDate: "",
-    archived: false,
-    archivedAt: "",
-    archiveReason: "",
-    notes: [transferNote, ...normalizeWaitlistNotes(applicant.notes)]
-  };
-
-  const previousWaitlist = [...waitlistState.waitlist];
-  const previousRoster = [...waitlistState.roster];
-
-  // Moving to roster is a transfer, not an archive. Remove the applicant from
-  // the waitlist entirely so they do not appear under Archived Applicants.
-  waitlistState.waitlist.splice(applicantIndex, 1);
+  const transfer={id:crypto.randomUUID(),applicantId:applicant.id,residentId:newResident.id,applicantName:name,transferredAt:new Date().toISOString(),transferredBy:identity.name||identity.email||"Staff User",undone:false,undoneAt:"",applicantSnapshot:structuredClone(applicant)};
+  waitlistState.waitlist.splice(applicantIndex,1);
   waitlistState.roster.push(newResident);
-
-  try {
-    const active = resequenceActiveWaitlist(getActiveWaitlist());
-    const archived = getArchivedWaitlist();
-    const cleanedWaitlist = normalizeAppState({ waitlist: [...active, ...archived] }).waitlist;
-    const cleanedRoster = normalizeAppState({ roster: waitlistState.roster }).roster;
-
-    await APP_DOC_REF().update({
-      waitlist: cleanedWaitlist,
-      roster: cleanedRoster,
-      updatedAt: new Date().toISOString()
-    });
-
-    waitlistState.waitlist = cleanedWaitlist;
-    waitlistState.roster = cleanedRoster;
-
-    if (typeof KBRH_LAST_STATE !== "undefined" && KBRH_LAST_STATE) {
-      KBRH_LAST_STATE = normalizeAppState({
-        ...KBRH_LAST_STATE,
-        waitlist: cleanedWaitlist,
-        roster: cleanedRoster
-      });
-    }
-
-    renderWaitlist();
-  } catch (error) {
-    console.error("Move to roster failed:", error);
-    waitlistState.waitlist = previousWaitlist;
-    waitlistState.roster = previousRoster;
-    renderWaitlist();
-    alert(`Could not move applicant to roster${error?.code ? ` (${error.code})` : ""}. No changes were saved.`);
+  waitlistState.transferHistory.unshift(transfer);
+  try{
+    const active=resequenceActiveWaitlist(getActiveWaitlist());
+    const cleanedWaitlist=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()]}).waitlist;
+    const normalized=normalizeAppState({roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});
+    await APP_DOC_REF().update({waitlist:cleanedWaitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});
+    waitlistState.waitlist=cleanedWaitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;
+    if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);
+    closeMoveToRosterModal();renderWaitlist();
+  }catch(error){
+    console.error("Move to roster failed:",error);waitlistState.waitlist=previousWaitlist;waitlistState.roster=previousRoster;waitlistState.transferHistory=previousTransfers;renderWaitlist();
+    alert(`Could not move applicant to roster${error?.code?` (${error.code})`:""}. No changes were saved.`);
   }
+}
+
+async function undoTransfer(transferId){
+  const transfer=(waitlistState.transferHistory||[]).find(item=>item.id===transferId&&!item.undone);
+  if(!transfer||!transfer.applicantSnapshot){alert("This transfer can no longer be undone.");return;}
+  const resident=(waitlistState.roster||[]).find(item=>item.id===transfer.residentId);
+  if(!resident||resident.archived){alert("This transfer cannot be undone because the roster record is missing or has already been archived.");return;}
+  if(!confirm(`Undo transfer of ${transfer.applicantName}? The resident will be removed from the roster and restored to the active waitlist.`))return;
+  const beforeWaitlist=structuredClone(waitlistState.waitlist),beforeRoster=structuredClone(waitlistState.roster),beforeTransfers=structuredClone(waitlistState.transferHistory);
+  const applicant=structuredClone(transfer.applicantSnapshot);applicant.archived=false;applicant.archivedAt="";applicant.archiveReason="";
+  appendPersonActivity(applicant,"Transfer Undo","Transfer to roster undone","Applicant restored to active waitlist.");
+  waitlistState.roster=waitlistState.roster.filter(item=>item.id!==transfer.residentId);
+  waitlistState.waitlist.push(applicant);transfer.undone=true;transfer.undoneAt=new Date().toISOString();
+  try{const active=resequenceActiveWaitlist(getActiveWaitlist());const normalized=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()],roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});await APP_DOC_REF().update({waitlist:normalized.waitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});waitlistState.waitlist=normalized.waitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Undid waitlist-to-roster transfer: ${transfer.applicantName}`]).catch(console.warn);renderWaitlist();}catch(error){console.error(error);waitlistState.waitlist=beforeWaitlist;waitlistState.roster=beforeRoster;waitlistState.transferHistory=beforeTransfers;renderWaitlist();alert("Could not undo the transfer. No changes were saved.");}
 }
 
 function openApplicantActionsModal(applicantId) {
@@ -613,7 +610,9 @@ function savePositionChange() {
   }
 
   const [applicant] = active.splice(currentIndex, 1);
+  const oldPosition=currentIndex+1;
   active.splice(requestedPosition - 1, 0, applicant);
+  appendPersonActivity(applicant,"Waitlist","Waitlist position changed",`Position ${oldPosition} → ${requestedPosition}`);
   rebuildWaitlist(active, archived);
 
   // Manual positioning is an explicit staff override of the automatic
@@ -629,6 +628,7 @@ function savePositionChange() {
 function handleApplicantAction(applicantId, action) {
   if (!action) return;
 
+  if (action === "viewRecord") openApplicantInfoModal(applicantId);
   if (action === "edit") startInlineEdit(applicantId);
   if (action === "changePosition") openPositionModal(applicantId);
   if (action === "archive") archiveApplicant(applicantId);
@@ -670,6 +670,11 @@ function getConsecutiveNoCallCount(item) {
   }
 
   return count;
+}
+
+function noCallWarningThreshold(){
+  const value=Number(operationalSettings?.noCallWarningThreshold);
+  return Number.isFinite(value)&&value>0?Math.round(value):2;
 }
 
 function setDefaultCallInDateTime() {
@@ -747,6 +752,7 @@ function saveCallInStatus(selected, recordedAt = null) {
     timestamp: eventDate.toLocaleString(),
     createdAt: eventDate.toISOString()
   });
+  appendPersonActivity(applicant,"Call-In",selected,`Recorded for ${eventDate.toLocaleString("en-CA")}`,null,eventDate.toISOString());
 
   if (selected === "Call In") {
     applicant.callPriority = "normal";
@@ -827,6 +833,7 @@ function addWaitlistNote() {
     text,
     createdAt: new Date().toISOString()
   });
+  appendPersonActivity(applicant,"Note","Waitlist note added",text);
 
   document.getElementById("newWaitlistNoteText").value = "";
 
@@ -876,6 +883,7 @@ function undoLastCallIn(applicantId) {
   if (!confirm(`Undo the last call-in record for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
   applicant.callInHistory.shift();
+  appendPersonActivity(applicant,"Call-In","Last call-in record undone",normalizeCallInStatus(lastRecord));
   applicant.callPriority = getCallPriority({ ...applicant, callPriority: "" });
 
   if (lastRecord.previousActiveOrder) {
@@ -896,6 +904,7 @@ function archiveApplicant(applicantId) {
   if (!confirm(`Archive ${applicant.firstName} ${applicant.lastName}?`)) return;
 
   applicant.archived = true;
+  appendPersonActivity(applicant,"Archive","Applicant archived",reason.trim()||"No reason recorded");
   applicant.archivedAt = new Date().toISOString();
   applicant.archiveReason = reason.trim();
 
@@ -912,6 +921,7 @@ function reinstateApplicant(applicantId) {
   if (!confirm(`Reinstate ${applicant.firstName} ${applicant.lastName} to the bottom of the waitlist?`)) return;
 
   applicant.archived = false;
+  appendPersonActivity(applicant,"Restore","Applicant reinstated to active waitlist","Restored from archived waitlist.");
   applicant.archivedAt = "";
   applicant.archiveReason = "";
   applicant.callPriority = "normal";
@@ -946,6 +956,7 @@ function getLastCallText(item) {
 }
 
 function renderCallInCounters() {
+  const dayHint=document.getElementById("callInDayHint"); if(dayHint) dayHint.textContent=`Standard call-in day: ${operationalSettings?.callInDay||"Monday"}.`;
   const active = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
     : [];
@@ -963,7 +974,7 @@ function renderCallInCounters() {
     if (latest === "Call In") callIns += 1;
     if (latest === "Late Call") lateCalls += 1;
     if (latest === "No Call") noCalls += 1;
-    if (getConsecutiveNoCallCount(item) >= 2) noCallTwice += 1;
+    if (getConsecutiveNoCallCount(item) >= noCallWarningThreshold()) noCallTwice += 1;
   }
 
   const callInEl = document.getElementById("callInCount");
@@ -975,9 +986,37 @@ function renderCallInCounters() {
   if (lateEl) lateEl.textContent = String(lateCalls);
   if (noCallEl) noCallEl.textContent = String(noCalls);
   if (twiceEl) twiceEl.textContent = String(noCallTwice);
+  const thresholdLabel=document.getElementById("noCallThresholdLabel"); if(thresholdLabel) thresholdLabel.textContent=`${noCallWarningThreshold()}+`;
+}
+
+function buildApplicantActivityHistory(item){
+  const stored=normalizeActivityHistory(item.activityHistory);
+  const generated=[];
+  (item.callInHistory||[]).forEach(record=>generated.push({id:`call-${record.id||record.createdAt}`,type:"Call-In",summary:normalizeCallInStatus(record)||"Call-In Updated",detail:"",staffName:"Recorded call-in",createdAt:record.createdAt||""}));
+  normalizeWaitlistNotes(item.notes).forEach(note=>generated.push({id:`note-${note.id}`,type:"Note",summary:"Note",detail:note.text||"",staffName:note.author||"Unknown",createdAt:note.createdAt||""}));
+  const prescreen=(waitlistState.preScreenings||[]).find(r=>r.applicantId===item.id);
+  if(prescreen?.startedAt)generated.push({id:`pre-start-${prescreen.id}`,type:"Pre-Screening",summary:"Pre-screening started",detail:prescreen.workflowStatus||"",staffName:prescreen.staffUser||"Staff",createdAt:prescreen.startedAt});
+  if(prescreen?.completedAt)generated.push({id:`pre-complete-${prescreen.id}`,type:"Pre-Screening",summary:"Pre-screening completed",detail:prescreen.workflowStatus||prescreen.outcome||"",staffName:prescreen.staffUser||"Staff",createdAt:prescreen.completedAt});
+  const seen=new Set();return [...stored,...generated].filter(x=>x.createdAt).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).filter(x=>{const k=x.id||`${x.summary}|${x.createdAt}`;if(seen.has(k))return false;seen.add(k);return true;});
+}
+
+function renderUpcomingIntakes(){
+  const body=document.getElementById("upcomingIntakesBody");if(!body)return;
+  const activeIds=new Set((waitlistState.waitlist||[]).filter(a=>!a.archived).map(a=>a.id));
+  const today=new Date();today.setHours(0,0,0,0);
+  const rows=(waitlistState.preScreenings||[]).filter(r=>r.status==="Completed"&&r.answers?.scheduledIntakeDate&&activeIds.has(r.applicantId)).map(r=>{const a=(waitlistState.waitlist||[]).find(x=>x.id===r.applicantId);const d=new Date(`${r.answers.scheduledIntakeDate}T00:00:00`);const diff=Math.round((d-today)/86400000);return{r,a,diff};}).sort((a,b)=>String(a.r.answers.scheduledIntakeDate).localeCompare(String(b.r.answers.scheduledIntakeDate)));
+  body.innerHTML=rows.length?rows.map(({r,a,diff})=>`<tr class="${diff<0?"intake-overdue-row":diff===0?"intake-today-row":""}"><td><strong>${escapeHtml(`${a?.firstName||""} ${a?.lastName||""}`.trim()||r.applicantName||"Applicant")}</strong></td><td>${escapeHtml(r.answers.scheduledIntakeDate)}${r.answers.scheduledIntakeTime?` · ${escapeHtml(r.answers.scheduledIntakeTime)}`:""}</td><td>${diff<0?`<span class="status-pill status-danger">Overdue ${Math.abs(diff)}d</span>`:diff===0?`<span class="status-pill status-warning">Today</span>`:`<span class="status-pill status-success">In ${diff}d</span>`}</td><td><button type="button" class="secondary" onclick="openApplicantInfoModal('${r.applicantId}')">View Record</button></td></tr>`).join(""):`<tr><td colspan="4" class="empty">No scheduled intakes.</td></tr>`;
+}
+
+function renderRecentTransfers(){
+  const body=document.getElementById("recentTransfersBody");if(!body)return;
+  const rows=(waitlistState.transferHistory||[]).slice().sort((a,b)=>String(b.transferredAt).localeCompare(String(a.transferredAt))).slice(0,5);
+  body.innerHTML=rows.length?rows.map(t=>`<tr><td>${escapeHtml(t.applicantName||"Applicant")}</td><td>${escapeHtml(formatDateTime(t.transferredAt))}</td><td>${escapeHtml(t.transferredBy||"—")}</td><td>${t.undone?'<span class="status-pill">Undone</span>':`<button type="button" class="secondary" onclick="undoTransfer('${t.id}')">Undo Transfer</button>`}</td></tr>`).join(""):`<tr><td colspan="4" class="empty">No recent transfers.</td></tr>`;
 }
 
 function renderWaitlist() {
+  renderUpcomingIntakes();
+  renderRecentTransfers();
   document.body.classList.toggle("waitlist-editing-active", Boolean(editingApplicantId));
   renderCallInCounters();
   renderActiveWaitlist();
@@ -992,14 +1031,14 @@ function getWaitlistStatusClass(item) {
     ? "waitlist-offer-row"
     : item.status === "Incarcerated"
       ? "waitlist-incarcerated-row"
-      : noCallCount >= 2
+      : noCallCount >= noCallWarningThreshold()
         ? "waitlist-follow-up-row"
         : "";
 }
 
 function applicantDisplayStatus(item) {
   const noCallCount = getConsecutiveNoCallCount(item);
-  if (noCallCount >= 2) return `No Call (${noCallCount})`;
+  if (noCallCount >= noCallWarningThreshold()) return `⚠ No Call (${noCallCount})`;
   const prescreen = Array.isArray(waitlistState.preScreenings)
     ? waitlistState.preScreenings.find(record => record.applicantId === item.id)
     : null;
@@ -1093,6 +1132,8 @@ function openApplicantInfoModal(applicantId) {
     html += applicantInfoItem("Archive Reason", item.archiveReason, true);
   }
   html += `</div></section>`;
+  const activity=buildApplicantActivityHistory(item);
+  html += `<section class="applicant-info-section"><h3>Activity History</h3><div class="person-activity-list">${activity.length?activity.map(entry=>`<article class="person-activity-item"><div><strong>${escapeHtml(entry.summary)}</strong><span>${escapeHtml(entry.detail||entry.type||"")}</span></div><small>${escapeHtml(formatDateTime(entry.createdAt))} · ${escapeHtml(entry.staffName||"System")}</small></article>`).join(""):`<p class="empty">No activity recorded yet.</p>`}</div></section>`;
 
   body.innerHTML = html;
   modal.classList.remove("hidden");
@@ -1300,6 +1341,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("cancelPositionModalBtn")?.addEventListener("click", closePositionModal);
   document.getElementById("closePositionModalBtn")?.addEventListener("click", closePositionModal);
   document.getElementById("savePositionBtn")?.addEventListener("click", savePositionChange);
+  document.getElementById("confirmMoveRosterBtn")?.addEventListener("click", confirmMoveToRoster);
+  document.getElementById("cancelMoveRosterModalBtn")?.addEventListener("click", closeMoveToRosterModal);
+  document.getElementById("closeMoveRosterModalBtn")?.addEventListener("click", closeMoveToRosterModal);
   document.getElementById("positionNumberInput")?.addEventListener("keydown", event => {
     if (event.key === "Enter") savePositionChange();
   });
@@ -1342,8 +1386,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
   if (!user) return;
+  operationalSettings = await loadKbrhSettings();
 
   listenToAppState(nextState => {
     waitlistState = nextState;
@@ -1361,6 +1406,8 @@ auth.onAuthStateChanged(user => {
           callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : []
         }))
       : [];
+
+    waitlistState.transferHistory = Array.isArray(waitlistState.transferHistory) ? waitlistState.transferHistory : [];
 
     waitlistState.roster = Array.isArray(waitlistState.roster)
       ? waitlistState.roster.filter(client => client && client !== "temp")
