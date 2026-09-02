@@ -205,3 +205,10 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - Settings navigation is rendered only for admin@kbrh.local. For all other authenticated accounts, admin-only navigation elements are removed from the DOM.
 - Direct access to settings.html remains blocked for non-admin users.
 - Firestore settings writes remain restricted to admin@kbrh.local.
+
+## v5.5.0 UX overhaul
+- Added Dashboard with active resident, waitlist, intake and follow-up KPIs.
+- Added grouped/collapsible navigation with remembered state.
+- Added global resident/applicant search in the header.
+- Added sticky table headers and standardized modal overflow behavior.
+- Existing workflows and Firestore schema are preserved.

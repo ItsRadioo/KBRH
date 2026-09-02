@@ -171,3 +171,48 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
+
+/* v5.5 usability layer */
+(() => {
+  "use strict";
+  const NAV_GROUPS = [
+    ["Residents", ["dashboard.html","roster.html","waitlist.html","prescreening.html"]],
+    ["Daily Operations", ["index.html","meal-chores.html","chore-checks.html","charts.html"]],
+    ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
+    ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
+  ];
+  const labels={"dashboard.html":"Dashboard"};
+  function basename(h){try{return new URL(h,location.href).pathname.split('/').pop()||'index.html';}catch(_){return h;}}
+  function groupNavigation(){
+    const nav=document.querySelector('.app-nav'); if(!nav||nav.dataset.v55Grouped) return;
+    nav.dataset.v55Grouped='1';
+    if(![...nav.querySelectorAll('a')].some(a=>basename(a.href)==='dashboard.html')){
+      const a=document.createElement('a'); a.className='app-nav-link'; a.href='dashboard.html'; a.textContent='Dashboard'; nav.prepend(a);
+    }
+    const links=[...nav.querySelectorAll(':scope > a.app-nav-link')];
+    const map=new Map(links.map(a=>[basename(a.getAttribute('href')||a.href),a]));
+    nav.innerHTML='';
+    NAV_GROUPS.forEach(([title,files],i)=>{
+      const section=document.createElement('section'); section.className='v55-nav-group';
+      const head=document.createElement('button'); head.type='button'; head.className='v55-nav-group-title'; head.innerHTML=`<span>${title}</span><span aria-hidden="true">⌄</span>`;
+      const body=document.createElement('div'); body.className='v55-nav-group-links';
+      files.forEach(file=>{const a=map.get(file); if(a){if(labels[file])a.textContent=labels[file]; body.appendChild(a); map.delete(file);}});
+      if(body.children.length){section.append(head,body);nav.appendChild(section); const key='kbrh.nav.'+title; let open=true; try{open=localStorage.getItem(key)!=='closed';}catch(_){}; section.classList.toggle('is-collapsed',!open); head.setAttribute('aria-expanded',String(open)); head.onclick=()=>{const next=!section.classList.contains('is-collapsed');section.classList.toggle('is-collapsed',next);head.setAttribute('aria-expanded',String(!next));try{localStorage.setItem(key,next?'closed':'open');}catch(_){}};}
+    });
+    map.forEach(a=>nav.appendChild(a));
+  }
+  function addGlobalSearch(){
+    if(document.querySelector('.v55-global-search')) return;
+    const header=document.querySelector('.header-top'); if(!header) return;
+    const wrap=document.createElement('div'); wrap.className='v55-global-search';
+    wrap.innerHTML=`<input type="search" aria-label="Search residents or applicants" placeholder="Search residents or applicants…"><div class="v55-search-results" hidden></div>`;
+    const logout=header.querySelector('.logout-btn'); header.insertBefore(wrap,logout||null);
+    const input=wrap.querySelector('input'), results=wrap.querySelector('.v55-search-results'); let timer;
+    input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(async()=>{const q=input.value.trim().toLowerCase();if(q.length<2){results.hidden=true;return;}try{const s=await loadAppState();const people=[];(s.roster||[]).forEach(p=>{if(!p.archived)people.push({kind:'Resident',name:`${p.firstName||''} ${p.lastName||''}`.trim(),detail:p.roomNumber?`Room ${p.roomNumber}`:'Active roster',href:'roster.html'});});(s.waitlist||[]).forEach(p=>{people.push({kind:p.archived?'Archived Applicant':'Applicant',name:`${p.firstName||''} ${p.lastName||''}`.trim(),detail:p.archived?'Archived waitlist':'Current waitlist',href:'waitlist.html'});});const hits=people.filter(p=>(p.name+' '+p.detail).toLowerCase().includes(q)).slice(0,8);results.innerHTML=hits.length?hits.map(p=>`<a href="${p.href}?search=${encodeURIComponent(p.name)}"><strong>${escapeV55(p.name)}</strong><span>${p.kind} · ${escapeV55(p.detail)}</span></a>`).join(''):'<div class="v55-search-empty">No matching person found.</div>';results.hidden=false;}catch(e){results.innerHTML='<div class="v55-search-empty">Search unavailable.</div>';results.hidden=false;}},180);});
+    document.addEventListener('click',e=>{if(!wrap.contains(e.target))results.hidden=true;});
+  }
+  function escapeV55(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function stickyHeaders(){document.querySelectorAll('.table-wrap table').forEach(t=>t.classList.add('v55-sticky-table'));}
+  function init55(){if(document.body.classList.contains('page-login')||document.body.classList.contains('page-print')||document.body.classList.contains('page-meal-print'))return;document.body.classList.add('kbrh-v55');groupNavigation();addGlobalSearch();stickyHeaders();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init55);else init55();
+})();
