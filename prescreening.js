@@ -14,6 +14,11 @@ function getApplicants(){
 function getRecord(applicantId){
   return (prescreenState?.preScreenings || []).find(r => r.applicantId === applicantId);
 }
+function applicantPrescreenStatus(applicant){
+  const record=getRecord(applicant.id);
+  if(record?.status) return record.status;
+  return applicant.preScreeningStatus || "Not Started";
+}
 function applicantName(a){ return `${a.firstName||""} ${a.lastName||""}`.trim() || "Unnamed Applicant"; }
 function staffDisplayName(){ return typeof currentStaffName === "function" ? currentStaffName() : (auth.currentUser?.displayName || auth.currentUser?.email || "Staff Member");
 }
@@ -27,10 +32,10 @@ function addWaitlistNote(applicant,text){
 
 function renderList(){
   const applicants=getApplicants();
-  const completed=applicants.filter(a=>getRecord(a.id)?.status==="Completed").length;
+  const completed=applicants.filter(a=>applicantPrescreenStatus(a)==="Completed").length;
   $("prescreenSummary").innerHTML=`<strong>${completed}</strong> completed of <strong>${applicants.length}</strong> offer${applicants.length===1?"":"s"}`;
   $("prescreenApplicantBody").innerHTML=applicants.length?applicants.map(a=>{
-    const r=getRecord(a.id); const status=r?.status||"Not Started";
+    const r=getRecord(a.id); const status=applicantPrescreenStatus(a);
     const cls=status==="Completed"?"status-completed":status==="In Progress"?"status-progress":"status-not-started";
     return `<tr><td><strong>${esc(applicantName(a))}</strong></td><td>${esc(a.contact||a.phone||"—")}</td><td>${esc(a.dateApplied||"—")}</td><td><span class="prescreen-status ${cls}">${esc(status)}</span>${r?.workflowStatus?`<div class="hint">${esc(r.workflowStatus)}</div>`:""}</td><td>${esc(formatDateTime(r?.updatedAt||r?.completedAt||r?.startedAt))}</td><td><button type="button" onclick="openPrescreen('${a.id}')">${status==="Not Started"?"Start":status==="Completed"?"View / Edit":"Continue"}</button></td></tr>`;
   }).join(""):`<tr><td colspan="6" class="empty">No active waitlist applicants are currently marked Offer Given.</td></tr>`;
@@ -245,7 +250,38 @@ async function completePrescreen(){
   }
   appendPersonActivity(a,"Pre-Screening","Pre-screening completed",result.title);
   if(result.code==="scheduled-intake") appendPersonActivity(a,"Intake","Intake scheduled",`${x.scheduledIntakeDate||"Date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}`);
-  await saveAppState(prescreenState); renderList(); alert(result.title); currentStep="summary"; renderForm();
+
+  // Persist an explicit completion marker on the applicant as well as the full record.
+  // This makes completion status resilient even if another live-state update arrives immediately after save.
+  a.preScreeningStatus="Completed";
+  a.preScreeningCompletedAt=currentRecord.completedAt;
+  a.preScreeningRecordId=currentRecord.id;
+
+  const normalized=normalizeAppState(prescreenState);
+  const completedRecord=normalized.preScreenings.find(r=>r.id===currentRecord.id || r.applicantId===currentApplicantId);
+  const completedApplicant=normalized.waitlist.find(w=>w.id===currentApplicantId);
+  try{
+    await APP_DOC_REF().update({
+      preScreenings: normalized.preScreenings,
+      waitlist: normalized.waitlist,
+      updatedAt: new Date().toISOString()
+    });
+    const verify=await APP_DOC_REF().get({source:"server"});
+    const serverData=verify.data()||{};
+    const serverRecord=(serverData.preScreenings||[]).find(r=>r.id===currentRecord.id || r.applicantId===currentApplicantId);
+    const serverApplicant=(serverData.waitlist||[]).find(w=>w.id===currentApplicantId);
+    if(serverRecord?.status!=="Completed" && serverApplicant?.preScreeningStatus!=="Completed") throw new Error("Completion verification failed");
+    prescreenState.preScreenings=normalized.preScreenings;
+    prescreenState.waitlist=normalized.waitlist;
+    currentRecord=completedRecord||currentRecord;
+    renderList();
+    alert(result.title);
+    currentStep="summary";
+    renderForm();
+  }catch(error){
+    console.error("Pre-screening completion save failed",error);
+    alert("The pre-screening could not be confirmed as saved. It is still open so you can try Complete Pre-Screening again. No completion will be assumed until Firestore confirms it.");
+  }
 }
 
 async function movePrescreenApplicantToRoster(){

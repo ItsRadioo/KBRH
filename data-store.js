@@ -202,7 +202,10 @@ function normalizeAppState(state) {
         waitlistPosition: Number.isFinite(Number(item.waitlistPosition)) ? Number(item.waitlistPosition) : null,
         notes: normalizeNotes(item.notes),
         callInHistory: Array.isArray(item.callInHistory) ? item.callInHistory : [],
-        activityHistory: normalizeActivityHistory(item.activityHistory)
+        activityHistory: normalizeActivityHistory(item.activityHistory),
+        preScreeningStatus: item.preScreeningStatus || "",
+        preScreeningCompletedAt: item.preScreeningCompletedAt || "",
+        preScreeningRecordId: item.preScreeningRecordId || ""
       }))
     : [];
 
@@ -309,10 +312,14 @@ function normalizeAppState(state) {
         applicantId: item.applicantId || "",
         applicantName: item.applicantName || "",
         status: item.status || "Not Started",
+        workflowStatus: item.workflowStatus || "",
         staffUser: item.staffUser || "",
+        staffEmail: item.staffEmail || "",
+        staffUid: item.staffUid || "",
         startedAt: item.startedAt || "",
         completedAt: item.completedAt || "",
         updatedAt: item.updatedAt || "",
+        step: item.step || "opening",
         answers: item.answers && typeof item.answers === "object" ? item.answers : {},
         outcome: item.outcome || "",
         overallNotes: item.overallNotes || ""
