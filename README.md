@@ -223,3 +223,10 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - House Chores moved to `house-chores.html`.
 - Successful login opens the Dashboard.
 - Navigation links were updated accordingly.
+
+## v5.5.3 Sidebar correction
+- Forces every navigation group to occupy a full sidebar row.
+- Makes the navigation area independently scrollable when all groups are expanded.
+- Constrains global search and its results to the sidebar width.
+- Removes hover movement from group controls and navigation links.
+- Keeps the sidebar collapse chevron fixed in place when hovered/focused.

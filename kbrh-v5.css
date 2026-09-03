@@ -995,3 +995,140 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
   body:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav-link{padding-left:12px!important;padding-right:10px!important;}
 }
 .bus-pass-form-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.bus-pass-field{grid-column:span 4}.bus-pass-field.wide{grid-column:span 8}.bus-pass-field.full{grid-column:1/-1}.bus-pass-field label{display:block;margin-bottom:6px;font-weight:750;color:#344054}.bus-pass-field input,.bus-pass-field select,.bus-pass-field textarea{width:100%;box-sizing:border-box}.bus-pass-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.bus-pass-kpi{padding:14px 16px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}.bus-pass-kpi strong{display:block;font-size:1.45rem;color:#0f766e}.bus-pass-kpi span{font-size:.78rem;color:#667085}.bus-pass-history-actions{display:flex;gap:8px;justify-content:flex-end}@media(max-width:760px){.bus-pass-field,.bus-pass-field.wide{grid-column:1/-1}.bus-pass-kpis{grid-template-columns:1fr}}
+
+/* v5.5.3: robust sidebar sizing + no hover-shift controls */
+@media (min-width: 901px) {
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header {
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header *,
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header *::before,
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header *::after {
+    box-sizing: border-box;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .header-top {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 16px 10px 12px !important;
+    overflow: visible !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .brand-and-title,
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .page-heading {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .v55-global-search {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .v55-global-search input {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .v55-search-results {
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .app-nav {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    padding: 10px 8px 86px !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-gutter: auto !important;
+    overscroll-behavior-y: contain;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 4px 0 !important;
+    clear: both !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group-title {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 9px 10px 7px !important;
+    transform: none !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group-title:hover,
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group-title:focus {
+    transform: none !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group-links {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 2px !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .v55-nav-group.is-collapsed .v55-nav-group-links {
+    display: none !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .app-nav-link {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .app-nav-link:hover {
+    transform: none !important;
+  }
+}
+
+/* The sidebar collapse chevron must stay vertically centred on hover. */
+.v5-sidebar-toggle,
+.v5-sidebar-toggle:hover,
+.v5-sidebar-toggle:focus-visible {
+  transform: translate(-1px,-50%) !important;
+}
+body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle,
+body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle:hover,
+body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle:focus-visible {
+  transform: translate(-1px,-50%) !important;
+}
