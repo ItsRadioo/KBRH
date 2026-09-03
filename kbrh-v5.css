@@ -1132,3 +1132,67 @@ body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle:hover,
 body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle:focus-visible {
   transform: translate(-1px,-50%) !important;
 }
+
+/* v5.5.4: keep full KBRH title visible inside sidebar */
+@media (min-width: 901px) {
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .brand-and-title {
+    align-items: center !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .page-heading {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 55px) !important;
+    overflow: visible !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .page-heading .app-name {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: .72rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: .035em !important;
+    text-transform: uppercase !important;
+  }
+}
+
+/* v5.5.5: wider desktop sidebar with single-line KBRH title and no KB badge */
+@media (min-width: 901px) {
+  :root {
+    --v5-sidebar: 292px;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .brand-mark {
+    display: none !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .brand-and-title {
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .page-heading {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body:not(.page-login):not(.page-print):not(.page-meal-print) > header .page-heading .app-name {
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: .78rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: .03em !important;
+  }
+}

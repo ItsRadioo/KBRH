@@ -224,9 +224,17 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - Successful login opens the Dashboard.
 - Navigation links were updated accordingly.
 
-## v5.5.3 Sidebar correction
+## v5.5.4 Sidebar correction
 - Forces every navigation group to occupy a full sidebar row.
 - Makes the navigation area independently scrollable when all groups are expanded.
 - Constrains global search and its results to the sidebar width.
 - Removes hover movement from group controls and navigation links.
 - Keeps the sidebar collapse chevron fixed in place when hovered/focused.
+
+
+## v5.5.4
+- Fixed the sidebar brand title so “Ken Brown Recovery Home” stays fully visible rather than being clipped.
+
+## v5.5.5
+- Removed the desktop KB badge from the sidebar header.
+- Increased the desktop sidebar width so “Ken Brown Recovery Home” stays on one line without clipping or wrapping.
