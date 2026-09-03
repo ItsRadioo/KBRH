@@ -83,6 +83,7 @@ function defaultAppState() {
     incidentReports: [],
     chartData: { laundry: {}, electronics: {}, meetings: {} },
     transferHistory: [],
+    busPassRecords: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -315,6 +316,22 @@ function normalizeAppState(state) {
         answers: item.answers && typeof item.answers === "object" ? item.answers : {},
         outcome: item.outcome || "",
         overallNotes: item.overallNotes || ""
+      }))
+    : [];
+
+  merged.busPassRecords = Array.isArray(merged.busPassRecords)
+    ? merged.busPassRecords.filter(Boolean).map(item => ({
+        id: item.id || crypto.randomUUID(),
+        residentId: item.residentId || "",
+        residentName: item.residentName || "",
+        issuedAt: item.issuedAt || new Date().toISOString(),
+        destination: item.destination || "",
+        passCount: Math.max(1, Number(item.passCount) || 1),
+        tripType: item.tripType || "Round Trip",
+        staffName: item.staffName || "",
+        staffUid: item.staffUid || "",
+        staffEmail: item.staffEmail || "",
+        notes: item.notes || ""
       }))
     : [];
 

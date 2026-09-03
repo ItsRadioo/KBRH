@@ -1,3 +1,7 @@
+KBRH Professional v5.5.2
+
+Restores Bus Pass Tracker and fixes expanded sidebar/search overflow.
+
 # KBRH Resident Chore Rotator
 
 This build includes:

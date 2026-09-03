@@ -15,7 +15,8 @@
     "page-counseling-notes": ["Case Management", "Counseling Notes", "Record resident counselling interactions and review archived notes."],
     "page-audit-log": ["Administration", "Audit Log", "Review authenticated staff activity across the system."],
     "page-staff-profile": ["Administration", "Staff Profile", "Manage the staff identity attached to your account activity."],
-    "page-staff-list": ["Administration", "Staff Contacts", "Quick access to active staff names and primary phone numbers."]
+    "page-staff-list": ["Administration", "Staff Contacts", "Quick access to active staff names and primary phone numbers."],
+    "page-bus-pass": ["Operations", "Bus Pass Tracker", "Record resident bus-pass distribution with automatic staff attribution."]
   };
 
   function currentPageClass() {
@@ -177,7 +178,7 @@
   "use strict";
   const NAV_GROUPS = [
     ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html"]],
-    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html"]],
+    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
   ];
@@ -191,6 +192,7 @@
     }
     const links=[...nav.querySelectorAll(':scope > a.app-nav-link')];
     const map=new Map(links.map(a=>[basename(a.getAttribute('href')||a.href),a]));
+    if(!map.has('bus-pass.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='bus-pass.html';a.textContent='Bus Pass Tracker';map.set('bus-pass.html',a);}
     nav.innerHTML='';
     NAV_GROUPS.forEach(([title,files],i)=>{
       const section=document.createElement('section'); section.className='v55-nav-group';

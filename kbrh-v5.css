@@ -980,3 +980,18 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 .v55-status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;line-height:1.2;background:#eef2f6;color:#344054;white-space:nowrap}.v55-status-chip.attention{background:#fff1f0;color:#a61b1b}.v55-status-chip.success{background:#ecfdf3;color:#067647}
 @media(max-width:900px){.v55-global-search{width:100%;order:3;margin:8px 0 0}.header-top{flex-wrap:wrap}}
 .v55-attention-list{display:grid;gap:8px}.v55-attention-item{display:flex;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid #ead6d3;border-radius:10px;background:#fff8f7;color:#172033;text-decoration:none}.v55-attention-item span{color:#9b2c2c;font-weight:700}
+
+/* v5.5.2: sidebar overflow + search containment */
+@media (min-width:901px){
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header{overflow:hidden!important;}
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .header-top{flex:0 0 auto!important;min-height:0!important;padding:16px 10px 12px!important;}
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .brand-and-title{padding:0 2px 8px!important;}
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;padding:10px 4px 78px!important;scrollbar-gutter:stable;}
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .logout-btn{z-index:5;}
+  .v55-global-search{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0!important;box-sizing:border-box!important;}
+  .v55-global-search input{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:8px 10px!important;text-overflow:ellipsis;}
+  .v55-search-results{max-width:100%!important;}
+  .v55-nav-group-title{padding-left:10px!important;padding-right:10px!important;}
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav-link{padding-left:12px!important;padding-right:10px!important;}
+}
+.bus-pass-form-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.bus-pass-field{grid-column:span 4}.bus-pass-field.wide{grid-column:span 8}.bus-pass-field.full{grid-column:1/-1}.bus-pass-field label{display:block;margin-bottom:6px;font-weight:750;color:#344054}.bus-pass-field input,.bus-pass-field select,.bus-pass-field textarea{width:100%;box-sizing:border-box}.bus-pass-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.bus-pass-kpi{padding:14px 16px;border:1px solid #dbe4ee;border-radius:12px;background:#f8fafc}.bus-pass-kpi strong{display:block;font-size:1.45rem;color:#0f766e}.bus-pass-kpi span{font-size:.78rem;color:#667085}.bus-pass-history-actions{display:flex;gap:8px;justify-content:flex-end}@media(max-width:760px){.bus-pass-field,.bus-pass-field.wide{grid-column:1/-1}.bus-pass-kpis{grid-template-columns:1fr}}
