@@ -16,7 +16,8 @@
     "page-audit-log": ["Administration", "Audit Log", "Review authenticated staff activity across the system."],
     "page-staff-profile": ["Administration", "Staff Profile", "Manage the staff identity attached to your account activity."],
     "page-staff-list": ["Administration", "Staff Contacts", "Quick access to active staff names and primary phone numbers."],
-    "page-bus-pass": ["Operations", "Bus Pass Tracker", "Record resident bus-pass distribution with automatic staff attribution."]
+    "page-bus-pass": ["Operations", "Bus Pass Tracker", "Record resident bus-pass distribution with automatic staff attribution."],
+    "page-tool-signout": ["Operations", "Tool Sign-Out", "Track tools issued to residents and confirm their return."]
   };
 
   function currentPageClass() {
@@ -178,7 +179,7 @@
   "use strict";
   const NAV_GROUPS = [
     ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html"]],
-    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html"]],
+    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html","tool-signout.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
   ];
@@ -193,6 +194,7 @@
     const links=[...nav.querySelectorAll(':scope > a.app-nav-link')];
     const map=new Map(links.map(a=>[basename(a.getAttribute('href')||a.href),a]));
     if(!map.has('bus-pass.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='bus-pass.html';a.textContent='Bus Pass Tracker';map.set('bus-pass.html',a);}
+    if(!map.has('tool-signout.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='tool-signout.html';a.textContent='Tool Sign-Out';map.set('tool-signout.html',a);}
     nav.innerHTML='';
     NAV_GROUPS.forEach(([title,files],i)=>{
       const section=document.createElement('section'); section.className='v55-nav-group';

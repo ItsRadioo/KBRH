@@ -1,3 +1,7 @@
+KBRH Professional v5.5.11
+
+Added Tool Sign-Out under Daily Operations. Tracks Resident Name, Reason, Time Out, Time In, Tool, and ID #; active tools can be marked returned; authenticated staff attribution is stored automatically; printable six-column history included.
+
 KBRH Professional v5.5.2
 
 Restores Bus Pass Tracker and fixes expanded sidebar/search overflow.

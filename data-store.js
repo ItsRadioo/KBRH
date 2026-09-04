@@ -84,6 +84,7 @@ function defaultAppState() {
     chartData: { laundry: {}, electronics: {}, meetings: {} },
     transferHistory: [],
     busPassRecords: [],
+    toolSignOutRecords: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -351,6 +352,26 @@ function normalizeAppState(state) {
         staffUid: item.staffUid || "",
         staffEmail: item.staffEmail || "",
         notes: item.notes || ""
+      }))
+    : [];
+
+  merged.toolSignOutRecords = Array.isArray(merged.toolSignOutRecords)
+    ? merged.toolSignOutRecords.filter(Boolean).map(item => ({
+        id: item.id || crypto.randomUUID(),
+        residentId: item.residentId || "",
+        residentName: item.residentName || "",
+        reason: item.reason || "",
+        timeOut: item.timeOut || new Date().toISOString(),
+        timeIn: item.timeIn || "",
+        tool: item.tool || "",
+        toolId: item.toolId || "",
+        issuedByName: item.issuedByName || "",
+        issuedByUid: item.issuedByUid || "",
+        issuedByEmail: item.issuedByEmail || "",
+        returnedByName: item.returnedByName || "",
+        returnedByUid: item.returnedByUid || "",
+        returnedByEmail: item.returnedByEmail || "",
+        updatedAt: item.updatedAt || item.timeOut || new Date().toISOString()
       }))
     : [];
 
