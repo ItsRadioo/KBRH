@@ -12,7 +12,13 @@ function getApplicants(){
   return (prescreenState?.waitlist || []).filter(a => !a.archived && a.status === "Offer Given");
 }
 function getRecord(applicantId){
-  return (prescreenState?.preScreenings || []).find(r => r.applicantId === applicantId);
+  const records=(prescreenState?.preScreenings || []).filter(r => r.applicantId === applicantId);
+  if(!records.length) return null;
+  return records.slice().sort((a,b)=>{
+    const ad=new Date(a.updatedAt||a.completedAt||a.startedAt||0).getTime()||0;
+    const bd=new Date(b.updatedAt||b.completedAt||b.startedAt||0).getTime()||0;
+    return bd-ad;
+  })[0];
 }
 function applicantPrescreenStatus(applicant){
   const record=getRecord(applicant.id);
@@ -285,15 +291,23 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
       latest.preScreenings=Array.isArray(latest.preScreenings)?latest.preScreenings:[];
       latest.waitlist=Array.isArray(latest.waitlist)?latest.waitlist:[];
 
-      const recordIndex=latest.preScreenings.findIndex(r=>r.id===localRecord.id||r.applicantId===currentApplicantId);
-      if(recordIndex>=0) latest.preScreenings[recordIndex]=clonePrescreenValue(localRecord);
-      else latest.preScreenings.push(clonePrescreenValue(localRecord));
+      const previousServerRecord=(latest.preScreenings||[]).find(r=>r.id===localRecord.id)
+        || (latest.preScreenings||[]).filter(r=>r.applicantId===currentApplicantId).sort((a,b)=>{
+          const ad=new Date(a.updatedAt||a.completedAt||a.startedAt||0).getTime()||0;
+          const bd=new Date(b.updatedAt||b.completedAt||b.startedAt||0).getTime()||0;
+          return bd-ad;
+        })[0]
+        || null;
+
+      // One applicant must have one authoritative pre-screening record. Remove any stale
+      // duplicates created by older builds, then write the newest edited record back once.
+      latest.preScreenings=latest.preScreenings.filter(r=>r.id!==localRecord.id && r.applicantId!==currentApplicantId);
+      latest.preScreenings.push(clonePrescreenValue(localRecord));
 
       const applicant=latest.waitlist.find(a=>a.id===currentApplicantId);
       if(!applicant) throw new Error("Applicant is no longer on the waitlist.");
 
       if(localRecord.status==="Completed"){
-        const previousServerRecord=recordIndex>=0 ? (snap.data()?.preScreenings||[]).find(r=>r.id===localRecord.id||r.applicantId===currentApplicantId) : null;
         const alreadyCompleted=Boolean(previousServerRecord?.status==="Completed");
         if(!alreadyCompleted && localApplicantSnapshot){
           // Preserve the completion note/activity created by the first-completion workflow while
@@ -316,8 +330,16 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
 
     const verify=await APP_DOC_REF().get({source:"server"});
     const server=normalizeAppState(verify.data()||{});
-    const serverRecord=(server.preScreenings||[]).find(r=>r.id===localRecord.id||r.applicantId===currentApplicantId);
-    if(!serverRecord||serverRecord.updatedAt!==localRecord.updatedAt) throw new Error("The newest pre-screening changes were not confirmed by Firestore.");
+    const exactRecord=(server.preScreenings||[]).find(r=>r.id===localRecord.id);
+    const serverRecord=exactRecord || (server.preScreenings||[]).filter(r=>r.applicantId===currentApplicantId).sort((a,b)=>{
+      const ad=new Date(a.updatedAt||a.completedAt||a.startedAt||0).getTime()||0;
+      const bd=new Date(b.updatedAt||b.completedAt||b.startedAt||0).getTime()||0;
+      return bd-ad;
+    })[0];
+    if(!serverRecord) throw new Error("The pre-screening record could not be found after saving.");
+    if(serverRecord.updatedAt!==localRecord.updatedAt){
+      throw new Error("A different pre-screening record was returned after saving. Please reopen the applicant and try again.");
+    }
 
     prescreenState=server;
     currentRecord=clonePrescreenValue(serverRecord);

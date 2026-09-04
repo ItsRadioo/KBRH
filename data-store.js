@@ -306,7 +306,7 @@ function normalizeAppState(state) {
       : {}
   };
 
-  merged.preScreenings = Array.isArray(merged.preScreenings)
+  const normalizedPreScreenings = Array.isArray(merged.preScreenings)
     ? merged.preScreenings.filter(item => item && item !== "temp").map(item => ({
         id: item.id || crypto.randomUUID(),
         applicantId: item.applicantId || "",
@@ -325,6 +325,18 @@ function normalizeAppState(state) {
         overallNotes: item.overallNotes || ""
       }))
     : [];
+
+  // Older builds could leave more than one pre-screening for the same applicant. Keep the
+  // most recently changed record so refreshes never resurrect an older version.
+  const latestPreScreenByApplicant = new Map();
+  for (const item of normalizedPreScreenings) {
+    const key=item.applicantId || item.id;
+    const existing=latestPreScreenByApplicant.get(key);
+    const itemTime=new Date(item.updatedAt||item.completedAt||item.startedAt||0).getTime()||0;
+    const existingTime=existing ? (new Date(existing.updatedAt||existing.completedAt||existing.startedAt||0).getTime()||0) : -1;
+    if(!existing || itemTime>=existingTime) latestPreScreenByApplicant.set(key,item);
+  }
+  merged.preScreenings = Array.from(latestPreScreenByApplicant.values());
 
   merged.busPassRecords = Array.isArray(merged.busPassRecords)
     ? merged.busPassRecords.filter(Boolean).map(item => ({
