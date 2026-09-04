@@ -214,73 +214,174 @@ function updateFooter(){
   $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status==="Completed");
   $("printPrescreenBtn")?.classList.toggle("hidden",currentStep!=="summary");
   $("movePrescreenToRosterBtn")?.classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status!=="Completed");
+  $("saveDraftBtn").textContent=currentRecord?.status==="Completed"?"Save Changes":"Save Draft";
   $("nextPrescreenBtn").textContent=i===steps.length-2?"Review Summary":"Continue";
 }
 
-async function saveDraft(showAlert=true){
+function clonePrescreenValue(value){
+  return typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
+}
+
+function applyCompletedOutcomeToApplicant(applicant,record,result,identity,wasCompleted){
+  if(!applicant||!record)return;
+  const x=record.answers||{};
+  applicant.preScreeningStatus="Completed";
+  applicant.preScreeningCompletedAt=record.completedAt||record.updatedAt||new Date().toISOString();
+  applicant.preScreeningRecordId=record.id;
+
+  if(result.code==="returned-interest") applicant.status="N/A";
+  else if(result.code==="archive"){ applicant.archived=true; applicant.status="N/A"; }
+  else if(result.code==="scheduled-intake" || result.code==="detox" || result.code==="callback") applicant.status="Offer Given";
+  else if(result.code==="returned-sobriety") applicant.status="N/A";
+
+  // A completed pre-screen can be edited later. Record one concise revision entry instead of
+  // replaying all of the original completion notes every time a field changes.
+  if(wasCompleted){
+    const detailParts=[`Outcome: ${result.title}`];
+    if(x.lastUseDate) detailParts.push(`Last use: ${x.lastUseDate}${x.lastUseSubstance?` (${x.lastUseSubstance})`:""}`);
+    if(x.scheduledIntakeDate) detailParts.push(`Intake: ${x.scheduledIntakeDate}${x.scheduledIntakeTime?` ${x.scheduledIntakeTime}`:""}`);
+    addWaitlistNote(applicant,`Pre-screening updated. ${detailParts.join(" · ")}.`);
+    appendPersonActivity(applicant,"Pre-Screening","Pre-screening updated",detailParts.join(" · "),identity);
+  }
+}
+
+async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
   collectCurrentStep();
-  currentRecord.status=currentRecord.status==="Completed"?"Completed":"In Progress";
-  currentRecord.workflowStatus=currentStep.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
-  await saveAppState(prescreenState); renderList();
-  if(showAlert) alert("Draft saved.");
+  if(!currentRecord||!currentApplicantId)return false;
+
+  const localRecord=clonePrescreenValue(currentRecord);
+  const localApplicantSnapshot=clonePrescreenValue((prescreenState?.waitlist||[]).find(a=>a.id===currentApplicantId)||null);
+  const wasCompleted=localRecord.status==="Completed";
+  const now=new Date().toISOString();
+  let result=null;
+
+  if(complete||wasCompleted){
+    result=suggestedOutcome(localRecord);
+    localRecord.status="Completed";
+    localRecord.completedAt=localRecord.completedAt||now;
+    localRecord.outcome=result.code;
+    localRecord.workflowStatus=result.title;
+  }else{
+    localRecord.status="In Progress";
+    localRecord.workflowStatus=currentStep.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
+  }
+  localRecord.updatedAt=now;
+  localRecord.step=currentStep;
+  localRecord.staffUser=staffDisplayName();
+  localRecord.staffEmail=auth.currentUser?.email||localRecord.staffEmail||"";
+  localRecord.staffUid=auth.currentUser?.uid||localRecord.staffUid||"";
+
+  let identity={name:staffDisplayName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+  if(typeof getCurrentStaffIdentity==="function"){
+    try{ identity=await getCurrentStaffIdentity(); }catch(error){ console.warn("Staff identity lookup failed during pre-screen save",error); }
+  }
+
+  try{
+    let savedState=null;
+    await db.runTransaction(async transaction=>{
+      const ref=APP_DOC_REF();
+      const snap=await transaction.get(ref);
+      const latest=normalizeAppState(snap.exists?snap.data():defaultAppState());
+      latest.preScreenings=Array.isArray(latest.preScreenings)?latest.preScreenings:[];
+      latest.waitlist=Array.isArray(latest.waitlist)?latest.waitlist:[];
+
+      const recordIndex=latest.preScreenings.findIndex(r=>r.id===localRecord.id||r.applicantId===currentApplicantId);
+      if(recordIndex>=0) latest.preScreenings[recordIndex]=clonePrescreenValue(localRecord);
+      else latest.preScreenings.push(clonePrescreenValue(localRecord));
+
+      const applicant=latest.waitlist.find(a=>a.id===currentApplicantId);
+      if(!applicant) throw new Error("Applicant is no longer on the waitlist.");
+
+      if(localRecord.status==="Completed"){
+        const previousServerRecord=recordIndex>=0 ? (snap.data()?.preScreenings||[]).find(r=>r.id===localRecord.id||r.applicantId===currentApplicantId) : null;
+        const alreadyCompleted=Boolean(previousServerRecord?.status==="Completed");
+        if(!alreadyCompleted && localApplicantSnapshot){
+          // Preserve the completion note/activity created by the first-completion workflow while
+          // still basing the write on the newest server version of the applicant.
+          applicant.notes=clonePrescreenValue(localApplicantSnapshot.notes||applicant.notes||[]);
+          applicant.activityHistory=clonePrescreenValue(localApplicantSnapshot.activityHistory||applicant.activityHistory||[]);
+          applicant.status=localApplicantSnapshot.status||applicant.status;
+          applicant.archived=Boolean(localApplicantSnapshot.archived);
+          applicant.archivedAt=localApplicantSnapshot.archivedAt||applicant.archivedAt||"";
+          applicant.archiveReason=localApplicantSnapshot.archiveReason||applicant.archiveReason||"";
+        }
+        applyCompletedOutcomeToApplicant(applicant,localRecord,result,identity,alreadyCompleted);
+      }
+
+      latest.updatedAt=now;
+      const normalized=normalizeAppState(latest);
+      transaction.set(ref,{preScreenings:normalized.preScreenings,waitlist:normalized.waitlist,updatedAt:now},{merge:true});
+      savedState=normalized;
+    });
+
+    const verify=await APP_DOC_REF().get({source:"server"});
+    const server=normalizeAppState(verify.data()||{});
+    const serverRecord=(server.preScreenings||[]).find(r=>r.id===localRecord.id||r.applicantId===currentApplicantId);
+    if(!serverRecord||serverRecord.updatedAt!==localRecord.updatedAt) throw new Error("The newest pre-screening changes were not confirmed by Firestore.");
+
+    prescreenState=server;
+    currentRecord=clonePrescreenValue(serverRecord);
+    const storedIndex=prescreenState.preScreenings.findIndex(r=>r.id===currentRecord.id||r.applicantId===currentApplicantId);
+    if(storedIndex>=0) prescreenState.preScreenings[storedIndex]=currentRecord;
+    renderList();
+    renderForm();
+    if(showAlert) alert(currentRecord.status==="Completed"?"Pre-screening changes saved.":"Draft saved.");
+    return true;
+  }catch(error){
+    console.error("Pre-screening save failed",error);
+    alert(`Could not save the pre-screening changes. ${error?.message||"Please try again."}`);
+    return false;
+  }
+}
+
+async function saveDraft(showAlert=true){
+  return persistCurrentPrescreen({complete:false,showAlert});
 }
 
 async function completePrescreen(){
   collectCurrentStep();
   const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
+  const wasCompleted=currentRecord?.status==="Completed";
   const result=suggestedOutcome(currentRecord); const x=currentRecord.answers||{};
-  currentRecord.status="Completed"; currentRecord.completedAt=new Date().toISOString(); currentRecord.updatedAt=currentRecord.completedAt; currentRecord.outcome=result.code; currentRecord.workflowStatus=result.title;
-  if(result.code==="returned-interest"){
-    a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant declined the current opening and ${x.remainWaitlist==="yes"?"wishes to remain on the waitlist":"was returned to the waitlist"}. ${x.interestNotes||""}`.trim());
-  } else if(result.code==="archive"){
-    a.archived=true; a.status="N/A"; addWaitlistNote(a,"Pre-screening: applicant declined the opening and requested removal from the active waitlist.");
-  } else if(result.code==="callback"){
-    addWaitlistNote(a,`Pre-screening callback scheduled for ${x.callbackDate} at ${x.callbackTime}. ${x.callbackNotes||""}`.trim());
-  } else if(result.code==="detox"){
-    addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Detox plan initiated; offer remains active. ${x.detoxFacility||""} ${x.detoxExpectedDate?`Expected completion: ${x.detoxExpectedDate}.`:""} ${x.detoxNotes||""}`.trim());
-  } else if(result.code==="scheduled-intake"){
-    a.status="Offer Given";
-    addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Intake scheduled for ${x.scheduledIntakeDate||"date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}; offer remains active. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. ${x.scheduledIntakeNotes||""}`.trim());
-  } else if(result.code==="returned-sobriety"){
-    a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant did not meet the five-day sobriety requirement and was returned to the waitlist. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. Contact the next eligible applicant.`);
-  } else if(result.code==="review"){
-    addWaitlistNote(a,"Pre-screening completed: further review required due to a possible legal or health participation conflict.");
-  } else if(result.code==="approved"){
-    addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
+
+  // First completion keeps the detailed original completion notes. Later edits are handled by
+  // persistCurrentPrescreen as revisions so the newest facts become authoritative.
+  if(!wasCompleted){
+    if(result.code==="returned-interest"){
+      a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant declined the current opening and ${x.remainWaitlist==="yes"?"wishes to remain on the waitlist":"was returned to the waitlist"}. ${x.interestNotes||""}`.trim());
+    } else if(result.code==="archive"){
+      a.archived=true; a.status="N/A"; addWaitlistNote(a,"Pre-screening: applicant declined the opening and requested removal from the active waitlist.");
+    } else if(result.code==="callback"){
+      addWaitlistNote(a,`Pre-screening callback scheduled for ${x.callbackDate} at ${x.callbackTime}. ${x.callbackNotes||""}`.trim());
+    } else if(result.code==="detox"){
+      addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Detox plan initiated; offer remains active. ${x.detoxFacility||""} ${x.detoxExpectedDate?`Expected completion: ${x.detoxExpectedDate}.`:""} ${x.detoxNotes||""}`.trim());
+    } else if(result.code==="scheduled-intake"){
+      a.status="Offer Given";
+      addWaitlistNote(a,`Pre-screening: applicant does not yet meet the five-day sobriety requirement. Intake scheduled for ${x.scheduledIntakeDate||"date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}; offer remains active. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. ${x.scheduledIntakeNotes||""}`.trim());
+    } else if(result.code==="returned-sobriety"){
+      a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant did not meet the five-day sobriety requirement and was returned to the waitlist. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. Contact the next eligible applicant.`);
+    } else if(result.code==="review"){
+      addWaitlistNote(a,"Pre-screening completed: further review required due to a possible legal or health participation conflict.");
+    } else if(result.code==="approved"){
+      addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
+    }
+    appendPersonActivity(a,"Pre-Screening","Pre-screening completed",result.title);
+    if(result.code==="scheduled-intake") appendPersonActivity(a,"Intake","Intake scheduled",`${x.scheduledIntakeDate||"Date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}`);
+
+    // Put the locally-created activity/note data into the local state before the transaction.
+    const localApplicant=(prescreenState.waitlist||[]).find(w=>w.id===a.id);
+    if(localApplicant){ Object.assign(localApplicant,a); }
   }
-  appendPersonActivity(a,"Pre-Screening","Pre-screening completed",result.title);
-  if(result.code==="scheduled-intake") appendPersonActivity(a,"Intake","Intake scheduled",`${x.scheduledIntakeDate||"Date not recorded"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}`);
 
-  // Persist an explicit completion marker on the applicant as well as the full record.
-  // This makes completion status resilient even if another live-state update arrives immediately after save.
-  a.preScreeningStatus="Completed";
-  a.preScreeningCompletedAt=currentRecord.completedAt;
-  a.preScreeningRecordId=currentRecord.id;
-
-  const normalized=normalizeAppState(prescreenState);
-  const completedRecord=normalized.preScreenings.find(r=>r.id===currentRecord.id || r.applicantId===currentApplicantId);
-  const completedApplicant=normalized.waitlist.find(w=>w.id===currentApplicantId);
-  try{
-    await APP_DOC_REF().update({
-      preScreenings: normalized.preScreenings,
-      waitlist: normalized.waitlist,
-      updatedAt: new Date().toISOString()
-    });
-    const verify=await APP_DOC_REF().get({source:"server"});
-    const serverData=verify.data()||{};
-    const serverRecord=(serverData.preScreenings||[]).find(r=>r.id===currentRecord.id || r.applicantId===currentApplicantId);
-    const serverApplicant=(serverData.waitlist||[]).find(w=>w.id===currentApplicantId);
-    if(serverRecord?.status!=="Completed" && serverApplicant?.preScreeningStatus!=="Completed") throw new Error("Completion verification failed");
-    prescreenState.preScreenings=normalized.preScreenings;
-    prescreenState.waitlist=normalized.waitlist;
-    currentRecord=completedRecord||currentRecord;
-    renderList();
+  currentRecord.status="Completed";
+  currentRecord.completedAt=currentRecord.completedAt||new Date().toISOString();
+  currentRecord.outcome=result.code;
+  currentRecord.workflowStatus=result.title;
+  const ok=await persistCurrentPrescreen({complete:true,showAlert:false});
+  if(ok){
     alert(result.title);
     currentStep="summary";
     renderForm();
-  }catch(error){
-    console.error("Pre-screening completion save failed",error);
-    alert("The pre-screening could not be confirmed as saved. It is still open so you can try Complete Pre-Screening again. No completion will be assumed until Firestore confirms it.");
   }
 }
 
@@ -349,4 +450,16 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("cancelPrescreenMoveRosterBtn").onclick=$("closePrescreenMoveRosterBtn").onclick=closePrescreenMoveRoster;
   $("prescreenModal").addEventListener("click",e=>{if(e.target===$("prescreenModal"))closePrescreen();});
 });
-auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{prescreenState=state;prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];renderList();});});
+auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{
+  const localOpenRecord=currentRecord&&currentApplicantId?clonePrescreenValue(currentRecord):null;
+  prescreenState=state;
+  prescreenState.preScreenings=Array.isArray(prescreenState.preScreenings)?prescreenState.preScreenings:[];
+  // Live snapshots may refresh the list, but they must never overwrite unsaved edits in an open
+  // pre-screening. The explicit Save action is the authority and uses a Firestore transaction.
+  if(localOpenRecord){
+    const i=prescreenState.preScreenings.findIndex(r=>r.id===localOpenRecord.id||r.applicantId===currentApplicantId);
+    if(i>=0) prescreenState.preScreenings[i]=localOpenRecord; else prescreenState.preScreenings.push(localOpenRecord);
+    currentRecord=localOpenRecord;
+  }
+  renderList();
+});});

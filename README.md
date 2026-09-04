@@ -238,3 +238,11 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 ## v5.5.5
 - Removed the desktop KB badge from the sidebar header.
 - Increased the desktop sidebar width so “Ken Brown Recovery Home” stays on one line without clipping or wrapping.
+
+## v5.5.9 — Pre-Screening Edit Authority Fix
+- Completed pre-screenings remain editable; the Save Draft button becomes Save Changes after completion.
+- Open pre-screening edits are protected from live Firestore snapshots so an incoming refresh cannot overwrite unsaved staff changes.
+- Saving now starts from the newest server document and uses a Firestore transaction; the most recent explicit save wins.
+- Editing a completed pre-screening recalculates the outcome and updates the applicant's current pre-screening status/workflow information.
+- Changes to last-use date, substance, sobriety decision, or scheduled intake date persist and are reflected in Upcoming Intakes.
+- Completed-record edits create a concise revision note/activity entry rather than duplicating the original completion record.
