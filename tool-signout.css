@@ -1,1 +1,71 @@
 .tool-heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.tool-summary-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 18px}.tool-summary-row>div{border:1px solid var(--border,#d7e0ea);border-radius:12px;padding:12px 14px;background:#f8fafc;display:flex;flex-direction:column;gap:3px}.tool-summary-row strong{font-size:1.35rem}.tool-summary-row span{font-size:.83rem;color:#66758a}.tool-count{white-space:nowrap}.tool-return-btn{white-space:nowrap}.tool-status{display:inline-flex;align-items:center;justify-content:center;min-width:88px;padding:5px 9px;border-radius:999px;font-size:.75rem;font-weight:800;letter-spacing:.03em}.tool-status-available{background:#e5f7ee;color:#17633c;border:1px solid #b9e5ce}.tool-status-out{background:#fff0dc;color:#8a4b00;border:1px solid #efd0a4}.tool-modal-card{width:min(620px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column}.tool-modal-card .modal-header,.tool-modal-card .modal-footer{flex:0 0 auto}.tool-modal-card .modal-body{overflow-y:auto;overflow-x:hidden;padding:20px}.tool-modal-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.tool-modal-form .full{grid-column:1/-1}.tool-modal-form label{display:block;font-weight:700;margin-bottom:6px}.tool-modal-form input,.tool-modal-form select{width:100%;box-sizing:border-box}.modal-x{min-width:44px;width:44px;height:44px;padding:0;font-size:26px;line-height:1}@media(max-width:760px){.tool-summary-row{grid-template-columns:1fr}.tool-modal-form{grid-template-columns:1fr}.tool-modal-form .full{grid-column:auto}}@media print{header,.v5-page-hero,#addToolBtn,.tool-summary-row,.tool-return-btn,#toolOutCount,.section-title-row button,.v5-sidebar-toggle,.modal{display:none!important}body{background:#fff!important}.card{box-shadow:none!important;border:0!important;padding:0!important}main{margin:0!important;padding:0!important}.card:nth-of-type(1),.card:nth-of-type(2){display:none!important}.table-wrap{overflow:visible!important}table{width:100%!important;border-collapse:collapse!important}th,td{border:1px solid #000!important;padding:8px!important;color:#000!important}h2{color:#000!important}}
+
+/* v5.5.14: Tool dialogs must behave as true centered overlays. */
+.page-tool-signout #addToolModal,
+.page-tool-signout #signOutToolModal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:10050!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:24px!important;
+  background:rgba(7,20,33,.64)!important;
+  backdrop-filter:blur(5px);
+  overflow:auto!important;
+}
+.page-tool-signout #addToolModal.hidden,
+.page-tool-signout #signOutToolModal.hidden{
+  display:none!important;
+}
+.page-tool-signout #addToolModal .tool-modal-card,
+.page-tool-signout #signOutToolModal .tool-modal-card{
+  position:relative!important;
+  margin:auto!important;
+  width:min(620px,calc(100vw - 48px))!important;
+  max-height:calc(100vh - 48px)!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+  border:1px solid #cad6e2!important;
+  border-radius:17px!important;
+  background:#fff!important;
+  box-shadow:0 24px 80px rgba(3,18,30,.34)!important;
+}
+.page-tool-signout .tool-modal-card .modal-header{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  flex:0 0 auto!important;
+  padding:18px 22px!important;
+  background:#f7f9fc!important;
+  border-bottom:1px solid #d9e2eb!important;
+}
+.page-tool-signout .tool-modal-card .modal-header h2{margin:0!important;}
+.page-tool-signout .tool-modal-card .modal-header .hint{margin:4px 0 0!important;}
+.page-tool-signout .tool-modal-card .modal-body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:20px 22px!important;
+}
+.page-tool-signout .tool-modal-card .modal-footer{
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+  flex:0 0 auto!important;
+  padding:14px 22px!important;
+  background:#f7f9fc!important;
+  border-top:1px solid #d9e2eb!important;
+}
+@media(max-width:640px){
+  .page-tool-signout #addToolModal,
+  .page-tool-signout #signOutToolModal{padding:12px!important;}
+  .page-tool-signout #addToolModal .tool-modal-card,
+  .page-tool-signout #signOutToolModal .tool-modal-card{
+    width:calc(100vw - 24px)!important;
+    max-height:calc(100vh - 24px)!important;
+  }
+}
