@@ -250,3 +250,7 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 - Editing a completed pre-screening recalculates the outcome and updates the applicant's current pre-screening status/workflow information.
 - Changes to last-use date, substance, sobriety decision, or scheduled intake date persist and are reflected in Upcoming Intakes.
 - Completed-record edits create a concise revision note/activity entry rather than duplicating the original completion record.
+
+
+## v5.5.13
+Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use the inventory Sign Out action to select resident and reason. Tool name and ID are carried automatically into the sign-out record.
