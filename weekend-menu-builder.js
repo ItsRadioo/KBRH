@@ -86,51 +86,26 @@
   generateBtn.addEventListener("click", generate);
   clearBtn.addEventListener("click", ()=>{ cards.innerHTML=""; body.innerHTML=""; output.hidden=true; addDay("Friday"); });
   function printGeneratedMenu(){
+    // Print in the current tab so browser popup blockers cannot interfere.
+    // The page's existing @media print rules hide the builder UI and preserve
+    // the original generated-menu formatting.
     if (output.hidden) generate();
 
-    const menu = body.cloneNode(true);
-    const printWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!printWindow) {
-      alert("The PDF/print window was blocked. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const previousTitle = document.title;
+    document.title = "Weekend Menu & Chores";
 
-    printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Weekend Menu &amp; Chores</title>
-<style>
-  @page{size:letter portrait;margin:.55in}
-  *{box-sizing:border-box}
-  html,body{background:#fff;color:#111;margin:0;padding:0}
-  .document-menu{width:100%;border:1px solid #111;background:#fff;color:#111;font-family:"Times New Roman",Times,serif}
-  .document-day{break-inside:avoid;page-break-inside:avoid}
-  .document-day + .document-day{border-top:1px solid #111}
-  .document-day-title{font-family:"Times New Roman",Times,serif;font-size:20pt;font-weight:700;line-height:1.05;text-align:center;padding:2px 8px 3px;border-bottom:1px solid #555}
-  .document-day-content{display:grid;grid-template-columns:1fr 1fr;min-height:135px}
-  .document-day.meals-3 .document-day-content{min-height:220px}
-  .document-meals,.document-chore{padding:6px 12px 9px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
-  .document-chore{border-left:1px solid #111}
-  .document-section{margin:0 0 18px}
-  .document-section:last-child{margin-bottom:0}
-  .document-label{font-size:19pt;font-weight:700;text-decoration:underline;text-underline-offset:3px;line-height:1.05;margin:0 0 4px}
-  .document-value{font-size:15.5pt;line-height:1.15;white-space:pre-line;overflow-wrap:anywhere}
-  .document-chore .document-label{font-size:19pt}
-  .document-chore .document-value{margin-top:20px}
-  .document-empty{opacity:.42;font-style:italic}
-</style>
-</head>
-<body>${menu.outerHTML}</body>
-</html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(()=>{
-      printWindow.print();
-      printWindow.onafterprint = ()=>printWindow.close();
-    }, 150);
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+
+    window.addEventListener("afterprint", restoreTitle);
+    window.print();
+
+    // Some browsers do not fire afterprint when the dialog is cancelled.
+    setTimeout(() => {
+      if (document.title === "Weekend Menu & Chores") restoreTitle();
+    }, 1500);
   }
 
   printBtn.addEventListener("click", printGeneratedMenu);
