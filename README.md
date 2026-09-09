@@ -261,3 +261,7 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 - Add/remove days with Lunch, Supper, optional Dessert, and Chore fields.
 - Generate Table creates a clean printable table.
 - Print Table / Save PDF hides the editor, navigation, and webpage controls so only the generated table prints.
+
+## v5.5.17
+- Restored the original Weekend Menu Builder layout exactly.
+- Print Table now opens a dedicated print/PDF document containing only the generated menu table, preserving the original document formatting.

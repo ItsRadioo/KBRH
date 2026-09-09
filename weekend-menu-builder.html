@@ -2,29 +2,101 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Weekend Menu Builder</title>
-<link href="style.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/><link href="kbrh-v5.css" rel="stylesheet"/>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-modern.css" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script><script src="auth.js"></script><script>requireLogin();</script>
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script>requireLogin();</script>
+<link href="kbrh-v5.css" rel="stylesheet"/>
+<script src="kbrh-nav.js"></script>
 <style>
-.menu-builder{max-width:1200px;margin:0 auto}.menu-grid{display:grid;gap:14px}.menu-day{border:1px solid #d7dde5;border-radius:12px;padding:16px;background:#fff}.menu-day-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.menu-day h3{margin:0}.menu-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.menu-fields label{font-weight:700}.menu-fields textarea,.menu-fields input{width:100%;box-sizing:border-box;margin-top:5px}.menu-fields textarea{min-height:74px;resize:vertical}.menu-fields .full{grid-column:1/-1}.preview-wrap{margin-top:22px}.preview-table{width:100%;border-collapse:collapse;background:#fff}.preview-table th,.preview-table td{border:1px solid #222;padding:9px;vertical-align:top;text-align:left}.preview-table th{background:#f0f2f5}.empty-note{padding:18px;text-align:center;color:#667085}.danger-small{background:#fff;color:#9b1c1c;border:1px solid #d9a6a6;padding:7px 10px;border-radius:7px}.builder-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}@media(max-width:760px){.menu-fields{grid-template-columns:1fr}.menu-fields .full{grid-column:auto}}@media print{header,.builder-editor,.no-print{display:none!important}.menu-builder{max-width:none}.preview-wrap{margin:0}.preview-table{font-size:11pt}.preview-table th,.preview-table td{padding:6px}@page{size:letter landscape;margin:.4in}}
+  .menu-builder-grid{display:grid;gap:16px;margin-top:16px}
+  .menu-day-card{border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:16px;background:#fff}
+  .menu-day-head{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+  .menu-day-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .menu-day-fields label{display:flex;flex-direction:column;gap:6px;font-weight:600}
+  .menu-day-fields textarea,.menu-day-fields select{width:100%;box-sizing:border-box}
+  .menu-day-fields textarea{min-height:78px;resize:vertical}
+  .dessert-field[hidden]{display:none!important}
+
+  .generated-menu{margin:28px auto 0;max-width:900px}
+  .generated-menu-title{text-align:center;margin:0 0 16px;font-size:1.35rem}
+  .document-menu{border:1.5px solid #222;background:#fff;color:#111;font-family:"Times New Roman",Times,serif}
+  .document-day + .document-day{border-top:1.5px solid #222}
+  .document-day-title{font-family:"Times New Roman",Times,serif;font-size:28px;font-weight:700;line-height:1.05;text-align:center;padding:4px 10px 5px;border-bottom:1px solid #555}
+  .document-day-content{display:grid;grid-template-columns:1fr 1fr;min-height:190px}
+  .document-day.meals-3 .document-day-content{min-height:300px}
+  .document-meals,.document-chore{padding:10px 18px 14px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
+  .document-chore{border-left:1.5px solid #222}
+  .document-section{margin:0 0 28px}
+  .document-section:last-child{margin-bottom:0}
+  .document-label{font-size:27px;font-weight:700;text-decoration:underline;text-underline-offset:3px;line-height:1.05;margin:0 0 7px}
+  .document-value{font-size:21px;line-height:1.22;white-space:pre-line;overflow-wrap:anywhere}
+  .document-chore .document-label{font-size:27px}
+  .document-chore .document-value{margin-top:28px}
+  .document-empty{opacity:.42;font-style:italic}
+
+  @media(max-width:760px){
+    .menu-day-fields{grid-template-columns:1fr}
+    .generated-menu{overflow-x:auto}
+    .document-menu{min-width:660px}
+  }
+  @media print{
+    @page{size:letter portrait;margin:.55in}
+    header,.builder-controls,.menu-builder-grid,.no-print,.generated-menu-title{display:none!important}
+    html,body{background:#fff!important}
+    body{margin:0!important}
+    main{max-width:none!important;margin:0!important;padding:0!important}
+    .card{box-shadow:none!important;border:0!important;padding:0!important;margin:0!important;background:#fff!important}
+    .generated-menu{display:block!important;max-width:none!important;margin:0!important;overflow:visible!important}
+    .document-menu{width:100%;border:1px solid #111}
+    .document-day{break-inside:avoid;page-break-inside:avoid}
+    .document-day + .document-day{border-top:1px solid #111}
+    .document-day-title{font-size:20pt;padding:2px 8px 3px;border-bottom:1px solid #555}
+    .document-day-content{min-height:135px}
+    .document-day.meals-3 .document-day-content{min-height:220px}
+    .document-meals,.document-chore{padding:6px 12px 9px}
+    .document-chore{border-left:1px solid #111}
+    .document-section{margin-bottom:18px}
+    .document-label,.document-chore .document-label{font-size:19pt;margin-bottom:4px}
+    .document-value{font-size:15.5pt;line-height:1.15}
+    .document-chore .document-value{margin-top:20px}
+  }
 </style>
 </head>
 <body>
-<header><div class="header-top"><div class="brand-and-title"><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Weekend Menu Builder</h1><p>Build the meal and chore table, then print only the finished table.</p></div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div></header>
-<main class="menu-builder">
-<section class="card wide builder-editor">
-<h2>Menu Builder</h2>
-<div class="builder-actions"><button id="addDayBtn" type="button">+ Add Day</button><button id="generateBtn" type="button">Generate Table</button><button class="secondary" id="clearBtn" type="button">Clear</button><a class="button-link secondary" href="meal-chores.html">Back to Meal Chores</a></div>
-<div id="dayEditor" class="menu-grid"></div>
-</section>
-<section class="card wide preview-wrap">
-<div class="no-print" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 style="margin-bottom:4px">Generated Table</h2><p class="hint" style="margin-top:0">Only this table is included when you print.</p></div><button id="printBtn" type="button">Print Table / Save PDF</button></div>
-<div id="tableOutput" class="empty-note">Add your days and click Generate Table.</div>
+<header>
+  <div class="header-top">
+    <div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Weekend Menu Builder</h1><p>Create a clean meal and chore schedule one day at a time.</p></div></div>
+    <button class="logout-btn" onclick="logout()" type="button">Sign Out</button>
+  </div>
+  <nav aria-label="Primary navigation" class="app-nav"></nav>
+</header>
+<main>
+<section class="card wide">
+  <div class="builder-controls">
+    <h2>Build Schedule</h2>
+    <p class="hint">Add each day, choose the weekday, then enter lunch, supper and chores. Sunday automatically includes dessert.</p>
+    <div class="button-row">
+      <button id="addDayBtn" type="button">+ Add Day</button>
+      <button id="generateTableBtn" type="button">Generate Table</button>
+      <button class="secondary" id="clearDaysBtn" type="button">Clear</button>
+      <button class="secondary" id="printTableBtn" type="button">Print Table</button>
+    </div>
+  </div>
+  <div id="dayCards" class="menu-builder-grid"></div>
+  <div id="generatedMenu" class="generated-menu" hidden>
+    <h2 class="generated-menu-title">Weekend Menu &amp; Chores</h2>
+    <div id="generatedMenuBody" class="document-menu" aria-label="Generated weekend menu and chore schedule"></div>
+  </div>
 </section>
 </main>
-<script src="weekend-menu-builder.js"></script><script src="kbrh-v5.js"></script>
-</body></html>
+<script src="weekend-menu-builder.js"></script>
+<script src="kbrh-v5.js"></script>
+</body>
+</html>
