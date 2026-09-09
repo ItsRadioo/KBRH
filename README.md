@@ -265,3 +265,10 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 ## v5.5.17
 - Restored the original Weekend Menu Builder layout exactly.
 - Print Table now opens a dedicated print/PDF document containing only the generated menu table, preserving the original document formatting.
+
+## v5.5.19 — Weekend Menu direct PDF export
+- Weekend Menu Builder screen and generated-table formatting remain unchanged.
+- Replaced browser printing with the same jsPDF-based direct-download approach used by Charts.
+- **Download PDF** creates a letter-size portrait PDF from the entered menu/chore data without opening a print window or popup.
+- PDF preserves day headings, Meals/Chore columns, Lunch/Supper, and Sunday Dessert.
+- Long content and additional days automatically continue onto another PDF page when required.

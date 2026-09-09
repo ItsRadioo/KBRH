@@ -6,7 +6,7 @@
   const addBtn = document.getElementById("addDayBtn");
   const generateBtn = document.getElementById("generateTableBtn");
   const clearBtn = document.getElementById("clearDaysBtn");
-  const printBtn = document.getElementById("printTableBtn");
+  const pdfBtn = document.getElementById("printTableBtn");
 
   function nextUnusedDay(){
     const used = new Set([...cards.querySelectorAll("select[data-field='day']")].map(s=>s.value));
@@ -82,33 +82,130 @@
     output.scrollIntoView({behavior:"smooth", block:"start"});
   }
 
+  function pdfFileName(){
+    const stamp = new Date().toISOString().slice(0,10);
+    return `Weekend-Menu-Chores-${stamp}.pdf`;
+  }
+
+  function drawUnderlinedLabel(doc, text, x, y, centerX){
+    doc.setFont("times","bold");
+    doc.setFontSize(19);
+    const w = doc.getTextWidth(text);
+    const tx = centerX ? x - w/2 : x;
+    doc.text(text, tx, y);
+    doc.setLineWidth(.6);
+    doc.line(tx, y + 2, tx + w, y + 2);
+  }
+
+  function textBlockHeight(doc, value, width, fontSize=15.5){
+    doc.setFont("times","normal");
+    doc.setFontSize(fontSize);
+    const lines = doc.splitTextToSize(value || "—", width);
+    return Math.max(18, lines.length * (fontSize * 1.16));
+  }
+
+  function measureDayHeight(doc, row, colW){
+    const valueW = colW - 28;
+    const labelH = 28;
+    const gap = 18;
+    const mealValues = [row.lunch, row.supper];
+    if(row.day === "Sunday") mealValues.push(row.dessert);
+    let mealsH = 10;
+    mealValues.forEach((v, i) => {
+      mealsH += labelH + textBlockHeight(doc, v, valueW);
+      if(i < mealValues.length - 1) mealsH += gap;
+    });
+    mealsH += 12;
+    const choreH = 10 + labelH + 20 + textBlockHeight(doc, row.chore, valueW) + 12;
+    return Math.max(row.day === "Sunday" ? 205 : 145, mealsH, choreH) + 28;
+  }
+
+  function drawDay(doc, row, x, y, width, height){
+    const titleH = 28;
+    const contentY = y + titleH;
+    const colW = width / 2;
+    const contentH = height - titleH;
+
+    doc.setDrawColor(20,20,20);
+    doc.setLineWidth(.8);
+    doc.rect(x, y, width, height);
+    doc.line(x, contentY, x + width, contentY);
+    doc.line(x + colW, contentY, x + colW, y + height);
+
+    doc.setFont("times","bold");
+    doc.setFontSize(20);
+    doc.text(row.day, x + width/2, y + 20, {align:"center"});
+
+    const leftCenter = x + colW/2;
+    const rightCenter = x + colW + colW/2;
+    const valueWidth = colW - 30;
+    let ly = contentY + 25;
+
+    const drawMealSection = (label, value) => {
+      drawUnderlinedLabel(doc, label, leftCenter, ly, true);
+      ly += 22;
+      doc.setFont("times","normal");
+      doc.setFontSize(15.5);
+      const lines = doc.splitTextToSize(value || "—", valueWidth);
+      doc.text(lines, leftCenter, ly, {align:"center", lineHeightFactor:1.16});
+      ly += Math.max(18, lines.length * 18) + 17;
+    };
+
+    drawMealSection("Lunch", row.lunch);
+    drawMealSection("Supper", row.supper);
+    if(row.day === "Sunday") drawMealSection("Dessert", row.dessert);
+
+    let ry = contentY + 25;
+    drawUnderlinedLabel(doc, "Chore", rightCenter, ry, true);
+    ry += 42;
+    doc.setFont("times","normal");
+    doc.setFontSize(15.5);
+    const choreLines = doc.splitTextToSize(row.chore || "—", valueWidth);
+    doc.text(choreLines, rightCenter, ry, {align:"center", lineHeightFactor:1.16});
+  }
+
+  function generatePdf(){
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      alert("PDF generator did not load. Refresh the page and try again.");
+      return;
+    }
+    const rows = collect();
+    if(!rows.length){
+      alert("Add at least one day before generating the PDF.");
+      return;
+    }
+
+    // Keep the on-screen preview in sync with exactly what is exported.
+    generate();
+
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({orientation:"portrait", unit:"pt", format:"letter"});
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginX = 42;
+    const marginTop = 42;
+    const marginBottom = 42;
+    const width = pageW - marginX * 2;
+    const colW = width / 2;
+    let y = marginTop;
+
+    rows.forEach((row, index) => {
+      const h = measureDayHeight(doc, row, colW);
+      if(index > 0 && y + h > pageH - marginBottom){
+        doc.addPage();
+        y = marginTop;
+      }
+      drawDay(doc, row, marginX, y, width, h);
+      y += h;
+    });
+
+    doc.save(pdfFileName());
+  }
+
   addBtn.addEventListener("click", ()=>addDay());
   generateBtn.addEventListener("click", generate);
   clearBtn.addEventListener("click", ()=>{ cards.innerHTML=""; body.innerHTML=""; output.hidden=true; addDay("Friday"); });
-  function printGeneratedMenu(){
-    // Print in the current tab so browser popup blockers cannot interfere.
-    // The page's existing @media print rules hide the builder UI and preserve
-    // the original generated-menu formatting.
-    if (output.hidden) generate();
-
-    const previousTitle = document.title;
-    document.title = "Weekend Menu & Chores";
-
-    const restoreTitle = () => {
-      document.title = previousTitle;
-      window.removeEventListener("afterprint", restoreTitle);
-    };
-
-    window.addEventListener("afterprint", restoreTitle);
-    window.print();
-
-    // Some browsers do not fire afterprint when the dialog is cancelled.
-    setTimeout(() => {
-      if (document.title === "Weekend Menu & Chores") restoreTitle();
-    }, 1500);
-  }
-
-  printBtn.addEventListener("click", printGeneratedMenu);
+  pdfBtn.addEventListener("click", generatePdf);
 
   addDay("Friday");
 })();
