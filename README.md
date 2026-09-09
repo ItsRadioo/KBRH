@@ -254,3 +254,10 @@ Waitlist ordering update: applicants with no call-in history are ordered automat
 
 ## v5.5.13
 Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use the inventory Sign Out action to select resident and reason. Tool name and ID are carried automatically into the sign-out record.
+
+
+## v5.5.16 – Weekend Menu Builder Print Fix
+- Restored the hidden Weekend Menu Builder page.
+- Add/remove days with Lunch, Supper, optional Dessert, and Chore fields.
+- Generate Table creates a clean printable table.
+- Print Table / Save PDF hides the editor, navigation, and webpage controls so only the generated table prints.

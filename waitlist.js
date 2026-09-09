@@ -156,18 +156,22 @@ function getActiveWaitlist() {
   if (!active.length) return [];
 
   /*
-   * Ordering rules:
-   *  - Applicants with NO call-in history are ordered by Application Date,
-   *    oldest first. Their add/import order is only used as a tie-breaker.
-   *  - Once an applicant has any call-in record, their saved
-   *    waitlistPosition becomes authoritative and is no longer recalculated
-   *    from Application Date.
+   * Waitlist ordering model:
    *
-   * Called applicants therefore occupy their saved positions, while never-
-   * called applicants fill the remaining positions in application-date order.
+   *  1. Applicants WITH call-in history keep the order established by their
+   *     saved waitlistPosition / call-in workflow.
+   *  2. Applicants with NO call-in history are one contiguous block placed
+   *     immediately BEFORE the No Call section.
+   *  3. That new-applicant block is sorted by Application Date, oldest first.
+   *     Original array order is only a tie-breaker for identical/missing dates.
+   *  4. No Call applicants remain below the new-applicant block.
+   *
+   * This prevents newly entered applicants from being scattered through the
+   * numbered list simply because nextWaitlistPosition() gave them a temporary
+   * numeric position when they were created.
    */
   const indexed = active.map((item, index) => ({ item, index }));
-  const called = indexed.filter(entry => hasCallInRecord(entry.item));
+
   const uncalled = indexed
     .filter(entry => !hasCallInRecord(entry.item))
     .sort((a, b) => {
@@ -176,10 +180,8 @@ function getActiveWaitlist() {
       return a.index - b.index;
     });
 
-  const slots = new Array(active.length).fill(null);
-  const overflowCalled = [];
-
-  called
+  const called = indexed
+    .filter(entry => hasCallInRecord(entry.item))
     .sort((a, b) => {
       const ap = Number(a.item.waitlistPosition);
       const bp = Number(b.item.waitlistPosition);
@@ -188,26 +190,21 @@ function getActiveWaitlist() {
       if (aValid && bValid && ap !== bp) return ap - bp;
       if (aValid !== bValid) return aValid ? -1 : 1;
       return a.index - b.index;
-    })
-    .forEach(entry => {
-      const position = Number(entry.item.waitlistPosition);
-      const target = Number.isFinite(position) && position > 0
-        ? Math.min(active.length - 1, Math.max(0, Math.round(position) - 1))
-        : -1;
-
-      if (target >= 0 && slots[target] === null) {
-        slots[target] = entry.item;
-      } else {
-        overflowCalled.push(entry.item);
-      }
     });
 
-  const fillQueue = [...uncalled.map(entry => entry.item), ...overflowCalled];
-  for (let i = 0; i < slots.length; i += 1) {
-    if (slots[i] === null) slots[i] = fillQueue.shift() || null;
-  }
+  const calledAboveNoCall = [];
+  const noCall = [];
 
-  return slots.filter(Boolean);
+  called.forEach(entry => {
+    if (getCallPriority(entry.item) === "nocall") noCall.push(entry.item);
+    else calledAboveNoCall.push(entry.item);
+  });
+
+  return [
+    ...calledAboveNoCall,
+    ...uncalled.map(entry => entry.item),
+    ...noCall
+  ];
 }
 
 function getArchivedWaitlist() {
@@ -303,22 +300,31 @@ function enforceCallPriorityOrder() {
 
   const calledIn = [];
   const late = [];
+  const uncalled = [];
   const noCall = [];
 
   active.forEach(item => {
+    if (!hasCallInRecord(item)) {
+      uncalled.push(item);
+      return;
+    }
+
     const priority = getCallPriority(item);
     item.callPriority = priority;
 
-    if (priority === "late") {
-      late.push(item);
-    } else if (priority === "nocall") {
-      noCall.push(item);
-    } else {
-      calledIn.push(item);
-    }
+    if (priority === "late") late.push(item);
+    else if (priority === "nocall") noCall.push(item);
+    else calledIn.push(item);
   });
 
-  const ordered = [...calledIn, ...late, ...noCall];
+  uncalled.sort((a, b) => {
+    const dateDiff = applicationDateSortValue(a) - applicationDateSortValue(b);
+    if (dateDiff !== 0) return dateDiff;
+    return active.indexOf(a) - active.indexOf(b);
+  });
+
+  // Never-called applicants deliberately sit immediately above No Call.
+  const ordered = [...calledIn, ...late, ...uncalled, ...noCall];
   const after = ordered.map(item => item.id).join("|");
   rebuildWaitlist(ordered, archived);
 
