@@ -159,6 +159,37 @@
 </div>
 </section>
 </main>
+
+<div class="modal-backdrop hidden" id="dischargeModal">
+<div aria-labelledby="dischargeModalTitle" aria-modal="true" class="modal-card" role="dialog" style="max-width:620px">
+<div class="modal-title-row">
+<div><h2 id="dischargeModalTitle">Archive / Discharge Resident</h2><p class="hint" id="dischargeResidentName"></p></div>
+<button aria-label="Close" class="secondary modal-close-button" id="closeDischargeModalBtn" type="button">×</button>
+</div>
+<div class="field-group">
+<label for="dischargeOutcome">Discharge Reason</label>
+<select id="dischargeOutcome">
+<option value="">Select a reason…</option>
+<option value="completed">Program Completed</option>
+<option value="involuntary">Involuntary Discharge / Removed</option>
+<option value="voluntary-goals">Voluntary Departure — Felt They Got Enough From Program</option>
+<option value="voluntary-other">Voluntary Withdrawal / Left Early</option>
+<option value="medical">Medical / Health</option>
+<option value="transfer">Transfer to Another Service</option>
+<option value="legal">Incarcerated / Legal</option>
+<option value="other">Other</option>
+</select>
+</div>
+<div class="field-group">
+<label for="dischargeNotes">Notes <span class="hint">(optional)</span></label>
+<textarea id="dischargeNotes" rows="4" placeholder="Optional details about the discharge"></textarea>
+</div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelDischargeModalBtn" type="button">Cancel</button>
+<button class="danger" id="confirmDischargeBtn" type="button">Archive / Discharge</button>
+</div>
+</div>
+</div>
 <div class="modal-backdrop hidden" id="notesModal">
 <div class="modal-card">
 <h2 id="notesModalTitle">Notes</h2>

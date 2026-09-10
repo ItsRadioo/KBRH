@@ -231,6 +231,9 @@ function normalizeAppState(state) {
         archived: client.archived || false,
         archivedAt: client.archivedAt || "",
         archiveReason: client.archiveReason || "",
+        dischargeOutcomeCode: client.dischargeOutcomeCode || "",
+        dischargeOutcomeLabel: client.dischargeOutcomeLabel || "",
+        dischargeNotes: client.dischargeNotes || "",
         archivedBy: client.archivedBy || "",
         archivedByUid: client.archivedByUid || "",
         archivedByEmail: client.archivedByEmail || "",
@@ -255,7 +258,15 @@ function normalizeAppState(state) {
         incident: warning.incident || "",
         staffAction: warning.staffAction || "",
         residentResponse: warning.residentResponse || "",
-        staffUser: warning.staffUser || "",
+        issuer: warning.issuer || warning.staffUser || "",
+        staffUser: warning.staffUser || warning.issuer || "",
+        enteredBy: warning.enteredBy || "",
+        enteredByUid: warning.enteredByUid || "",
+        enteredByEmail: warning.enteredByEmail || "",
+        updatedBy: warning.updatedBy || "",
+        updatedByUid: warning.updatedByUid || "",
+        updatedByEmail: warning.updatedByEmail || "",
+        updatedAt: warning.updatedAt || "",
         createdAt: warning.createdAt || new Date().toISOString()
       }))
     : [];
@@ -501,7 +512,7 @@ function stampNewNoteAuthors(before,state,identity){
     }
   }
   const simple=[
-    ["counselingNotes","author"],["writeUps","issuedBy"],["choreChecks","checkedBy"],["verbalWarnings","staffUser"],["incidentReports","staffName"]
+    ["counselingNotes","author"],["writeUps","issuedBy"],["choreChecks","checkedBy"],["incidentReports","staffName"]
   ];
   for(const [key,field] of simple){const old=kbrhMapById(before?.[key]);for(const rec of (state?.[key]||[])){if(!old.has(rec.id))rec[field]=identity.name;}}
   const psOld=kbrhMapById(before?.preScreenings);for(const rec of (state?.preScreenings||[])){if(!psOld.has(rec.id)||rec.status!==psOld.get(rec.id)?.status){rec.staffUser=identity.name;rec.staffEmail=identity.email;rec.staffUid=identity.uid;}}

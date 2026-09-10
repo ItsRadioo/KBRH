@@ -272,3 +272,19 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 - **Download PDF** creates a letter-size portrait PDF from the entered menu/chore data without opening a print window or popup.
 - PDF preserves day headings, Meals/Chore columns, Lunch/Supper, and Sunday Dessert.
 - Long content and additional days automatically continue onto another PDF page when required.
+
+
+## v5.5.20 – Verbal Warning Issuer Tracking
+- Verbal warnings now include a Warning Issued By field that defaults to the currently signed-in staff member.
+- The issuer can be overridden when a staff member enters a warning on another staff member's behalf.
+- When the signed-in user differs from the issuer, the system records and displays the signed-in user as Entered By.
+- When issuer and signed-in user match, only the issuer is shown.
+- Existing warning records remain compatible and use the previous staff attribution as the issuer.
+
+
+## v5.5.21
+- Added standardized discharge/outcome modal on roster archive/discharge.
+- Added outcome tracking fields for consistent reporting.
+- Added Outcome Reports page with intakes, completions, involuntary removals, success rate, monthly summary, and CSV export.
+- Residents moved back to the waitlist are excluded from intake reporting.
+- Success rate = Program Completed / (Program Completed + Involuntary Discharge / Removed). Other departures do not affect success rate.

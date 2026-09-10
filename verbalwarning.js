@@ -70,7 +70,7 @@ function toggleOtherResidentField() {
 }
 
 function clearWarningForm() {
-  ['warningDate','warningIncident','warningStaffAction','warningResidentResponse','otherResidentName'].forEach(id => { if ($(id)) $(id).value=''; });
+  ['warningDate','warningIncident','warningStaffAction','warningResidentResponse','warningIssuer','otherResidentName'].forEach(id => { if ($(id)) $(id).value=''; });
   if ($('warningResident')) $('warningResident').value='';
   setDefaultTime();
   toggleOtherResidentField();
@@ -81,6 +81,7 @@ function openWarningModal(warningId = null) {
   populateResidentDropdown();
   clearWarningForm();
   $('warningDate').value = new Date().toISOString().slice(0,10);
+  if ($('warningIssuer')) $('warningIssuer').value = typeof currentStaffName === 'function' ? currentStaffName() : (auth.currentUser?.displayName || auth.currentUser?.email || '');
 
   if (warningId) {
     const warning = (warningState.verbalWarnings || []).find(item => item.id === warningId);
@@ -93,6 +94,7 @@ function openWarningModal(warningId = null) {
     $('warningResident').value = knownResident ? warning.residentId : 'OTHER';
     toggleOtherResidentField();
     if ($('warningResident').value === 'OTHER') $('otherResidentName').value = warning.residentName || '';
+    $('warningIssuer').value = warning.issuer || warning.staffUser || '';
     $('warningIncident').value = warning.incident || '';
     $('warningStaffAction').value = warning.staffAction || '';
     $('warningResidentResponse').value = warning.residentResponse || '';
@@ -121,22 +123,46 @@ function getSelectedResident() {
 
 async function saveWarningFromModal() {
   const selected = getSelectedResident();
+  const identity = typeof getCurrentStaffIdentity === 'function'
+    ? await getCurrentStaffIdentity()
+    : {uid:auth.currentUser?.uid || '', email:auth.currentUser?.email || '', name:typeof currentStaffName==='function'?currentStaffName():(auth.currentUser?.displayName || auth.currentUser?.email || 'Unknown Staff')};
+  const issuer = getInputValue('warningIssuer');
+  const normalizedIssuer = issuer.trim().toLocaleLowerCase();
+  const normalizedWriter = String(identity.name || '').trim().toLocaleLowerCase();
+  const enteredOnBehalf = Boolean(normalizedIssuer && normalizedWriter && normalizedIssuer !== normalizedWriter);
   const record = {
     date: getInputValue('warningDate'), time: getWarningTime(), residentId: selected.residentId,
-    residentName: selected.residentName, incident: getInputValue('warningIncident'),
-    staffAction: getInputValue('warningStaffAction'), residentResponse: getInputValue('warningResidentResponse')
+    residentName: selected.residentName, issuer,
+    incident: getInputValue('warningIncident'), staffAction: getInputValue('warningStaffAction'),
+    residentResponse: getInputValue('warningResidentResponse')
   };
-  if (!record.date || !record.residentName || !record.incident) {
-    alert('Date, resident name, and incident are required.');
+  if (!record.date || !record.residentName || !record.issuer || !record.incident) {
+    alert('Date, resident name, warning issuer, and incident are required.');
     return;
   }
   warningState.verbalWarnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings : [];
   if (editingWarningId) {
     const existing = warningState.verbalWarnings.find(item => item.id === editingWarningId);
     if (!existing) return;
-    Object.assign(existing, record, {updatedAt:new Date().toISOString()});
+    Object.assign(existing, record, {
+      enteredBy: enteredOnBehalf ? identity.name : '',
+      enteredByUid: enteredOnBehalf ? identity.uid : '',
+      enteredByEmail: enteredOnBehalf ? identity.email : '',
+      updatedBy: identity.name,
+      updatedByUid: identity.uid,
+      updatedByEmail: identity.email,
+      updatedAt:new Date().toISOString()
+    });
   } else {
-    warningState.verbalWarnings.unshift({...record,id:crypto.randomUUID(),staffUser:typeof currentStaffName==='function'?currentStaffName():(auth.currentUser?.email || ''),createdAt:new Date().toISOString()});
+    warningState.verbalWarnings.unshift({
+      ...record,
+      id:crypto.randomUUID(),
+      staffUser:issuer,
+      enteredBy: enteredOnBehalf ? identity.name : '',
+      enteredByUid: enteredOnBehalf ? identity.uid : '',
+      enteredByEmail: enteredOnBehalf ? identity.email : '',
+      createdAt:new Date().toISOString()
+    });
   }
   renderWarnings();
   await saveWarnings();
@@ -155,7 +181,11 @@ function deleteWarning(id) {
 function renderWarnings() {
   const body = $('warningBody'); if (!body) return;
   const warnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings : [];
-  body.innerHTML = warnings.length ? warnings.map(w => `<tr><td>${escapeHtml(w.date)}</td><td>${escapeHtml(w.time)}</td><td>${escapeHtml(w.residentName)}</td><td>${escapeHtml(w.incident)}</td><td>${escapeHtml(w.staffAction)}</td><td>${escapeHtml(w.residentResponse)}</td><td><div class="actions"><button type="button" class="secondary" onclick="startEditWarning('${w.id}')">Edit</button><button type="button" class="danger" onclick="deleteWarning('${w.id}')">Delete</button></div></td></tr>`).join('') : '<tr><td colspan="7" class="empty">No verbal warnings logged.</td></tr>';
+  body.innerHTML = warnings.length ? warnings.map(w => {
+    const issuer = w.issuer || w.staffUser || '';
+    const enteredBy = w.enteredBy && String(w.enteredBy).trim().toLocaleLowerCase() !== String(issuer).trim().toLocaleLowerCase() ? w.enteredBy : '';
+    return `<tr><td>${escapeHtml(w.date)}</td><td>${escapeHtml(w.time)}</td><td>${escapeHtml(w.residentName)}</td><td>${escapeHtml(issuer)}</td><td>${enteredBy ? escapeHtml(enteredBy) : ''}</td><td>${escapeHtml(w.incident)}</td><td>${escapeHtml(w.staffAction)}</td><td>${escapeHtml(w.residentResponse)}</td><td><div class="actions"><button type="button" class="secondary" onclick="startEditWarning('${w.id}')">Edit</button><button type="button" class="danger" onclick="deleteWarning('${w.id}')">Delete</button></div></td></tr>`;
+  }).join('') : '<tr><td colspan="9" class="empty">No verbal warnings logged.</td></tr>';
 }
 
 document.addEventListener('DOMContentLoaded', () => {

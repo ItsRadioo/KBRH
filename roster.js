@@ -3,6 +3,7 @@ let editingClientId = null;
 let notesClientId = null;
 let editingAll = false;
 let rosterSearchTerm = "";
+let pendingDischargeClientId = null;
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -591,18 +592,39 @@ function moveToPhase(clientId, phase) {
 }
 
 async function archiveClient(clientId) {
-  const localClient = rosterState.roster.find(item => item.id === clientId);
-  if (!localClient) return;
+  const client = rosterState.roster.find(item => item.id === clientId);
+  if (!client) return;
 
-  const reason = prompt("Archive / discharge reason:", "Discharged");
-  if (reason === null) return;
-  if (!confirm(`Archive ${localClient.firstName} ${localClient.lastName}?\n\nThis removes the resident from the active roster and keeps the record in Archived Residents.`)) return;
+  pendingDischargeClientId = clientId;
+  const name = `${client.firstName || ""} ${client.lastName || ""}`.trim();
+  document.getElementById("dischargeResidentName").textContent = name;
+  document.getElementById("dischargeOutcome").value = "";
+  document.getElementById("dischargeNotes").value = "";
+  document.getElementById("dischargeModal").classList.remove("hidden");
+  document.body.classList.add("kbrh-modal-open");
+}
+
+function closeDischargeModal() {
+  pendingDischargeClientId = null;
+  document.getElementById("dischargeModal")?.classList.add("hidden");
+  document.body.classList.remove("kbrh-modal-open");
+}
+
+async function confirmDischarge() {
+  const clientId = pendingDischargeClientId;
+  const localClient = rosterState.roster.find(item => item.id === clientId);
+  if (!localClient) return closeDischargeModal();
+
+  const select = document.getElementById("dischargeOutcome");
+  const outcomeCode = select.value;
+  const outcomeLabel = select.options[select.selectedIndex]?.textContent?.trim() || "";
+  const dischargeNotes = document.getElementById("dischargeNotes").value.trim();
+  if (!outcomeCode) { alert("Select a discharge reason."); return; }
+
+  if (!confirm(`Archive ${localClient.firstName} ${localClient.lastName}?\n\nReason: ${outcomeLabel}\n\nThis removes the resident from the active roster and keeps the record in Archived Residents.`)) return;
 
   const user = auth.currentUser;
-  if (!user) {
-    alert("Your login session has expired. Please sign in again before archiving a resident.");
-    return;
-  }
+  if (!user) { alert("Your login session has expired. Please sign in again before archiving a resident."); return; }
 
   let identity = { uid:user.uid||"", email:user.email||"", name:user.email||"Staff User" };
   if (typeof getCurrentStaffIdentity === "function") {
@@ -611,12 +633,10 @@ async function archiveClient(clientId) {
   }
 
   const archivedAt = new Date().toISOString();
-  const archiveReason = reason.trim();
+  const archiveReason = outcomeLabel;
   const appRef = APP_DOC_REF();
 
   try {
-    // Always start from the newest server copy.  Do not archive from rosterState,
-    // because another page/user may have changed the shared roster since it loaded.
     const latestSnap = await appRef.get({ source:"server" });
     if (!latestSnap.exists) throw new Error("Shared KBRH application record was not found.");
 
@@ -629,41 +649,33 @@ async function archiveClient(clientId) {
     resident.archived = true;
     resident.archivedAt = archivedAt;
     resident.archiveReason = archiveReason;
+    resident.dischargeOutcomeCode = outcomeCode;
+    resident.dischargeOutcomeLabel = outcomeLabel;
+    resident.dischargeNotes = dischargeNotes;
     resident.archivedBy = identity.name || identity.email || "Staff User";
     resident.archivedByUid = identity.uid || "";
     resident.archivedByEmail = identity.email || "";
-    appendPersonActivity(resident,"Archive","Resident archived / discharged",archiveReason,identity,archivedAt);
+    appendPersonActivity(resident,"Archive","Resident archived / discharged",[archiveReason, dischargeNotes].filter(Boolean).join(" — "),identity,archivedAt);
     resident.notes = Array.isArray(resident.notes) ? [...resident.notes] : [];
     resident.notes.unshift({
-      id: crypto.randomUUID(),
-      author: resident.archivedBy,
-      authorUid: resident.archivedByUid,
-      authorEmail: resident.archivedByEmail,
-      text: `Archived from roster on ${new Date(archivedAt).toLocaleDateString("en-CA")}. Reason: ${archiveReason || "Not specified"}.`,
-      createdAt: archivedAt
+      id: crypto.randomUUID(), author: resident.archivedBy, authorUid: resident.archivedByUid, authorEmail: resident.archivedByEmail,
+      text: `Archived from roster on ${new Date(archivedAt).toLocaleDateString("en-CA")}. Reason: ${archiveReason}.${dischargeNotes ? ` Notes: ${dischargeNotes}` : ""}`, createdAt: archivedAt
     });
     roster[index] = resident;
 
-    // Normalize/sanitize the exact array being written. This avoids Firestore
-    // rejecting a write because a legacy resident contains an undefined value.
     const cleanRoster = normalizeAppState({ roster }).roster;
     await appRef.update({ roster: cleanRoster, updatedAt: archivedAt });
 
-    // Confirm against the server before changing what staff see on screen.
     const verifySnap = await appRef.get({ source:"server" });
     if (!verifySnap.exists) throw new Error("Archive save could not be verified.");
     const verified = normalizeAppState(verifySnap.data());
     const verifiedClient = verified.roster.find(item => item.id === clientId);
-    if (!verifiedClient || verifiedClient.archived !== true) {
-      throw new Error("Firestore returned the resident as active after the archive save.");
-    }
+    if (!verifiedClient || verifiedClient.archived !== true) throw new Error("Firestore returned the resident as active after the archive save.");
 
-    rosterState = verified;
-    KBRH_LAST_STATE = normalizeAppState(verified);
-    renderRoster();
-
+    rosterState = verified; KBRH_LAST_STATE = normalizeAppState(verified);
+    closeDischargeModal(); renderRoster();
     if (typeof writeAuditEntry === "function") {
-      writeAuditEntry([`Archived resident: ${verifiedClient.firstName || ""} ${verifiedClient.lastName || ""}`.trim()], identity)
+      writeAuditEntry([`Archived resident: ${verifiedClient.firstName || ""} ${verifiedClient.lastName || ""} — ${archiveReason}`.trim()], identity)
         .catch(error => console.warn("Archive audit entry failed, but the resident archive was saved.", error));
     }
   } catch (error) {
@@ -671,10 +683,7 @@ async function archiveClient(clientId) {
     const code = error?.code ? ` [${error.code}]` : "";
     const message = error?.message ? `\n\n${error.message}` : "";
     alert(`Could not archive resident${code}. The resident was NOT removed from the active roster.${message}`);
-    try {
-      const latest = await appRef.get({ source:"server" });
-      if (latest.exists) rosterState = normalizeAppState(latest.data());
-    } catch (_) {}
+    try { const latest = await appRef.get({ source:"server" }); if (latest.exists) rosterState = normalizeAppState(latest.data()); } catch (_) {}
     renderRoster();
   }
 }
@@ -689,6 +698,9 @@ function restoreClient(clientId) {
   appendPersonActivity(client,"Restore","Resident restored to active roster","");
   client.archivedAt = "";
   client.archiveReason = "";
+  client.dischargeOutcomeCode = "";
+  client.dischargeOutcomeLabel = "";
+  client.dischargeNotes = "";
 
   client.notes = Array.isArray(client.notes) ? client.notes : [];
   client.notes.unshift({
@@ -1311,4 +1323,12 @@ document.addEventListener("DOMContentLoaded", () => {
       closeEditResidentModal();
     }
   });
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("closeDischargeModalBtn")?.addEventListener("click", closeDischargeModal);
+  document.getElementById("cancelDischargeModalBtn")?.addEventListener("click", closeDischargeModal);
+  document.getElementById("confirmDischargeBtn")?.addEventListener("click", confirmDischarge);
+  document.getElementById("dischargeModal")?.addEventListener("mousedown", e => { if (e.target.id === "dischargeModal") closeDischargeModal(); });
 });
