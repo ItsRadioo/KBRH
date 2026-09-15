@@ -1064,7 +1064,7 @@ function applicantDisplayStatus(item) {
   const prescreen = Array.isArray(waitlistState.preScreenings)
     ? waitlistState.preScreenings.find(record => record.applicantId === item.id)
     : null;
-  if (item.status === "Offer Given" && prescreen?.status === "Completed") return "Offer Given · Pre-Screened ✓";
+  if (item.status === "Offer Given" && prescreen?.status === "Completed") return "Pre-Screened ✓";
   return item.status || "N/A";
 }
 
@@ -1198,7 +1198,7 @@ function renderActiveWaitlist() {
               <td><input id="editDateApplied-${item.id}" type="date" value="${escapeAttribute(item.dateApplied)}" /></td>
               <td><span class="empty">Save or cancel edit first</span></td>
               <td>${escapeHtml(lastCall)}</td>
-              <td><a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a></td>
+              <td><a href="#" onclick="openNotes('${item.id}'); return false;">View (${noteCount})</a></td>
               <td>
                 <button type="button" class="success" onclick="saveInlineEdit('${item.id}')">Save</button>
                 <button type="button" class="secondary" onclick="cancelInlineEdit()">Cancel</button>
@@ -1223,7 +1223,7 @@ function renderActiveWaitlist() {
             </td>
             <td class="last-call-cell">${escapeHtml(lastCall)}</td>
             <td>
-              <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
+              <a href="#" onclick="openNotes('${item.id}'); return false;">View (${noteCount})</a>
             </td>
             <td>
               ${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button>
@@ -1258,7 +1258,7 @@ function renderArchivedWaitlist() {
             <td>${escapeHtml(formatDateTime(item.archivedAt))}</td>
             <td>${escapeHtml(item.archiveReason)}</td>
             <td>
-              <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
+              <a href="#" onclick="openNotes('${item.id}'); return false;">View (${noteCount})</a>
             </td>
             <td>
               <select onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">

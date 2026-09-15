@@ -299,3 +299,6 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 - Added persistent Collapse/Expand controls to large tables.
 - Refined pre-screening presentation without changing its questions or branching flow.
 - Added Pending Admissions dashboard visibility and professional UI polish.
+
+
+v5.5.23: Tightened waitlist desktop columns without wrapping; Notes links now show View (count); completed pre-screens display Pre-Screened instead of Offer Given + Pre-Screened.
