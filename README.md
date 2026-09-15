@@ -302,3 +302,7 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 
 
 v5.5.24: Tightened waitlist desktop columns without wrapping; Notes links now show View (count); completed pre-screens display Pre-Screened instead of Offer Given + Pre-Screened.
+
+
+## v5.5.25
+Adaptive content-width tables enforced globally; kbrh-v5.css references cache-busted so deployed browsers load the new rules immediately.

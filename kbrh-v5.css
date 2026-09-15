@@ -1206,7 +1206,9 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
 .kbrh-collapse-bar{display:flex;justify-content:flex-end;margin:0 0 10px}.kbrh-collapse-btn{font-size:.82rem;padding:7px 11px;background:#f5f8fb;color:#34495e;border:1px solid #d7e1ea}.kbrh-table-collapsed{display:none!important}
 .page-prescreening .prescreen-modal{width:min(980px,calc(100vw - 32px));border-radius:18px;overflow:hidden}.page-prescreening .prescreen-modal-header{padding-bottom:14px;border-bottom:1px solid #e5ebf0}.page-prescreening .prescreen-progress{background:#f6f9fb;border-radius:10px;padding:10px 14px;margin:12px 0}.page-prescreening .prescreen-form{padding:4px 2px 16px}.page-prescreening .prescreen-step{border:0!important;box-shadow:none!important;padding:4px 2px!important}.page-prescreening .prescreen-choice{border-radius:11px!important;border:1px solid #d7e1ea!important;background:#fff!important;padding:13px 14px!important}.page-prescreening .prescreen-choice.selected{border-color:#6e879d!important;box-shadow:0 0 0 2px rgba(75,104,130,.10)}.page-prescreening .prescreen-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e3eaf0;padding-top:14px;z-index:3}.page-prescreening textarea{min-height:88px}
 .pending-status{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef4f8;color:#38546b;font-size:.82rem;font-weight:800}.pending-overdue{background:#fff0f0;color:#9b2f2f}.pending-today{background:#fff8e3;color:#765d10}
-\n\n/* v5.5.23: tighter waitlist desktop columns without wrapping */\n@media (min-width: 1100px) {\n  body.page-waitlist .waitlist-table-full,\n  body.page-waitlist .archived-waitlist-table-full {\n    width: max-content !important;\n    min-width: 100% !important;\n    table-layout: auto !important;\n  }\n  body.page-waitlist .waitlist-table-full th,\n  body.page-waitlist .waitlist-table-full td,\n  body.page-waitlist .archived-waitlist-table-full th,\n  body.page-waitlist .archived-waitlist-table-full td {\n    white-space: nowrap !important;\n    width: 1% !important;\n    padding-left: 8px !important;\n    padding-right: 8px !important;\n  }\n  body.page-waitlist .waitlist-table-full th:nth-child(5),\n  body.page-waitlist .waitlist-table-full td:nth-child(5) { min-width: 112px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(6),\n  body.page-waitlist .waitlist-table-full td:nth-child(6) { min-width: 120px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(9),\n  body.page-waitlist .waitlist-table-full td:nth-child(9) { min-width: 205px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(11),\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    min-width: 210px !important;\n    width: 210px !important;\n    max-width: none !important;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) button {\n    width: auto !important;\n    min-width: max-content !important;\n    white-space: nowrap !important;\n  }\n}\n
+
+
+/* v5.5.23: tighter waitlist desktop columns without wrapping */\n@media (min-width: 1100px) {\n  body.page-waitlist .waitlist-table-full,\n  body.page-waitlist .archived-waitlist-table-full {\n    width: max-content !important;\n    min-width: 100% !important;\n    table-layout: auto !important;\n  }\n  body.page-waitlist .waitlist-table-full th,\n  body.page-waitlist .waitlist-table-full td,\n  body.page-waitlist .archived-waitlist-table-full th,\n  body.page-waitlist .archived-waitlist-table-full td {\n    white-space: nowrap !important;\n    width: 1% !important;\n    padding-left: 8px !important;\n    padding-right: 8px !important;\n  }\n  body.page-waitlist .waitlist-table-full th:nth-child(5),\n  body.page-waitlist .waitlist-table-full td:nth-child(5) { min-width: 112px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(6),\n  body.page-waitlist .waitlist-table-full td:nth-child(6) { min-width: 120px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(9),\n  body.page-waitlist .waitlist-table-full td:nth-child(9) { min-width: 205px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(11),\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    min-width: 210px !important;\n    width: 210px !important;\n    max-width: none !important;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) button {\n    width: auto !important;\n    min-width: max-content !important;\n    white-space: nowrap !important;\n  }\n}\n
 /* v5.5.24 — universal content-driven table sizing
    Data tables now size columns from their real content instead of stretching
    every column to fill the card. Wide tables remain horizontally scrollable. */
@@ -1280,5 +1282,53 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
     table-layout: auto !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+}
+
+
+/* v5.5.25 — definitive adaptive table sizing + cache-busted stylesheet.
+   This block intentionally comes last so legacy desktop/sidebar rules cannot
+   stretch data columns back across the viewport. */
+@media screen {
+  .table-wrap { width:100% !important; max-width:100% !important; overflow-x:auto !important; }
+
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) {
+    width:max-content !important;
+    min-width:0 !important;
+    max-width:none !important;
+    table-layout:auto !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > thead > tr > th,
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > tbody > tr > td {
+    width:1% !important;
+    min-width:max-content !important;
+    max-width:none !important;
+    white-space:nowrap !important;
+    overflow-wrap:normal !important;
+    word-break:normal !important;
+  }
+
+  /* Waitlist: keep the descriptive Last Call-In field as the natural flexible
+     field while every identifier/action column hugs its actual content. */
+  body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(9),
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(9),
+  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(9),
+  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(9) {
+    width:auto !important;
+  }
+
+  /* Free text can wrap instead of dictating the width of the whole table. */
+  .table-wrap .notes-cell,
+  .table-wrap .note-cell,
+  .table-wrap td[data-column="notes"],
+  .table-wrap td[data-field="notes"] {
+    width:auto !important;
+    min-width:140px !important;
+    max-width:320px !important;
+    white-space:normal !important;
+    overflow-wrap:break-word !important;
   }
 }
