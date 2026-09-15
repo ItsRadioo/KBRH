@@ -966,6 +966,18 @@ function residentInfoItem(label, value, full = false) {
   `;
 }
 
+function incomeSourceLabel(value) {
+  return ({employment:"Employment",odsp:"ODSP",ow:"Ontario Works",ei:"Employment Insurance (EI)",cpp:"CPP / CPP-D",pension:"Pension / Retirement",none:"No Current Income",other:"Other"}[value] || value || "—");
+}
+
+function getResidentPrescreening(client) {
+  if (client?.preScreening) return client.preScreening;
+  const records = Array.isArray(rosterState?.preScreenings) ? rosterState.preScreenings : [];
+  return records.find(r => r?.id && r.id === client?.preScreeningRecordId)
+    || records.filter(r => r?.applicantId && r.applicantId === client?.waitlistSourceId).sort((a,b) => String(b.updatedAt||b.completedAt||"").localeCompare(String(a.updatedAt||a.completedAt||"")))[0]
+    || null;
+}
+
 function openResidentInfoModal(clientId) {
   const client = rosterState.roster.find(item => item && item.id === clientId);
   const modal = document.getElementById("residentInfoModal");
@@ -1005,6 +1017,20 @@ function openResidentInfoModal(clientId) {
   html += residentInfoItem("Admission Status", client.admissionCompleted ? "Complete" : "Incomplete");
   html += residentInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
   html += `</div></section>`;
+
+  const prescreen = getResidentPrescreening(client);
+  if (prescreen) {
+    const px = prescreen.answers || {};
+    html += `<section class="resident-info-section"><h3>Pre-Screening</h3><div class="resident-info-grid">`;
+    html += residentInfoItem("Completed", formatDate(prescreen.completedAt || prescreen.updatedAt));
+    html += residentInfoItem("Outcome", prescreen.workflowStatus || prescreen.outcome || "—");
+    html += residentInfoItem("Current Income Source", incomeSourceLabel(px.incomeSource || client.currentIncomeSource));
+    html += residentInfoItem("Employer / Source", px.incomeSourceName || client.currentIncomeSourceName || "—");
+    html += residentInfoItem("Approx. Monthly Income", (px.monthlyIncome || client.monthlyIncome) ? `$${px.monthlyIncome || client.monthlyIncome}` : "—");
+    html += residentInfoItem("Income Notes", px.incomeNotes || client.incomeNotes || "—", true);
+    html += residentInfoItem("Pre-Screening Notes", prescreen.overallNotes || "No overall pre-screening notes recorded.", true);
+    html += `</div></section>`;
+  }
   const activity=[...normalizeActivityHistory(client.activityHistory),...(Array.isArray(client.notes)?client.notes.map(note=>({id:`note-${note.id}`,summary:"Note",detail:note.text||"",staffName:note.author||"Unknown",createdAt:note.createdAt||""})):[])].filter(x=>x.createdAt).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   html += `<section class="resident-info-section"><h3>Activity History</h3><div class="person-activity-list">${activity.length?activity.map(entry=>`<article class="person-activity-item"><div><strong>${escapeHtml(entry.summary||entry.type||"Activity")}</strong><span>${escapeHtml(entry.detail||"")}</span></div><small>${escapeHtml(formatDateTime(entry.createdAt))} · ${escapeHtml(entry.staffName||"System")}</small></article>`).join(""):`<p class="empty">No activity recorded yet.</p>`}</div></section>`;
 

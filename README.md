@@ -1,3 +1,10 @@
+KBRH Professional v5.5.30
+
+- Added Current Income Source step to Pre-Screening.
+- Preserves the completed pre-screening record when an applicant moves to Roster.
+- Resident Display Info now shows historical pre-screening notes and income information.
+- Existing residents can resolve their historical pre-screening by linked waitlist/applicant ID when available.
+
 KBRH Professional v5.5.11
 
 Added Tool Sign-Out under Daily Operations. Tracks Resident Name, Reason, Time Out, Time In, Tool, and ID #; active tools can be marked returned; authenticated staff attribution is stored automatically; printable six-column history included.
