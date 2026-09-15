@@ -150,7 +150,7 @@ function applicationDateSortValue(item) {
 
 function getActiveWaitlist() {
   const active = Array.isArray(waitlistState.waitlist)
-    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived && item.admissionStage !== "Pending Admission")
     : [];
 
   if (!active.length) return [];
@@ -631,9 +631,25 @@ function savePositionChange() {
   saveWaitlist();
 }
 
+async function giveOfferQuick(applicantId){
+  const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
+  const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+  applicant.status="Offer Given"; applicant.offerGivenAt=new Date().toISOString(); applicant.offerGivenBy=identity.name||identity.email||"Staff User";
+  appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
+  await saveWaitlist(); renderWaitlist();
+}
+function startPrescreenQuick(applicantId){ location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+function nextActionHtml(item){
+  if(item.status==="Offer Given") return `<button type="button" class="primary-next-action" onclick="startPrescreenQuick('${item.id}')">Start Pre-Screening</button>`;
+  return `<button type="button" class="primary-next-action" onclick="giveOfferQuick('${item.id}')">Give Offer</button>`;
+}
+
 function handleApplicantAction(applicantId, action) {
   if (!action) return;
 
+  if (action === "giveOffer") giveOfferQuick(applicantId);
+  if (action === "startPrescreen") startPrescreenQuick(applicantId);
+  if (action === "recordCall") openCallInModal(applicantId);
   if (action === "viewRecord") openApplicantInfoModal(applicantId);
   if (action === "edit") startInlineEdit(applicantId);
   if (action === "changePosition") openPositionModal(applicantId);
@@ -964,7 +980,7 @@ function getLastCallText(item) {
 function renderCallInCounters() {
   const dayHint=document.getElementById("callInDayHint"); if(dayHint) dayHint.textContent=`Standard call-in day: ${operationalSettings?.callInDay||"Monday"}.`;
   const active = Array.isArray(waitlistState.waitlist)
-    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived)
+    ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived && item.admissionStage !== "Pending Admission")
     : [];
 
   let callIns = 0;
@@ -1063,7 +1079,7 @@ function activeCompactCell(item, index, key) {
     lastCallIn: `<td>${escapeHtml(getLastCallText(item))}</td>`,
     status: `<td>${escapeHtml(applicantDisplayStatus(item))}</td>`,
     info: `<td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>`,
-    actions: `<td><button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button></td>`
+    actions: `<td><div class="workflow-actions">${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button></div></td>`
   };
   return cells[key] || "";
 }
@@ -1210,7 +1226,7 @@ function renderActiveWaitlist() {
               <a href="#" onclick="openNotes('${item.id}'); return false;">Add/View Notes (${noteCount})</a>
             </td>
             <td>
-              <button type="button" class="actions-button" onclick="openApplicantActionsModal('${item.id}')">Actions</button>
+              ${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button>
             </td>
           </tr>
         `;

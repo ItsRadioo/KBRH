@@ -80,6 +80,7 @@ function defaultAppState() {
     choreChecks: [],
     choreCheckAssignments: { weekKey: "", refreshedAt: "", choreAssignments: {}, roomAssignments: {} },
     preScreenings: [],
+    pendingAdmissions: [],
     incidentReports: [],
     chartData: { laundry: {}, electronics: {}, meetings: {} },
     transferHistory: [],
@@ -349,6 +350,24 @@ function normalizeAppState(state) {
     if(!existing || itemTime>=existingTime) latestPreScreenByApplicant.set(key,item);
   }
   merged.preScreenings = Array.from(latestPreScreenByApplicant.values());
+
+  merged.pendingAdmissions = Array.isArray(merged.pendingAdmissions)
+    ? merged.pendingAdmissions.filter(Boolean).map(item => ({
+        id: item.id || crypto.randomUUID(),
+        applicantId: item.applicantId || "",
+        applicantName: item.applicantName || "",
+        status: item.status || "Pending Admission",
+        expectedIntakeDate: item.expectedIntakeDate || "",
+        expectedIntakeTime: item.expectedIntakeTime || "",
+        reason: item.reason || "Pre-screening completed",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+        createdBy: item.createdBy || "",
+        createdByUid: item.createdByUid || "",
+        createdByEmail: item.createdByEmail || "",
+        notes: item.notes || ""
+      }))
+    : [];
 
   merged.busPassRecords = Array.isArray(merged.busPassRecords)
     ? merged.busPassRecords.filter(Boolean).map(item => ({

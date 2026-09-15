@@ -1196,3 +1196,13 @@ body.kbrh-v5.v5-sidebar-collapsed .v5-sidebar-toggle:focus-visible {
     letter-spacing: .03em !important;
   }
 }
+
+/* v5.5.22 professional workflow polish */
+.card{border:1px solid #dbe4ec;border-radius:16px;box-shadow:0 8px 24px rgba(18,38,58,.06)}
+.card h2{letter-spacing:-.015em}.hint{color:#65778a}.button-row{gap:10px}
+button,.button-link{border-radius:9px;font-weight:700;transition:box-shadow .16s ease,background .16s ease,border-color .16s ease}
+button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px rgba(16,40,64,.12)}
+.workflow-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.primary-next-action{white-space:nowrap}.actions-button{white-space:nowrap}
+.kbrh-collapse-bar{display:flex;justify-content:flex-end;margin:0 0 10px}.kbrh-collapse-btn{font-size:.82rem;padding:7px 11px;background:#f5f8fb;color:#34495e;border:1px solid #d7e1ea}.kbrh-table-collapsed{display:none!important}
+.page-prescreening .prescreen-modal{width:min(980px,calc(100vw - 32px));border-radius:18px;overflow:hidden}.page-prescreening .prescreen-modal-header{padding-bottom:14px;border-bottom:1px solid #e5ebf0}.page-prescreening .prescreen-progress{background:#f6f9fb;border-radius:10px;padding:10px 14px;margin:12px 0}.page-prescreening .prescreen-form{padding:4px 2px 16px}.page-prescreening .prescreen-step{border:0!important;box-shadow:none!important;padding:4px 2px!important}.page-prescreening .prescreen-choice{border-radius:11px!important;border:1px solid #d7e1ea!important;background:#fff!important;padding:13px 14px!important}.page-prescreening .prescreen-choice.selected{border-color:#6e879d!important;box-shadow:0 0 0 2px rgba(75,104,130,.10)}.page-prescreening .prescreen-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e3eaf0;padding-top:14px;z-index:3}.page-prescreening textarea{min-height:88px}
+.pending-status{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef4f8;color:#38546b;font-size:.82rem;font-weight:800}.pending-overdue{background:#fff0f0;color:#9b2f2f}.pending-today{background:#fff8e3;color:#765d10}

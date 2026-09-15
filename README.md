@@ -288,3 +288,14 @@ Tool Sign-Out now includes persistent Tool Inventory. Add a tool once, then use 
 - Added Outcome Reports page with intakes, completions, involuntary removals, success rate, monthly summary, and CSV export.
 - Residents moved back to the waitlist are excluded from intake reporting.
 - Success rate = Program Completed / (Program Completed + Involuntary Discharge / Removed). Other departures do not affect success rate.
+
+
+## v5.5.22 — Admissions Workflow & Professional UI
+- Added Pending Admissions as a distinct pre-admission stage.
+- Successful/proceeding completed pre-screenings automatically enter Pending Admissions.
+- Pending applicants do not count as intakes until Admit to Program is confirmed.
+- Added streamlined waitlist Next Action controls with full manual actions retained under More.
+- Added one-click Give Offer and direct Start Pre-Screening shortcuts.
+- Added persistent Collapse/Expand controls to large tables.
+- Refined pre-screening presentation without changing its questions or branching flow.
+- Added Pending Admissions dashboard visibility and professional UI polish.

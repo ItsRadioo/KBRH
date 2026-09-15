@@ -178,12 +178,12 @@
 (() => {
   "use strict";
   const NAV_GROUPS = [
-    ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html","reports.html"]],
+    ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html","pending-admissions.html","reports.html"]],
     ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html","tool-signout.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
   ];
-  const labels={"index.html":"Dashboard","reports.html":"Reports"};
+  const labels={"index.html":"Dashboard","pending-admissions.html":"Pending Admissions","reports.html":"Reports"};
   function basename(h){try{return new URL(h,location.href).pathname.split('/').pop()||'index.html';}catch(_){return h;}}
   function groupNavigation(){
     const nav=document.querySelector('.app-nav'); if(!nav||nav.dataset.v55Grouped) return;
@@ -195,6 +195,7 @@
     const map=new Map(links.map(a=>[basename(a.getAttribute('href')||a.href),a]));
     if(!map.has('bus-pass.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='bus-pass.html';a.textContent='Bus Pass Tracker';map.set('bus-pass.html',a);}
     if(!map.has('tool-signout.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='tool-signout.html';a.textContent='Tool Sign-Out';map.set('tool-signout.html',a);}
+    if(!map.has('pending-admissions.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='pending-admissions.html';a.textContent='Pending Admissions';map.set('pending-admissions.html',a);}
     if(!map.has('reports.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='reports.html';a.textContent='Reports';map.set('reports.html',a);}
     nav.innerHTML='';
     NAV_GROUPS.forEach(([title,files],i)=>{
@@ -220,4 +221,9 @@
   function stickyHeaders(){document.querySelectorAll('.table-wrap table').forEach(t=>t.classList.add('v55-sticky-table'));}
   function init55(){if(document.body.classList.contains('page-login')||document.body.classList.contains('page-print')||document.body.classList.contains('page-meal-print'))return;document.body.classList.add('kbrh-v55');groupNavigation();addGlobalSearch();stickyHeaders();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init55);else init55();
+})();
+
+(function(){
+  function enhanceTables(){document.querySelectorAll('.table-wrap').forEach((wrap,i)=>{if(wrap.dataset.collapsibleReady)return; const table=wrap.querySelector('table'); if(!table)return; const rows=table.querySelectorAll('tbody tr').length; if(rows<4 && !wrap.closest('.wide'))return; wrap.dataset.collapsibleReady='1'; const page=(location.pathname.split('/').pop()||'index'); const key=`kbrh.table.${page}.${i}`; const bar=document.createElement('div');bar.className='kbrh-collapse-bar';const btn=document.createElement('button');btn.type='button';btn.className='kbrh-collapse-btn'; const apply=()=>{let c=false;try{c=localStorage.getItem(key)==='collapsed'}catch(_){} wrap.classList.toggle('kbrh-table-collapsed',c);btn.textContent=c?'Expand table':'Collapse table';btn.setAttribute('aria-expanded',String(!c));}; btn.onclick=()=>{const c=!wrap.classList.contains('kbrh-table-collapsed');try{localStorage.setItem(key,c?'collapsed':'expanded')}catch(_){}apply();}; bar.appendChild(btn);wrap.parentNode.insertBefore(bar,wrap);apply();});}
+  document.addEventListener('DOMContentLoaded',()=>{enhanceTables();setTimeout(enhanceTables,800);});
 })();

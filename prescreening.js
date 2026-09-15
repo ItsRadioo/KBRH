@@ -9,7 +9,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;"
 const attr = value => esc(value);
 
 function getApplicants(){
-  return (prescreenState?.waitlist || []).filter(a => !a.archived && a.status === "Offer Given");
+  return (prescreenState?.waitlist || []).filter(a => !a.archived && a.status === "Offer Given" && a.admissionStage !== "Pending Admission");
 }
 function getRecord(applicantId){
   const records=(prescreenState?.preScreenings || []).filter(r => r.applicantId === applicantId);
@@ -219,7 +219,7 @@ function updateFooter(){
   $("nextPrescreenBtn").classList.toggle("hidden",currentStep==="summary");
   $("completePrescreenBtn").classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status==="Completed");
   $("printPrescreenBtn")?.classList.toggle("hidden",currentStep!=="summary");
-  $("movePrescreenToRosterBtn")?.classList.toggle("hidden",currentStep!=="summary" || currentRecord?.status!=="Completed");
+  $("movePrescreenToRosterBtn")?.classList.add("hidden");
   $("saveDraftBtn").textContent=currentRecord?.status==="Completed"?"Save Changes":"Save Draft";
   $("nextPrescreenBtn").textContent=i===steps.length-2?"Review Summary":"Continue";
 }
@@ -322,9 +322,28 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
         applyCompletedOutcomeToApplicant(applicant,localRecord,result,identity,alreadyCompleted);
       }
 
+      if(localRecord.status==="Completed" && ["approved","scheduled-intake","detox"].includes(localRecord.outcome)){
+        latest.pendingAdmissions=Array.isArray(latest.pendingAdmissions)?latest.pendingAdmissions:[];
+        const x=localRecord.answers||{};
+        applicant.admissionStage="Pending Admission";
+        applicant.pendingAdmissionAt=applicant.pendingAdmissionAt||now;
+        const pendingIndex=latest.pendingAdmissions.findIndex(p=>p.applicantId===applicant.id && p.status!=="Admitted");
+        const pending={
+          id: pendingIndex>=0?latest.pendingAdmissions[pendingIndex].id:crypto.randomUUID(),
+          applicantId:applicant.id, applicantName:applicantName(applicant), status:"Pending Admission",
+          expectedIntakeDate:x.scheduledIntakeDate||latest.pendingAdmissions[pendingIndex]?.expectedIntakeDate||"",
+          expectedIntakeTime:x.scheduledIntakeTime||latest.pendingAdmissions[pendingIndex]?.expectedIntakeTime||"",
+          reason:localRecord.workflowStatus||"Pre-screening completed",
+          createdAt:pendingIndex>=0?(latest.pendingAdmissions[pendingIndex].createdAt||now):now, updatedAt:now,
+          createdBy:identity.name||staffDisplayName(), createdByUid:identity.uid||"", createdByEmail:identity.email||"",
+          notes:x.scheduledIntakeNotes||x.detoxNotes||""
+        };
+        if(pendingIndex>=0) latest.pendingAdmissions[pendingIndex]=pending; else latest.pendingAdmissions.unshift(pending);
+        appendPersonActivity(applicant,"Admissions","Moved to Pending Admission",pending.reason,identity);
+      }
       latest.updatedAt=now;
       const normalized=normalizeAppState(latest);
-      transaction.set(ref,{preScreenings:normalized.preScreenings,waitlist:normalized.waitlist,updatedAt:now},{merge:true});
+      transaction.set(ref,{preScreenings:normalized.preScreenings,waitlist:normalized.waitlist,pendingAdmissions:normalized.pendingAdmissions,updatedAt:now},{merge:true});
       savedState=normalized;
     });
 
@@ -401,7 +420,7 @@ async function completePrescreen(){
   currentRecord.workflowStatus=result.title;
   const ok=await persistCurrentPrescreen({complete:true,showAlert:false});
   if(ok){
-    alert(result.title);
+    alert(["approved","scheduled-intake","detox"].includes(result.code) ? `${result.title}\n\nApplicant moved automatically to Pending Admission.` : result.title);
     currentStep="summary";
     renderForm();
   }
@@ -485,3 +504,5 @@ auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{
   }
   renderList();
 });});
+
+window.addEventListener("load",()=>{ const id=new URLSearchParams(location.search).get("applicant"); if(id) setTimeout(()=>{ if(getApplicants().some(a=>a.id===id)) openPrescreen(id); },700); });
