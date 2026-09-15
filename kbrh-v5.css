@@ -1285,105 +1285,79 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
   }
 }
 
-
-/* v5.5.25 — definitive adaptive table sizing + cache-busted stylesheet.
-   This block intentionally comes last so legacy desktop/sidebar rules cannot
-   stretch data columns back across the viewport. */
+/* v5.5.27 — full-width, content-aware tables.
+   Tables fill the page. Natural content determines compact column widths;
+   page-specific descriptive columns absorb spare room. */
 @media screen {
-  .table-wrap { width:100% !important; max-width:100% !important; overflow-x:auto !important; }
+  .table-wrap {
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:auto !important;
+  }
 
   .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) {
-    width:max-content !important;
-    min-width:0 !important;
+    width:100% !important;
+    min-width:100% !important;
     max-width:none !important;
     table-layout:auto !important;
     margin-left:0 !important;
     margin-right:0 !important;
   }
 
+  /* Data columns stay content-aware instead of receiving equal fixed widths. */
   .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > thead > tr > th,
   .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > tbody > tr > td {
-    width:1% !important;
-    min-width:max-content !important;
+    width:auto !important;
+    min-width:0 !important;
     max-width:none !important;
+  }
+
+  /* WAITLIST — compact fields hug content; Last Call-In receives spare width. */
+  body.page-waitlist .waitlist-table-full > thead > tr > th:not(:nth-child(9)),
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:not(:nth-child(9)) {
+    width:1% !important;
     white-space:nowrap !important;
-    overflow-wrap:normal !important;
-    word-break:normal !important;
   }
 
-  /* Waitlist: keep the descriptive Last Call-In field as the natural flexible
-     field while every identifier/action column hugs its actual content. */
   body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(9),
-  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(9),
-  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(9),
-  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(9) {
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(9) {
     width:auto !important;
+    min-width:210px !important;
+    white-space:nowrap !important;
   }
 
-  /* Free text can wrap instead of dictating the width of the whole table. */
-  .table-wrap .notes-cell,
-  .table-wrap .note-cell,
-  .table-wrap td[data-column="notes"],
-  .table-wrap td[data-field="notes"] {
-    width:auto !important;
-    min-width:140px !important;
-    max-width:320px !important;
-    white-space:normal !important;
-    overflow-wrap:break-word !important;
-  }
-}
-
-/* v5.5.26 — full-width adaptive tables.
-   Tables fill the available content area when their natural content is narrower,
-   but retain intrinsic minimum widths and scroll only when genuinely necessary. */
-@media screen {
-  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) {
-    width:100% !important;
-    min-width:max-content !important;
-    max-width:none !important;
-    table-layout:auto !important;
-  }
-
-  /* Keep compact fields content-sized. The browser assigns remaining room to
-     unconstrained/flexible columns instead of leaving unused page space. */
-  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > thead > tr > th,
-  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > tbody > tr > td {
-    width:1% !important;
-  }
-
-  /* Waitlist: Last Call-In is the elastic column and Actions owns BOTH buttons. */
-  body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(9),
-  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(9),
-  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(9),
-  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(9) {
-    width:100% !important;
-    min-width:200px !important;
-  }
-
+  /* Both workflow controls live INSIDE one compact Actions column. */
   body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(11),
-  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(11),
-  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(11),
-  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(11) {
-    display:table-cell !important;
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(11) {
     width:1% !important;
-    min-width:365px !important;
-    max-width:none !important;
+    min-width:310px !important;
+    white-space:nowrap !important;
   }
 
-  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions,
-  body.page-waitlist .archived-waitlist-table-full td:nth-child(11) .workflow-actions {
-    display:flex !important;
+  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions {
+    display:grid !important;
+    grid-template-columns:minmax(170px, 1fr) minmax(120px, .65fr) !important;
     align-items:center !important;
-    flex-wrap:nowrap !important;
     gap:8px !important;
     width:100% !important;
   }
 
-  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions > button,
-  body.page-waitlist .archived-waitlist-table-full td:nth-child(11) .workflow-actions > button {
-    flex:1 1 0 !important;
-    width:auto !important;
+  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions > button {
+    width:100% !important;
     min-width:0 !important;
+    margin:0 !important;
     white-space:nowrap !important;
+  }
+
+  /* Archived table uses its Reason field as the descriptive/flexible column. */
+  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:not(:nth-child(9)),
+  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:not(:nth-child(9)) {
+    width:1% !important;
+    white-space:nowrap !important;
+  }
+  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(9),
+  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(9) {
+    width:auto !important;
+    min-width:180px !important;
   }
 }

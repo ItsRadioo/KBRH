@@ -1226,7 +1226,7 @@ function renderActiveWaitlist() {
               <a href="#" onclick="openNotes('${item.id}'); return false;">View (${noteCount})</a>
             </td>
             <td>
-              ${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button>
+              <div class="workflow-actions">${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button></div>
             </td>
           </tr>
         `;

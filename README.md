@@ -306,3 +306,7 @@ v5.5.24: Tightened waitlist desktop columns without wrapping; Notes links now sh
 
 ## v5.5.25
 Adaptive content-width tables enforced globally; kbrh-v5.css references cache-busted so deployed browsers load the new rules immediately.
+
+
+## v5.5.27
+Corrected full-width dynamic table sizing. Waitlist Last Call-In is elastic; both primary and More controls are contained side-by-side within the Actions column.
