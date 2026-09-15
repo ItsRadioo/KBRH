@@ -1207,3 +1207,78 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
 .page-prescreening .prescreen-modal{width:min(980px,calc(100vw - 32px));border-radius:18px;overflow:hidden}.page-prescreening .prescreen-modal-header{padding-bottom:14px;border-bottom:1px solid #e5ebf0}.page-prescreening .prescreen-progress{background:#f6f9fb;border-radius:10px;padding:10px 14px;margin:12px 0}.page-prescreening .prescreen-form{padding:4px 2px 16px}.page-prescreening .prescreen-step{border:0!important;box-shadow:none!important;padding:4px 2px!important}.page-prescreening .prescreen-choice{border-radius:11px!important;border:1px solid #d7e1ea!important;background:#fff!important;padding:13px 14px!important}.page-prescreening .prescreen-choice.selected{border-color:#6e879d!important;box-shadow:0 0 0 2px rgba(75,104,130,.10)}.page-prescreening .prescreen-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e3eaf0;padding-top:14px;z-index:3}.page-prescreening textarea{min-height:88px}
 .pending-status{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef4f8;color:#38546b;font-size:.82rem;font-weight:800}.pending-overdue{background:#fff0f0;color:#9b2f2f}.pending-today{background:#fff8e3;color:#765d10}
 \n\n/* v5.5.23: tighter waitlist desktop columns without wrapping */\n@media (min-width: 1100px) {\n  body.page-waitlist .waitlist-table-full,\n  body.page-waitlist .archived-waitlist-table-full {\n    width: max-content !important;\n    min-width: 100% !important;\n    table-layout: auto !important;\n  }\n  body.page-waitlist .waitlist-table-full th,\n  body.page-waitlist .waitlist-table-full td,\n  body.page-waitlist .archived-waitlist-table-full th,\n  body.page-waitlist .archived-waitlist-table-full td {\n    white-space: nowrap !important;\n    width: 1% !important;\n    padding-left: 8px !important;\n    padding-right: 8px !important;\n  }\n  body.page-waitlist .waitlist-table-full th:nth-child(5),\n  body.page-waitlist .waitlist-table-full td:nth-child(5) { min-width: 112px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(6),\n  body.page-waitlist .waitlist-table-full td:nth-child(6) { min-width: 120px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(9),\n  body.page-waitlist .waitlist-table-full td:nth-child(9) { min-width: 205px !important; }\n  body.page-waitlist .waitlist-table-full th:nth-child(11),\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    min-width: 210px !important;\n    width: 210px !important;\n    max-width: none !important;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n  body.page-waitlist .waitlist-table-full td:nth-child(11) button {\n    width: auto !important;\n    min-width: max-content !important;\n    white-space: nowrap !important;\n  }\n}\n
+/* v5.5.24 — universal content-driven table sizing
+   Data tables now size columns from their real content instead of stretching
+   every column to fill the card. Wide tables remain horizontally scrollable. */
+@media screen {
+  .table-wrap,
+  .chart-table-wrap {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+  }
+
+  /* All ordinary application tables are content-sized. Chart/schedule tables
+     that deliberately use fixed grids keep their specialised layouts below. */
+  table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table) {
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    table-layout: auto !important;
+  }
+
+  table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table) th,
+  table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table) td {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Keep short structured values compact instead of letting the viewport
+     distribute spare width between them. */
+  .table-wrap table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table) th,
+  .table-wrap table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table) td {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  /* Free-text fields are the exception: they may wrap rather than creating an
+     unnecessarily enormous table. */
+  .table-wrap .notes-cell,
+  .table-wrap .note-cell,
+  .table-wrap td[data-column="notes"],
+  .table-wrap td[data-field="notes"] {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    min-width: 140px !important;
+    max-width: 320px !important;
+  }
+
+  /* Buttons/selects should be only as wide as their labels/content. Inputs and
+     textareas still fill editable cells where that is useful. */
+  .table-wrap button,
+  .table-wrap .button-link,
+  .table-wrap select {
+    width: auto !important;
+    min-width: max-content !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
+
+  /* Remove earlier desktop rules that forced collapsed-sidebar tables back to
+     100% width and reintroduced the large inter-column gaps. */
+  body.kbrh-v5.v5-sidebar-collapsed .table-wrap table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table),
+  body.kbrh-v5.v5-sidebar-collapsed.page-roster:not(.roster-edit-all-active) .roster-table,
+  body.kbrh-v5.v5-sidebar-collapsed.page-waitlist .waitlist-table,
+  body.kbrh-v5.v5-sidebar-collapsed .roster-table-full,
+  body.kbrh-v5.v5-sidebar-collapsed .waitlist-table-full,
+  body.kbrh-v5.v5-sidebar-collapsed .archived-waitlist-table-full {
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    table-layout: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
