@@ -308,5 +308,9 @@ v5.5.24: Tightened waitlist desktop columns without wrapping; Notes links now sh
 Adaptive content-width tables enforced globally; kbrh-v5.css references cache-busted so deployed browsers load the new rules immediately.
 
 
-## v5.5.27
+## v5.5.28
 Corrected full-width dynamic table sizing. Waitlist Last Call-In is elastic; both primary and More controls are contained side-by-side within the Actions column.
+
+
+## v5.5.28
+Fixed false pre-screening save-conflict verification that blocked edits and Pending Admission transitions after a successful Firestore transaction.

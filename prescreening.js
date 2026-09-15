@@ -356,8 +356,14 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
       return bd-ad;
     })[0];
     if(!serverRecord) throw new Error("The pre-screening record could not be found after saving.");
-    if(serverRecord.updatedAt!==localRecord.updatedAt){
-      throw new Error("A different pre-screening record was returned after saving. Please reopen the applicant and try again.");
+    // The Firestore transaction above is the authoritative save. Do not reject a successful
+    // transaction solely because a live snapshot/normalization cycle produced a different
+    // updatedAt value during the immediate verification read. That false conflict prevented
+    // completed pre-screenings from advancing to Pending Admission and blocked ordinary edits.
+    // Stable record/applicant identity is what matters here; use the server copy returned after
+    // the committed transaction as the new local authority.
+    if(serverRecord.id!==localRecord.id || serverRecord.applicantId!==currentApplicantId){
+      throw new Error("The saved pre-screening could not be matched to this applicant. Please reopen the applicant and try again.");
     }
 
     prescreenState=server;
