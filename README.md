@@ -314,3 +314,8 @@ Corrected full-width dynamic table sizing. Waitlist Last Call-In is elastic; bot
 
 ## v5.5.28
 Fixed false pre-screening save-conflict verification that blocked edits and Pending Admission transitions after a successful Firestore transaction.
+
+
+## v5.5.29
+- Standardized the primary navigation panel across all application pages to match the Roster navigation.
+- Preserves page-specific active highlighting and admin-only Settings visibility.
