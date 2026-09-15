@@ -1332,3 +1332,58 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
     overflow-wrap:break-word !important;
   }
 }
+
+/* v5.5.26 — full-width adaptive tables.
+   Tables fill the available content area when their natural content is narrower,
+   but retain intrinsic minimum widths and scroll only when genuinely necessary. */
+@media screen {
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) {
+    width:100% !important;
+    min-width:max-content !important;
+    max-width:none !important;
+    table-layout:auto !important;
+  }
+
+  /* Keep compact fields content-sized. The browser assigns remaining room to
+     unconstrained/flexible columns instead of leaving unused page space. */
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > thead > tr > th,
+  .table-wrap > table:not(.resident-chart):not(.weekly-chart):not(.laundry-chart):not(.meal-week-table):not(.dish-day-table) > tbody > tr > td {
+    width:1% !important;
+  }
+
+  /* Waitlist: Last Call-In is the elastic column and Actions owns BOTH buttons. */
+  body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(9),
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(9),
+  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(9),
+  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(9) {
+    width:100% !important;
+    min-width:200px !important;
+  }
+
+  body.page-waitlist .waitlist-table-full > thead > tr > th:nth-child(11),
+  body.page-waitlist .waitlist-table-full > tbody > tr > td:nth-child(11),
+  body.page-waitlist .archived-waitlist-table-full > thead > tr > th:nth-child(11),
+  body.page-waitlist .archived-waitlist-table-full > tbody > tr > td:nth-child(11) {
+    display:table-cell !important;
+    width:1% !important;
+    min-width:365px !important;
+    max-width:none !important;
+  }
+
+  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions,
+  body.page-waitlist .archived-waitlist-table-full td:nth-child(11) .workflow-actions {
+    display:flex !important;
+    align-items:center !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+
+  body.page-waitlist .waitlist-table-full td:nth-child(11) .workflow-actions > button,
+  body.page-waitlist .archived-waitlist-table-full td:nth-child(11) .workflow-actions > button {
+    flex:1 1 0 !important;
+    width:auto !important;
+    min-width:0 !important;
+    white-space:nowrap !important;
+  }
+}
