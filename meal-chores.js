@@ -72,12 +72,33 @@ function getRosterStatusRecord(client) {
   );
 }
 
+function getMealPreAdmissionResidents() {
+  const selectedIds = new Set((state.chorePreAdmissionIds || []).map(String));
+  const choreResidents = Array.isArray(state.residents) ? state.residents : [];
+
+  return choreResidents
+    .filter(resident => resident && resident.preAdmissionApplicantId && selectedIds.has(String(resident.preAdmissionApplicantId)))
+    .map(resident => ({
+      id: resident.id,
+      firstName: resident.name || "Unnamed Applicant",
+      lastName: "",
+      name: resident.name || "Unnamed Applicant",
+      entryDate: "",
+      phase: "phase1",
+      archived: false,
+      isPreAdmission: true,
+      preAdmissionSource: resident.preAdmissionSource || "Pre-Admission",
+      choreResidentId: resident.id
+    }));
+}
+
 function activeResidents() {
   const roster = Array.isArray(state.roster)
     ? state.roster
     : [];
+  const mealRoster = [...roster, ...getMealPreAdmissionResidents()];
 
-  return roster
+  return mealRoster
     .filter(client => {
       if (!client || client === "temp") return false;
       if (client.archived) return false;
@@ -121,6 +142,7 @@ function newResidents() {
 }
 
 function getResidentDisplayName(client) {
+  if (client?.name) return client.name;
   const fullName =
     `${client.firstName || ""} ${client.lastName || ""}`.trim();
 
@@ -540,7 +562,9 @@ function residentSelect(day, slot, selectedId) {
       ${residents.map(resident => {
         let label = getResidentDisplayName(resident);
 
-        if (isNewResident(resident)) {
+        if (resident.isPreAdmission) {
+          label += ` — ${resident.preAdmissionSource || "Pre-Admission"}`;
+        } else if (isNewResident(resident)) {
           label += " — New resident";
         } else if (isSeniorResident(resident)) {
           label += " — Senior";

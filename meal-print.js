@@ -11,12 +11,14 @@ const MEAL_PRINT_DAYS = [
 let mealPrintState = defaultAppState();
 
 function getMealPrintRoster() {
-  return Array.isArray(mealPrintState.roster)
-    ? mealPrintState.roster.filter(client =>
-        client &&
-        client !== "temp"
-      )
+  const roster = Array.isArray(mealPrintState.roster)
+    ? mealPrintState.roster.filter(client => client && client !== "temp")
     : [];
+  const selectedIds = new Set((mealPrintState.chorePreAdmissionIds || []).map(String));
+  const preAdmissions = (Array.isArray(mealPrintState.residents) ? mealPrintState.residents : [])
+    .filter(resident => resident && resident.preAdmissionApplicantId && selectedIds.has(String(resident.preAdmissionApplicantId)))
+    .map(resident => ({ id: resident.id, firstName: resident.name || "Unnamed Applicant", lastName: "", name: resident.name || "Unnamed Applicant" }));
+  return [...roster, ...preAdmissions];
 }
 
 function getMealPrintSchedule() {
@@ -32,7 +34,7 @@ function getMealPrintResidentName(id) {
 
   if (!resident) return "UNKNOWN RESIDENT";
 
-  const fullName =
+  const fullName = resident.name ||
     `${resident.firstName || ""} ${resident.lastName || ""}`.trim();
 
   return (fullName || "UNNAMED RESIDENT").toUpperCase();

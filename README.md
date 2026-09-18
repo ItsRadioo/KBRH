@@ -1,3 +1,11 @@
+# v5.5.37 — Pre-Admission Meal Chores
+
+- Pre-screening and Pending Admission clients already added to the chore roster are now eligible for Meal Chores.
+- Meal chore selectors update from the same real-time pre-admission chore roster state.
+- Pre-admission clients are labelled with their workflow source in meal selectors.
+- Printable meal schedules resolve pre-admission client names correctly.
+- No admission status is changed by assigning a meal chore.
+
 # v5.5.36 — Real-Time Pre-Admission Chore Eligibility
 
 - Pre-admission chore candidates now mirror the CURRENT Pre-Screening and Pending Admissions lists.
