@@ -1,3 +1,12 @@
+# v5.5.35 — Pre-Admission Chore Assignment
+
+- House Chores can now manually include clients who are still in Pre-Screening or Pending Admission.
+- Added a Pre-Admission Chore Assignment selector showing the source status for each person.
+- Added people participate in manual chore assignment, rotation, exceptions, locks, away status, printable schedules, and chore checks through the existing resident chore model.
+- Removing a pre-admission person from chores does not alter their admissions record.
+- The selection is persisted in shared app state.
+- If the same person later appears on the Current Roster, the chore sync avoids a duplicate name and preserves the existing chore setup where possible.
+
 # KBRH Professional v5.5.34 — Retroactive Automatic Capitalization
 
 - Applies the existing automatic capitalization rules retroactively to stored structured fields.

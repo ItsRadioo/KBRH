@@ -102,75 +102,119 @@ function getNewResidentStartingAssignments(newClients) {
   return assignments;
 }
 
-function syncResidentsFromRoster() {
-  const existingResidents = Array.isArray(state.residents)
-    ? state.residents
-    : [];
+function getPreAdmissionChoreCandidates() {
+  const candidates = new Map();
 
+  (state.preScreenings || []).forEach(record => {
+    if (!record || !record.applicantId || !record.applicantName) return;
+    const status = String(record.status || record.workflowStatus || "").toLowerCase();
+    if (status.includes("declin") || status.includes("closed") || status.includes("fail")) return;
+    candidates.set(String(record.applicantId), {
+      applicantId: String(record.applicantId),
+      name: record.applicantName,
+      source: "Pre-Screening"
+    });
+  });
+
+  (state.pendingAdmissions || []).forEach(record => {
+    if (!record || !record.applicantId || !record.applicantName) return;
+    candidates.set(String(record.applicantId), {
+      applicantId: String(record.applicantId),
+      name: record.applicantName,
+      source: "Pending Admission"
+    });
+  });
+
+  return [...candidates.values()].sort((a,b) => a.name.localeCompare(b.name));
+}
+
+function syncResidentsFromRoster() {
+  const existingResidents = Array.isArray(state.residents) ? state.residents : [];
   const activeRosterClients = getActiveRosterClients();
+  const selectedIds = new Set((state.chorePreAdmissionIds || []).map(String));
+  const candidates = getPreAdmissionChoreCandidates();
+  const candidateMap = new Map(candidates.map(c => [c.applicantId, c]));
+
+  // Drop stale selections once the applicant is no longer in Pre-Screening/Pending Admission.
+  state.chorePreAdmissionIds = [...selectedIds].filter(id => candidateMap.has(id));
 
   const newClients = activeRosterClients.filter(client => {
     const fullName = getResidentNameFromClient(client);
-
     return !findExistingResident(existingResidents, client, fullName);
   });
-
   const newAssignments = getNewResidentStartingAssignments(newClients);
 
   const syncedResidents = activeRosterClients.map((client, index) => {
     const fullName = getResidentNameFromClient(client, index + 1);
-    const existing = findExistingResident(existingResidents, client, fullName);
-
+    // If this person was already temporarily assigned before admission, preserve that chore setup by name.
+    const existing = findExistingResident(existingResidents, client, fullName)
+      || existingResidents.find(r => r.preAdmissionApplicantId && r.name?.toLowerCase() === fullName.toLowerCase());
     let choreIndex;
-
-    if (existing && Number.isInteger(Number(existing.choreIndex))) {
-      choreIndex = Number(existing.choreIndex);
-    } else {
+    if (existing && Number.isInteger(Number(existing.choreIndex))) choreIndex = Number(existing.choreIndex);
+    else {
       const startingChore = newAssignments.get(client.id) || BATHROOM_CHORE;
       const startingIndex = choreIndexByName(startingChore);
-
       choreIndex = startingIndex >= 0 ? startingIndex : 0;
     }
-
     return {
-      id: existing?.id || crypto.randomUUID(),
-      rosterClientId: client.id,
-      name: fullName,
-      choreIndex,
-      exceptions: Array.isArray(existing?.exceptions)
-        ? existing.exceptions
-        : [],
-      lockedChore: existing?.lockedChore || "",
-      status: existing?.status || "active",
+      id: existing?.id || crypto.randomUUID(), rosterClientId: client.id,
+      preAdmissionApplicantId: "", preAdmissionSource: "", name: fullName, choreIndex,
+      exceptions: Array.isArray(existing?.exceptions) ? existing.exceptions : [],
+      lockedChore: existing?.lockedChore || "", status: existing?.status || "active",
       awayUntil: existing?.awayUntil || ""
     };
   });
 
-  const before = JSON.stringify(existingResidents.map(resident => ({
-    id: resident.id,
-    rosterClientId: resident.rosterClientId || "",
-    name: resident.name || "",
-    choreIndex: resident.choreIndex,
-    exceptions: resident.exceptions,
-    lockedChore: resident.lockedChore,
-    status: resident.status,
-    awayUntil: resident.awayUntil
-  })));
+  for (const applicantId of state.chorePreAdmissionIds) {
+    const candidate = candidateMap.get(String(applicantId));
+    if (!candidate) continue;
+    // Do not duplicate somebody who is already represented on the current roster by the same name.
+    if (syncedResidents.some(r => r.name?.toLowerCase() === candidate.name.toLowerCase())) continue;
+    const existing = existingResidents.find(r => String(r.preAdmissionApplicantId || "") === String(applicantId));
+    syncedResidents.push({
+      id: existing?.id || crypto.randomUUID(), rosterClientId: "",
+      preAdmissionApplicantId: String(applicantId), preAdmissionSource: candidate.source,
+      name: candidate.name, choreIndex: Number.isInteger(Number(existing?.choreIndex)) ? Number(existing.choreIndex) : Math.max(0, choreIndexByName(BATHROOM_CHORE)),
+      exceptions: Array.isArray(existing?.exceptions) ? existing.exceptions : [],
+      lockedChore: existing?.lockedChore || "", status: existing?.status || "active", awayUntil: existing?.awayUntil || ""
+    });
+  }
 
-  const after = JSON.stringify(syncedResidents.map(resident => ({
-    id: resident.id,
-    rosterClientId: resident.rosterClientId || "",
-    name: resident.name || "",
-    choreIndex: resident.choreIndex,
-    exceptions: resident.exceptions,
-    lockedChore: resident.lockedChore,
-    status: resident.status,
-    awayUntil: resident.awayUntil
-  })));
-
+  const compact = r => ({id:r.id,rosterClientId:r.rosterClientId||"",preAdmissionApplicantId:r.preAdmissionApplicantId||"",preAdmissionSource:r.preAdmissionSource||"",name:r.name||"",choreIndex:r.choreIndex,exceptions:r.exceptions,lockedChore:r.lockedChore,status:r.status,awayUntil:r.awayUntil});
+  const before = JSON.stringify(existingResidents.map(compact));
+  const after = JSON.stringify(syncedResidents.map(compact));
   state.residents = syncedResidents;
-
   return before !== after;
+}
+
+async function addPreAdmissionToChores() {
+  const select = document.getElementById("preAdmissionChorePerson");
+  const applicantId = select?.value || "";
+  if (!applicantId) return;
+  state.chorePreAdmissionIds = Array.isArray(state.chorePreAdmissionIds) ? state.chorePreAdmissionIds : [];
+  if (!state.chorePreAdmissionIds.includes(applicantId)) state.chorePreAdmissionIds.push(applicantId);
+  syncResidentsFromRoster();
+  render();
+  await saveAndRender();
+}
+
+async function removePreAdmissionFromChores(applicantId) {
+  state.chorePreAdmissionIds = (state.chorePreAdmissionIds || []).filter(id => String(id) !== String(applicantId));
+  syncResidentsFromRoster();
+  render();
+  await saveAndRender();
+}
+
+function renderPreAdmissionChoreControls() {
+  const select = document.getElementById("preAdmissionChorePerson");
+  const list = document.getElementById("preAdmissionChoreList");
+  if (!select || !list) return;
+  const selected = new Set((state.chorePreAdmissionIds || []).map(String));
+  const candidates = getPreAdmissionChoreCandidates();
+  const available = candidates.filter(c => !selected.has(c.applicantId));
+  select.innerHTML = `<option value="">Select person...</option>` + available.map(c => `<option value="${escapeHtml(c.applicantId)}">${escapeHtml(c.name)} — ${escapeHtml(c.source)}</option>`).join("");
+  const assigned = candidates.filter(c => selected.has(c.applicantId));
+  list.innerHTML = assigned.length ? assigned.map(c => `<li><span>${escapeHtml(c.name)} <small>(${escapeHtml(c.source)})</small></span><button class="danger" onclick="removePreAdmissionFromChores('${escapeJs(c.applicantId)}')">Remove</button></li>`).join("") : `<li class="empty">No pre-admission clients manually added.</li>`;
 }
 
 function autoReturnAwayResidents() {
@@ -793,6 +837,7 @@ function importBackup(event) {
 }
 
 function render() {
+  renderPreAdmissionChoreControls();
   renderResidentLists();
   renderChoreList();
   renderManualAssignments();
@@ -817,6 +862,7 @@ function renderResidentLists() {
         <li>
           <span>
             ${escapeHtml(resident.name)}
+            ${resident.preAdmissionSource ? `<span class="status">${escapeHtml(resident.preAdmissionSource)}</span>` : ""}
             ${statusBadge(resident)}
           </span>
 

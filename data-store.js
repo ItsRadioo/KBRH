@@ -77,6 +77,7 @@ function defaultAppState() {
   return {
     tableGenerated: false,
     residents: [],
+    chorePreAdmissionIds: [],
     chores: STANDARD_CHORES,
     history: [],
     mealSchedule: defaultMealSchedule(),
@@ -184,6 +185,8 @@ function normalizeAppState(state) {
     ? merged.residents.map((resident, index) => ({
         id: resident.id || crypto.randomUUID(),
         rosterClientId: resident.rosterClientId || "",
+        preAdmissionApplicantId: resident.preAdmissionApplicantId || "",
+        preAdmissionSource: resident.preAdmissionSource || "",
         name: resident.name || `Resident ${index + 1}`,
         choreIndex: Number.isInteger(Number(resident.choreIndex)) ? Number(resident.choreIndex) : 0,
         exceptions: Array.isArray(resident.exceptions) ? resident.exceptions : [],
@@ -191,6 +194,10 @@ function normalizeAppState(state) {
         status: resident.status || "active",
         awayUntil: resident.awayUntil || ""
       }))
+    : [];
+
+  merged.chorePreAdmissionIds = Array.isArray(merged.chorePreAdmissionIds)
+    ? [...new Set(merged.chorePreAdmissionIds.filter(Boolean).map(String))]
     : [];
 
   merged.history = Array.isArray(merged.history) ? merged.history : [];
