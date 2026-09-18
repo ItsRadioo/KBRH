@@ -1,6 +1,14 @@
 const APP_DOC_REF = () => db.collection("kbrh").doc("choreTracker");
 const SETTINGS_DOC_REF = () => db.collection("kbrh").doc("settings");
 
+// v5.5.33: person-name normalization helpers used during entry/edit saves.
+function kbrhUpperName(value){
+  return typeof value === "string" ? value.toLocaleUpperCase("en-CA") : value;
+}
+function kbrhUpperFullName(value){
+  return typeof value === "string" ? value.toLocaleUpperCase("en-CA") : value;
+}
+
 function defaultKbrhSettings(){
   return {
     callInDay: "Monday",
@@ -133,7 +141,7 @@ function normalizeCounselingNotes(notes) {
         .map(note => ({
           id: note.id || crypto.randomUUID(),
           residentId: note.residentId || "",
-          residentName: note.residentName || "Unknown Resident",
+          residentName: kbrhUpperFullName(note.residentName || "Unknown Resident"),
           author: note.author || "Unknown",
           authorUid: note.authorUid || "",
           authorEmail: note.authorEmail || "",
@@ -191,8 +199,8 @@ function normalizeAppState(state) {
   merged.waitlist = Array.isArray(merged.waitlist)
     ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
         id: item.id || crypto.randomUUID(),
-        lastName: item.lastName || "",
-        firstName: item.firstName || "",
+        lastName: kbrhUpperName(item.lastName || ""),
+        firstName: kbrhUpperName(item.firstName || ""),
         contact: item.contact || "",
         status: item.status || "",
         city: item.city || "",
@@ -216,13 +224,13 @@ function normalizeAppState(state) {
         id: client.id || crypto.randomUUID(),
         roomNumber: client.roomNumber || "",
         clientId: client.clientId || "",
-        firstName: client.firstName || "",
-        lastName: client.lastName || "",
+        firstName: kbrhUpperName(client.firstName || ""),
+        lastName: kbrhUpperName(client.lastName || ""),
         dob: client.dob || "",
         phone: client.phone || "",
         address: client.address || "",
         city: client.city || "",
-        contact: client.contact || "",
+        contact: kbrhUpperFullName(client.contact || ""),
         contactPhone: client.contactPhone || "",
         entryDate: client.entryDate || "",
         expectedDischargeDate: client.expectedDischargeDate || "",
@@ -244,7 +252,7 @@ function normalizeAppState(state) {
     : [];
 
   merged.transferHistory = Array.isArray(merged.transferHistory) ? merged.transferHistory.filter(Boolean).map(item => ({
-    id:item.id||crypto.randomUUID(), applicantId:item.applicantId||"", residentId:item.residentId||"", applicantName:item.applicantName||"", transferredAt:item.transferredAt||new Date().toISOString(), transferredBy:item.transferredBy||"", undone:Boolean(item.undone), undoneAt:item.undoneAt||"", applicantSnapshot:item.applicantSnapshot&&typeof item.applicantSnapshot==="object"?item.applicantSnapshot:null
+    id:item.id||crypto.randomUUID(), applicantId:item.applicantId||"", residentId:item.residentId||"", applicantName:kbrhUpperFullName(item.applicantName||""), transferredAt:item.transferredAt||new Date().toISOString(), transferredBy:item.transferredBy||"", undone:Boolean(item.undone), undoneAt:item.undoneAt||"", applicantSnapshot:item.applicantSnapshot&&typeof item.applicantSnapshot==="object"?item.applicantSnapshot:null
   })) : [];
 
   merged.counselingNotes = normalizeCounselingNotes(merged.counselingNotes);
@@ -255,7 +263,7 @@ function normalizeAppState(state) {
         date: warning.date || "",
         time: warning.time || "",
         residentId: warning.residentId || "",
-        residentName: warning.residentName || "",
+        residentName: kbrhUpperFullName(warning.residentName || ""),
         incident: warning.incident || "",
         staffAction: warning.staffAction || "",
         residentResponse: warning.residentResponse || "",
@@ -277,7 +285,7 @@ function normalizeAppState(state) {
     ? merged.writeUps.filter(item => item && item !== "temp").map(item => ({
         id: item.id || crypto.randomUUID(),
         residentId: item.residentId || "",
-        residentName: item.residentName || "Unknown Resident",
+        residentName: kbrhUpperFullName(item.residentName || "Unknown Resident"),
         date: item.date || "",
         reason: item.reason || "",
         issuedBy: item.issuedBy || "",
@@ -323,7 +331,7 @@ function normalizeAppState(state) {
     ? merged.preScreenings.filter(item => item && item !== "temp").map(item => ({
         id: item.id || crypto.randomUUID(),
         applicantId: item.applicantId || "",
-        applicantName: item.applicantName || "",
+        applicantName: kbrhUpperFullName(item.applicantName || ""),
         status: item.status || "Not Started",
         workflowStatus: item.workflowStatus || "",
         staffUser: item.staffUser || "",
@@ -355,7 +363,7 @@ function normalizeAppState(state) {
     ? merged.pendingAdmissions.filter(Boolean).map(item => ({
         id: item.id || crypto.randomUUID(),
         applicantId: item.applicantId || "",
-        applicantName: item.applicantName || "",
+        applicantName: kbrhUpperFullName(item.applicantName || ""),
         status: item.status || "Pending Admission",
         expectedIntakeDate: item.expectedIntakeDate || "",
         expectedIntakeTime: item.expectedIntakeTime || "",
@@ -541,6 +549,54 @@ async function writeAuditEntry(changes,identity){
   try{await db.collection("kbrhAudit").add({staffUid:identity.uid,staffName:identity.name,staffEmail:identity.email,page:kbrhPageName(),changes,summary:changes[0]||"Updated application data",timestamp:firebase.firestore.FieldValue.serverTimestamp(),timestampIso:new Date().toISOString()});}
   catch(error){console.warn("Audit log write failed",error);}
 }
+// One-time v5.5.32 migration for records that existed before automatic capitalization.
+// This updates only fields that are known to contain a person's name; narrative text,
+// emails, phone numbers, IDs and other content are deliberately left untouched.
+async function migrateExistingPersonNamesV5532(rawState) {
+  const migrationKey = "uppercasePersonNamesV5532";
+  if (rawState?._migrations?.[migrationKey]) return rawState;
+
+  const nameKeys = new Set([
+    "firstName", "lastName", "applicantName", "residentName",
+    "emergencyContact", "emergencyContactName", "contactName",
+    "staffName", "executiveDirectorName", "assignedResident", "checkedBy",
+    "issuedBy", "transferredBy"
+  ]);
+  let changed = false;
+
+  function walk(value, parentKey = "") {
+    if (Array.isArray(value)) return value.map(v => walk(v, parentKey));
+    if (!value || typeof value !== "object") return value;
+    const out = { ...value };
+    for (const [key, child] of Object.entries(out)) {
+      if (nameKeys.has(key) && typeof child === "string" && child.trim()) {
+        const upper = child.toLocaleUpperCase("en-CA");
+        if (upper !== child) { out[key] = upper; changed = true; }
+      } else if (child && typeof child === "object") {
+        out[key] = walk(child, key);
+      }
+    }
+    return out;
+  }
+
+  const migrated = walk(rawState);
+  const marker = { ...(rawState._migrations || {}), [migrationKey]: new Date().toISOString() };
+  const patch = { _migrations: marker };
+  for (const key of Object.keys(migrated)) {
+    if (key === "_migrations") continue;
+    if (JSON.stringify(migrated[key]) !== JSON.stringify(rawState[key])) patch[key] = migrated[key];
+  }
+  try {
+    await APP_DOC_REF().set(patch, { merge: true });
+    migrated._migrations = marker;
+    if (changed) console.info("KBRH v5.5.32: existing person names were normalized to uppercase.");
+    return migrated;
+  } catch (error) {
+    console.warn("KBRH v5.5.32 name migration could not be persisted; displaying normalized names for this session.", error);
+    return migrated;
+  }
+}
+
 async function loadAppState() {
   const snap = await APP_DOC_REF().get();
   if (!snap.exists) {
@@ -549,7 +605,8 @@ async function loadAppState() {
     KBRH_LAST_STATE = normalizeAppState(initial);
     return KBRH_LAST_STATE;
   }
-  KBRH_LAST_STATE = normalizeAppState(snap.data());
+  const rawState = snap.data();
+  KBRH_LAST_STATE = normalizeAppState(rawState);
   return KBRH_LAST_STATE;
 }
 

@@ -1,3 +1,13 @@
+# v5.5.33 — Capitalize Names When Resident Edit Is Saved
+
+- Removed the automatic one-time database-wide name migration from the normal load path.
+- Whenever a resident/client is edited and saved, First Name, Last Name, and Emergency Contact name are checked and stored in uppercase.
+- Applies to both the individual Edit Resident modal and Edit All Residents workflow.
+- Existing records are not bulk rewritten merely by loading the site; they are persisted in normalized form when that client is edited and saved.
+- New-entry automatic capitalization from v5.5.31 remains in place.
+
+KBRH Professional v5.5.32 — Existing Name Capitalization Migration
+
 KBRH Professional v5.5.30
 
 - Added Current Income Source step to Pre-Screening.

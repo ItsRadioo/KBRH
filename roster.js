@@ -20,6 +20,16 @@ function formatPhoneNumber(value) {
   return String(value || "");
 }
 
+// v5.5.33: whenever a resident edit is saved, normalize person-name fields before persistence.
+function normalizeResidentNamesOnSave(client) {
+  if (!client) return client;
+  const upper = value => typeof value === "string" ? value.trim().toLocaleUpperCase("en-CA") : value;
+  client.firstName = upper(client.firstName);
+  client.lastName = upper(client.lastName);
+  if (typeof client.contact === "string") client.contact = upper(client.contact);
+  return client;
+}
+
 async function saveRoster() {
   try {
     await saveAppState(rosterState);
@@ -322,6 +332,8 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
     client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
   }
 
+  normalizeResidentNamesOnSave(client);
+
   if (shouldRender) {
     editingClientId = null;
     renderRoster();
@@ -435,6 +447,8 @@ function saveEditResidentModal(event) {
   } else {
     client.phase2AdmissionDate = value("modalEditPhase2AdmissionDate");
   }
+
+  normalizeResidentNamesOnSave(client);
 
   closeEditResidentModal();
   renderRoster();
