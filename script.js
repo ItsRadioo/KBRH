@@ -104,26 +104,32 @@ function getNewResidentStartingAssignments(newClients) {
 
 function getPreAdmissionChoreCandidates() {
   const candidates = new Map();
+  const waitlist = Array.isArray(state.waitlist) ? state.waitlist : [];
+  const pendingAdmissions = Array.isArray(state.pendingAdmissions) ? state.pendingAdmissions : [];
 
-  (state.preScreenings || []).forEach(record => {
-    if (!record || !record.applicantId || !record.applicantName) return;
-    const status = String(record.status || record.workflowStatus || "").toLowerCase();
-    if (status.includes("declin") || status.includes("closed") || status.includes("fail")) return;
-    candidates.set(String(record.applicantId), {
-      applicantId: String(record.applicantId),
-      name: record.applicantName,
-      source: "Pre-Screening"
+  // Pre-Screening must mirror the CURRENT Pre-Screening page, not historical
+  // pre-screening records. An applicant is currently in Pre-Screening only while
+  // they are an active, non-archived Offer Given waitlist applicant who has not
+  // moved to Pending Admission.
+  waitlist
+    .filter(applicant => applicant && applicant !== "temp" && !applicant.archived && applicant.status === "Offer Given" && applicant.admissionStage !== "Pending Admission")
+    .forEach(applicant => {
+      const applicantId = String(applicant.id || "");
+      if (!applicantId) return;
+      const name = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Unnamed Applicant";
+      candidates.set(applicantId, { applicantId, name, source: "Pre-Screening" });
     });
-  });
 
-  (state.pendingAdmissions || []).forEach(record => {
-    if (!record || !record.applicantId || !record.applicantName) return;
-    candidates.set(String(record.applicantId), {
-      applicantId: String(record.applicantId),
-      name: record.applicantName,
-      source: "Pending Admission"
+  // Pending Admission must mirror the CURRENT Pending Admissions page exactly.
+  // Historical/completed/removed pending-admission records are excluded.
+  pendingAdmissions
+    .filter(record => record && record.applicantId && record.status === "Pending Admission")
+    .forEach(record => {
+      const applicantId = String(record.applicantId);
+      const applicant = waitlist.find(item => String(item?.id || "") === applicantId) || {};
+      const name = record.applicantName || `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Unnamed Applicant";
+      candidates.set(applicantId, { applicantId, name, source: "Pending Admission" });
     });
-  });
 
   return [...candidates.values()].sort((a,b) => a.name.localeCompare(b.name));
 }

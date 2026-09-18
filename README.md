@@ -1,3 +1,11 @@
+# v5.5.36 — Real-Time Pre-Admission Chore Eligibility
+
+- Pre-admission chore candidates now mirror the CURRENT Pre-Screening and Pending Admissions lists.
+- Historical pre-screening records no longer make former applicants appear in the chore selector.
+- Pre-Screening eligibility uses the same active Offer Given / not Pending Admission criteria as the Pre-Screening page.
+- Pending Admission eligibility requires the current status to be exactly Pending Admission.
+- Firestore snapshot updates automatically refresh the selector and remove stale chore-only selections when a client leaves both current lists.
+
 # v5.5.35 — Pre-Admission Chore Assignment
 
 - House Chores can now manually include clients who are still in Pre-Screening or Pending Admission.
