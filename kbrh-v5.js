@@ -227,3 +227,68 @@
   function enhanceTables(){document.querySelectorAll('.table-wrap').forEach((wrap,i)=>{if(wrap.dataset.collapsibleReady)return; const table=wrap.querySelector('table'); if(!table)return; const rows=table.querySelectorAll('tbody tr').length; if(rows<4 && !wrap.closest('.wide'))return; wrap.dataset.collapsibleReady='1'; const page=(location.pathname.split('/').pop()||'index'); const key=`kbrh.table.${page}.${i}`; const bar=document.createElement('div');bar.className='kbrh-collapse-bar';const btn=document.createElement('button');btn.type='button';btn.className='kbrh-collapse-btn'; const apply=()=>{let c=false;try{c=localStorage.getItem(key)==='collapsed'}catch(_){} wrap.classList.toggle('kbrh-table-collapsed',c);btn.textContent=c?'Expand table':'Collapse table';btn.setAttribute('aria-expanded',String(!c));}; btn.onclick=()=>{const c=!wrap.classList.contains('kbrh-table-collapsed');try{localStorage.setItem(key,c?'collapsed':'expanded')}catch(_){}apply();}; bar.appendChild(btn);wrap.parentNode.insertBefore(bar,wrap);apply();});}
   document.addEventListener('DOMContentLoaded',()=>{enhanceTables();setTimeout(enhanceTables,800);});
 })();
+
+/* v5.5.31 automatic field capitalization */
+(() => {
+  "use strict";
+
+  const UPPERCASE_HINTS = [
+    "firstname", "lastname", "first-name", "last-name", "first_name", "last_name",
+    "city", "province", "emergencycontactname", "emergency-contact-name",
+    "contactname", "employer", "employername", "sourcesname", "sourcename",
+    "incomesourcename", "organization", "organisation", "referralsource"
+  ];
+  const TITLECASE_HINTS = ["address", "street"];
+  const NEVER_FORMAT_HINTS = [
+    "email", "password", "phone", "tel", "note", "comment", "description",
+    "medication", "medical", "counsel", "incident", "narrative", "username",
+    "postal", "zip", "url"
+  ];
+
+  const cleanKey = (el) => `${el.id || ""} ${el.name || ""} ${el.getAttribute("autocomplete") || ""}`
+    .toLowerCase().replace(/[^a-z0-9_-]+/g, "");
+
+  function labelText(el) {
+    const explicit = el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null;
+    const wrapping = el.closest("label");
+    return `${explicit?.textContent || ""} ${wrapping?.textContent || ""}`.toLowerCase();
+  }
+
+  function modeFor(el) {
+    if (!(el instanceof HTMLInputElement)) return null;
+    if ((el.type || "text").toLowerCase() !== "text") return null;
+    if (el.disabled || el.readOnly || el.dataset.noAutoCase !== undefined) return null;
+    if (el.dataset.autoCase === "upper" || el.dataset.autoCase === "title") return el.dataset.autoCase;
+
+    const key = cleanKey(el);
+    const label = labelText(el);
+    const haystack = `${key} ${label}`;
+    if (NEVER_FORMAT_HINTS.some(x => haystack.includes(x))) return null;
+    if (UPPERCASE_HINTS.some(x => haystack.includes(x))) return "upper";
+    if (TITLECASE_HINTS.some(x => haystack.includes(x))) return "title";
+    return null;
+  }
+
+  function titleCase(value) {
+    return value.replace(/(^|[\s\-'/])([a-zà-öø-ÿ])/g, (_, sep, ch) => sep + ch.toUpperCase());
+  }
+
+  function formatField(el) {
+    const mode = modeFor(el);
+    if (!mode || !el.value) return;
+    const start = el.selectionStart, end = el.selectionEnd;
+    const next = mode === "upper" ? el.value.toLocaleUpperCase("en-CA") : titleCase(el.value);
+    if (next === el.value) return;
+    el.value = next;
+    try { if (start !== null && end !== null) el.setSelectionRange(start, end); } catch (_) {}
+  }
+
+  document.addEventListener("input", e => formatField(e.target), true);
+  document.addEventListener("change", e => formatField(e.target), true);
+  document.addEventListener("blur", e => formatField(e.target), true);
+
+  // Format any values populated programmatically once the page has initialized.
+  function sweep() { document.querySelectorAll('input[type="text"]').forEach(formatField); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(sweep, 0));
+  else setTimeout(sweep, 0);
+})();

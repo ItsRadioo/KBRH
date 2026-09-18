@@ -326,3 +326,10 @@ Fixed false pre-screening save-conflict verification that blocked edits and Pend
 ## v5.5.29
 - Standardized the primary navigation panel across all application pages to match the Roster navigation.
 - Preserves page-specific active highlighting and admin-only Settings visibility.
+
+
+## v5.5.31
+- Added global automatic capitalization for person names, city/province, emergency/contact names, employer/source and referral/organization fields.
+- Address/street text uses title-style capitalization.
+- Email, phone, postal code, notes, counselling, medication/medical and narrative fields are intentionally excluded.
+- Capitalization changes the actual input value so saved Firestore data uses the normalized capitalization.
