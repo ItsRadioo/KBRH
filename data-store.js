@@ -549,52 +549,75 @@ async function writeAuditEntry(changes,identity){
   try{await db.collection("kbrhAudit").add({staffUid:identity.uid,staffName:identity.name,staffEmail:identity.email,page:kbrhPageName(),changes,summary:changes[0]||"Updated application data",timestamp:firebase.firestore.FieldValue.serverTimestamp(),timestampIso:new Date().toISOString()});}
   catch(error){console.warn("Audit log write failed",error);}
 }
-// One-time v5.5.32 migration for records that existed before automatic capitalization.
-// This updates only fields that are known to contain a person's name; narrative text,
-// emails, phone numbers, IDs and other content are deliberately left untouched.
-async function migrateExistingPersonNamesV5532(rawState) {
-  const migrationKey = "uppercasePersonNamesV5532";
+// v5.5.34: normalize existing stored values anywhere the automatic-case rule applies.
+// This is intentionally limited to structured fields. Narrative/clinical notes, email,
+// phone, IDs, postal codes and other free-text content are never reformatted.
+const KBRH_AUTOCASE_UPPER_KEYS = new Set([
+  "firstName", "lastName", "applicantName", "residentName", "fullName",
+  "emergencyContact", "emergencyContactName", "contactName", "contact",
+  "staffName", "executiveDirectorName", "assignedResident", "checkedBy",
+  "issuedBy", "transferredBy", "city", "province", "employer", "employerName",
+  "sourceName", "sourcesName", "incomeSourceName", "organization", "organisation",
+  "referralSource"
+]);
+const KBRH_AUTOCASE_TITLE_KEYS = new Set(["address", "street", "streetAddress"]);
+const KBRH_AUTOCASE_NEVER_PARTS = [
+  "email", "password", "phone", "tel", "note", "comment", "description",
+  "medication", "medical", "counsel", "incident", "narrative", "username",
+  "postal", "zip", "url", "uid", "id"
+];
+
+function kbrhStoredTitleCase(value) {
+  return typeof value === "string"
+    ? value.toLocaleLowerCase("en-CA").replace(/(^|[\\s'/\\-])([a-zà-öø-ÿ])/g, (_, sep, ch) => sep + ch.toLocaleUpperCase("en-CA"))
+    : value;
+}
+
+function kbrhAutoCaseModeForKey(key) {
+  const lower = String(key || "").toLowerCase();
+  if (KBRH_AUTOCASE_NEVER_PARTS.some(part => lower.includes(part))) return null;
+  if (KBRH_AUTOCASE_UPPER_KEYS.has(key)) return "upper";
+  if (KBRH_AUTOCASE_TITLE_KEYS.has(key)) return "title";
+  return null;
+}
+
+function normalizeStoredAutoCaseV5534(value) {
+  if (Array.isArray(value)) return value.map(normalizeStoredAutoCaseV5534);
+  if (!value || typeof value !== "object") return value;
+  const out = { ...value };
+  for (const [key, child] of Object.entries(out)) {
+    const mode = kbrhAutoCaseModeForKey(key);
+    if (mode && typeof child === "string" && child.trim()) {
+      out[key] = mode === "upper"
+        ? child.trim().toLocaleUpperCase("en-CA")
+        : kbrhStoredTitleCase(child.trim());
+    } else if (child && typeof child === "object") {
+      out[key] = normalizeStoredAutoCaseV5534(child);
+    }
+  }
+  return out;
+}
+
+async function migrateExistingAutoCaseV5534(rawState) {
+  const migrationKey = "retroactiveAutoCaseV5534";
   if (rawState?._migrations?.[migrationKey]) return rawState;
 
-  const nameKeys = new Set([
-    "firstName", "lastName", "applicantName", "residentName",
-    "emergencyContact", "emergencyContactName", "contactName",
-    "staffName", "executiveDirectorName", "assignedResident", "checkedBy",
-    "issuedBy", "transferredBy"
-  ]);
-  let changed = false;
-
-  function walk(value, parentKey = "") {
-    if (Array.isArray(value)) return value.map(v => walk(v, parentKey));
-    if (!value || typeof value !== "object") return value;
-    const out = { ...value };
-    for (const [key, child] of Object.entries(out)) {
-      if (nameKeys.has(key) && typeof child === "string" && child.trim()) {
-        const upper = child.toLocaleUpperCase("en-CA");
-        if (upper !== child) { out[key] = upper; changed = true; }
-      } else if (child && typeof child === "object") {
-        out[key] = walk(child, key);
-      }
-    }
-    return out;
-  }
-
-  const migrated = walk(rawState);
-  const marker = { ...(rawState._migrations || {}), [migrationKey]: new Date().toISOString() };
+  const migrated = normalizeStoredAutoCaseV5534(rawState);
+  const marker = { ...(rawState?._migrations || {}), [migrationKey]: new Date().toISOString() };
   const patch = { _migrations: marker };
   for (const key of Object.keys(migrated)) {
     if (key === "_migrations") continue;
-    if (JSON.stringify(migrated[key]) !== JSON.stringify(rawState[key])) patch[key] = migrated[key];
+    if (JSON.stringify(migrated[key]) !== JSON.stringify(rawState?.[key])) patch[key] = migrated[key];
   }
+
   try {
     await APP_DOC_REF().set(patch, { merge: true });
     migrated._migrations = marker;
-    if (changed) console.info("KBRH v5.5.32: existing person names were normalized to uppercase.");
-    return migrated;
+    console.info("KBRH v5.5.34: existing applicable fields were normalized using the automatic capitalization rules.");
   } catch (error) {
-    console.warn("KBRH v5.5.32 name migration could not be persisted; displaying normalized names for this session.", error);
-    return migrated;
+    console.warn("KBRH v5.5.34 capitalization migration could not be persisted; normalized values will still be used for this session.", error);
   }
+  return migrated;
 }
 
 async function loadAppState() {
@@ -605,7 +628,7 @@ async function loadAppState() {
     KBRH_LAST_STATE = normalizeAppState(initial);
     return KBRH_LAST_STATE;
   }
-  const rawState = snap.data();
+  const rawState = await migrateExistingAutoCaseV5534(snap.data());
   KBRH_LAST_STATE = normalizeAppState(rawState);
   return KBRH_LAST_STATE;
 }
@@ -622,7 +645,7 @@ async function saveAppState(state) {
     catch (error) { console.warn("Staff identity lookup failed; continuing save with authenticated Firebase identity.", error); }
   }
   stampNewNoteAuthors(before, state, identity);
-  const cleaned = normalizeAppState(state);
+  const cleaned = normalizeAppState(normalizeStoredAutoCaseV5534(state));
   cleaned.updatedAt = new Date().toISOString();
   const changes = describeAppStateChanges(before, cleaned);
   await APP_DOC_REF().set(cleaned, { merge: true });
@@ -639,7 +662,8 @@ function listenToAppState(callback) {
       callback(KBRH_LAST_STATE);
       return;
     }
-    KBRH_LAST_STATE = normalizeAppState(snap.data());
+    const rawState = await migrateExistingAutoCaseV5534(snap.data());
+    KBRH_LAST_STATE = normalizeAppState(rawState);
     callback(KBRH_LAST_STATE);
   });
 }

@@ -1,3 +1,12 @@
+# KBRH Professional v5.5.34 — Retroactive Automatic Capitalization
+
+- Applies the existing automatic capitalization rules retroactively to stored structured fields.
+- Existing names, cities, provinces, contacts, employers/source names, organizations and referral sources are normalized to uppercase where applicable.
+- Existing address/street fields are normalized to title case.
+- Notes, clinical/medical narratives, emails, phone numbers, IDs, postal codes, URLs and other excluded fields are untouched.
+- Uses a one-time migration marker and Firestore merge writes; it does not clear or replace unrelated data.
+- Future saves also normalize applicable structured fields before persistence.
+
 # v5.5.33 — Capitalize Names When Resident Edit Is Saved
 
 - Removed the automatic one-time database-wide name migration from the normal load path.
