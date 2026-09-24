@@ -1,3 +1,9 @@
+KBRH Professional v5.5.39 — Log Book Edit & Daily Reports
+
+- Existing log entries can be edited for correction.
+- Original author/time remain intact; edits record editor and edit timestamp.
+- Daily report can be selected by date and printed.
+
 KBRH Professional v5.5.38 — Digital Log Book
 
 Adds Resident In/Out, Medication Delivery, and staff-attributed Note entries with live Firestore updates.
