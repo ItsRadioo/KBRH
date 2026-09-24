@@ -1,3 +1,17 @@
+KBRH Professional v5.5.42 — Active Log Book Residents Fix
+
+- Log Book resident selectors now use only the current active roster.
+- Phase 1 shows only active, non-archived Phase 1 residents.
+- Phase 2 shows only active, non-archived Phase 2 residents.
+- The broader residents/chore list is no longer used, preventing pre-admission and historical names from appearing.
+
+KBRH Professional v5.5.41 — Phase 2 Admin Access Fix
+
+- Fixed Phase 2 Log Book visibility for the application's recognized Admin identity/role.
+- Phase 2 access still explicitly includes attendantj@kbrh.local, executivedirector@kbrh.local, and admin@kbrh.local.
+- Firebase authenticated email remains supported, with application staff/profile identity and role as additional authorization sources.
+- Phase 1 and Phase 2 log data remain separate.
+
 KBRH Professional v5.5.39 — Log Book Edit & Daily Reports
 
 - Existing log entries can be edited for correction.

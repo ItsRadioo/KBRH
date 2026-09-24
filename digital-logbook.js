@@ -1,5 +1,31 @@
-const PHASE2_LOG_USERS=new Set(["attendantj@kbrh.local","executivedirector@kbrh.local","admin@kbrh.local"]);let currentLogScope="phase1",logUnsub=null;const canPhase2=()=>PHASE2_LOG_USERS.has(String(auth.currentUser?.email||"").trim().toLowerCase());const LOGDOC=()=>db.collection("kbrh").doc(currentLogScope==="phase2"?"digitalLogbookPhase2":"digitalLogbook");let LS={entries:[]},AS={};const E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function nm(r){return String(r?.name||[r?.firstName,r?.lastName].filter(Boolean).join(" ")||r?.residentName||"").trim()}function residents(){let a=Array.isArray(AS?.roster)?AS.roster:Array.isArray(AS?.residents)?AS.residents:[];return a.filter(r=>!r?.discharged&&!r?.inactive&&String(r?.status||"").toLowerCase()!=="discharged").filter(r=>String(r?.phase||"phase1").toLowerCase()===(currentLogScope==="phase2"?"phase2":"phase1")).map(r=>({id:String(r.id||r.residentId||nm(r)),name:nm(r)})).filter(r=>r.name).sort((a,b)=>a.name.localeCompare(b.name))}
+const PHASE2_LOG_USERS=new Set(["attendantj@kbrh.local","executivedirector@kbrh.local","admin@kbrh.local"]);let currentLogScope="phase1",logUnsub=null;
+function phase2IdentityValues(){
+  const u=auth.currentUser||{};
+  const vals=[u.email,u.displayName];
+  try{
+    const keys=["email","username","userName","login","role","staffRole","accessLevel","name"];
+    const sources=[window.currentUser,window.currentStaff,window.staffProfile,window.loggedInUser,window.userProfile];
+    sources.forEach(o=>{if(o&&typeof o==="object")keys.forEach(k=>vals.push(o[k]))});
+    ["currentUser","currentStaff","staffProfile","loggedInUser","userProfile","kbrhUser","kbrhStaff"].forEach(k=>{
+      try{const o=JSON.parse(localStorage.getItem(k)||"null");if(o&&typeof o==="object")keys.forEach(x=>vals.push(o[x]))}catch(_){}
+    });
+  }catch(_){}
+  return vals.filter(v=>v!=null).map(v=>String(v).trim().toLowerCase());
+}
+function canPhase2(){
+  const vals=phase2IdentityValues();
+  return vals.some(v=>PHASE2_LOG_USERS.has(v)||v==="admin"||v==="administrator"||v==="executive director"||v==="executivedirector");
+}const LOGDOC=()=>db.collection("kbrh").doc(currentLogScope==="phase2"?"digitalLogbookPhase2":"digitalLogbook");let LS={entries:[]},AS={};const E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function nm(r){return String(r?.name||[r?.firstName,r?.lastName].filter(Boolean).join(" ")||r?.residentName||"").trim()}
+function residents(){
+  const a=Array.isArray(AS?.roster)?AS.roster:[];
+  const phase=currentLogScope==="phase2"?"phase2":"phase1";
+  return a
+    .filter(r=>r&&r!=="temp"&&!r.archived&&(r.phase||"phase1")===phase)
+    .map(r=>({id:String(r.id||r.residentId||nm(r)),name:nm(r)}))
+    .filter(r=>r.name)
+    .sort((a,b)=>a.name.localeCompare(b.name));
+}
 function localNow(){let d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
 function oneSelect(){return `<select name="rid" required><option value="">Select resident…</option>${residents().map(r=>`<option value="${E(r.id)}">${E(r.name)}</option>`).join("")}</select>`}function multi(){return `<div class="lb-checks">${residents().map(r=>`<label class="lb-check"><input type="checkbox" name="rids" value="${E(r.id)}"> ${E(r.name)}</label>`).join("")||'<p class="hint">No active residents found.</p>'}</div>`}
 function modal(title,body,save){let root=document.querySelector("#lbRoot");root.innerHTML=`<div class="lb-bg"><div class="lb-modal"><div class="lb-head"><h2>${E(title)}</h2><button type="button" id="lbx">×</button></div><form id="lbf"><div class="lb-body">${body}</div><div class="lb-foot"><button type="button" id="lbc">Cancel</button><button type="submit">Save Entry</button></div></form></div></div>`;let close=()=>root.innerHTML="";root.querySelector("#lbx").onclick=close;root.querySelector("#lbc").onclick=close;root.querySelector(".lb-bg").onclick=e=>{if(e.target===e.currentTarget)close()};root.querySelector("#lbf").onsubmit=async e=>{e.preventDefault();try{await save(new FormData(e.currentTarget));close()}catch(x){alert(x.message||"Unable to save.")}}}
