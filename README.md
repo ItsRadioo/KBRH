@@ -387,3 +387,10 @@ Fixed false pre-screening save-conflict verification that blocked edits and Pend
 - Address/street text uses title-style capitalization.
 - Email, phone, postal code, notes, counselling, medication/medical and narrative fields are intentionally excluded.
 - Capitalization changes the actual input value so saved Firestore data uses the normalized capitalization.
+
+v5.5.40 — Restricted Phase 2 Log Book
+- Adds a separate Phase 2 digital log book.
+- Phase 2 access is restricted in the UI to attendantj@kbrh.local, executivedirector@kbrh.local, and admin@kbrh.local.
+- Authorized users can switch between Phase 1 and Phase 2 logs.
+- Phase 2 resident selectors show current Phase 2 residents only; Phase 1 selectors show current Phase 1 residents.
+- Entries, edits, live display, and date reports remain separated by log book.
