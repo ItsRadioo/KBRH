@@ -1,3 +1,7 @@
+KBRH Professional v5.5.38 — Digital Log Book
+
+Adds Resident In/Out, Medication Delivery, and staff-attributed Note entries with live Firestore updates.
+
 # v5.5.37 — Pre-Admission Meal Chores
 
 - Pre-screening and Pending Admission clients already added to the chore roster are now eligible for Meal Chores.
