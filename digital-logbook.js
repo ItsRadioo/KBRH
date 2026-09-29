@@ -19,7 +19,7 @@ function canPhase2(){
 function nm(r){return String(r?.name||[r?.firstName,r?.lastName].filter(Boolean).join(" ")||r?.residentName||"").trim()}
 function residents(){
   // Use the exact normalized current roster source used by Verbal Warnings.
-  const roster=Array.isArray(AS?.roster)?AS.roster.filter(c=>c&&c!=="temp"):[];
+  const roster=Array.isArray(AS?.roster)?AS.roster.filter(c=>c&&c!=="temp"&&!c.archived):[];
   const phase=currentLogScope==="phase2"?"phase2":"phase1";
   return roster
     .filter(c=>String(c.phase||"phase1").toLowerCase()===phase)

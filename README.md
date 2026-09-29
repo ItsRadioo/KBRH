@@ -1,3 +1,10 @@
+KBRH Professional v5.5.48 — Log Book Active Residents Fix
+
+- Digital Log Book resident selectors now exclude archived/discharged residents.
+- Phase 1 and Phase 2 selectors continue using the normalized live roster source.
+- This matches the Current Roster definition: resident exists in state.roster, is not archived, and belongs to the selected phase.
+- v5.5.47 significant-only audit behavior and v5.5.46 mobile overhaul are retained.
+
 KBRH Professional v5.5.47 — Significant-Changes Audit Log
 
 - Removed audit entries for ordinary button presses and navigation.
