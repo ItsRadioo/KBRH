@@ -248,7 +248,6 @@ function renderForm(){
         currentRecord.reviewed=true; currentRecord.reviewDecision=decision; currentRecord.reviewedAt=new Date().toISOString();
         currentRecord.reviewedBy=identity.name||staffDisplayName(); currentRecord.reviewedByUid=identity.uid||""; currentRecord.reviewedByEmail=identity.email||"";
         await persistCurrentPrescreen({complete:true,showAlert:false});
-        if(typeof writeAuditAction==="function") await writeAuditAction(`Pre-screening further review ${decision.toUpperCase()}`,`Applicant: ${applicantName(a)}`);
         alert(`Further review marked ${decision.toUpperCase()}.`);
         currentStep="summary"; renderForm();
       });

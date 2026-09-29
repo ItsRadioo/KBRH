@@ -1,3 +1,12 @@
+KBRH Professional v5.5.47 — Significant-Changes Audit Log
+
+- Removed audit entries for ordinary button presses and navigation.
+- Audit Log now focuses on significant saved system changes.
+- Continues tracking notes, client additions/removals, offers/status changes, client information edits and other persisted record changes.
+- Each audit entry retains the authenticated user, date/time and originating page.
+- Admin-only read access and append-only Firestore protections remain unchanged.
+- v5.5.46 mobile overhaul and all earlier workflow changes are retained.
+
 KBRH Professional v5.5.46 — Mobile UI Overhaul
 
 - Rebuilt phone navigation as an off-canvas hamburger menu with backdrop and mobile Sign Out.

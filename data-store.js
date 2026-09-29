@@ -557,35 +557,6 @@ async function writeAuditEntry(changes,identity){
   catch(error){console.warn("Audit log write failed",error);}
 }
 
-async function writeAuditAction(action,details=""){
-  const user=auth.currentUser;
-  if(!user?.uid)return;
-  let identity={uid:user.uid,email:user.email||"",name:user.displayName||user.email||"Staff User"};
-  if(typeof getCurrentStaffIdentity==="function"){try{identity=await getCurrentStaffIdentity();}catch(_){}}
-  const summary=String(action||"System action");
-  const changes=[summary];
-  if(details)changes.push(String(details));
-  try{
-    await db.collection("kbrhAudit").add({
-      eventType:"action",staffUid:identity.uid||user.uid,staffName:identity.name||user.email||"Staff User",
-      staffEmail:identity.email||user.email||"",page:kbrhPageName(),changes,summary,
-      timestamp:firebase.firestore.FieldValue.serverTimestamp(),timestampIso:new Date().toISOString()
-    });
-  }catch(error){console.warn("Audit action write failed",error);}
-}
-window.writeAuditAction=writeAuditAction;
-
-function kbrhAuditControlLabel(control){
-  return String(control?.getAttribute("aria-label")||control?.title||control?.textContent||control?.value||control?.id||"Control")
-    .replace(/\s+/g," ").trim().slice(0,160)||"Control";
-}
-document.addEventListener("click",event=>{
-  const control=event.target?.closest?.("button,input[type='button'],input[type='submit'],a.app-nav-link");
-  if(!control)return;
-  const label=kbrhAuditControlLabel(control);
-  writeAuditAction(control.matches("a")?`Navigation: ${label}`:`Button pressed: ${label}`);
-},true);
-
 // v5.5.34: normalize existing stored values anywhere the automatic-case rule applies.
 // This is intentionally limited to structured fields. Narrative/clinical notes, email,
 // phone, IDs, postal codes and other free-text content are never reformatted.
