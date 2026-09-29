@@ -55,4 +55,8 @@ function subscribeAuditLog() {
 
 document.getElementById("auditSearch")?.addEventListener("input", renderAuditLog);
 document.getElementById("refreshAuditBtn")?.addEventListener("click", subscribeAuditLog);
-auth.onAuthStateChanged(user => { if (user) subscribeAuditLog(); });
+auth.onAuthStateChanged(user => {
+  if(!user)return;
+  if(!isKbrhAdmin(user)){ location.replace("index.html"); return; }
+  subscribeAuditLog();
+});

@@ -18,13 +18,13 @@ function canPhase2(){
 }const LOGDOC=()=>db.collection("kbrh").doc(currentLogScope==="phase2"?"digitalLogbookPhase2":"digitalLogbook");let LS={entries:[]},AS={};const E=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function nm(r){return String(r?.name||[r?.firstName,r?.lastName].filter(Boolean).join(" ")||r?.residentName||"").trim()}
 function residents(){
-  const a=Array.isArray(AS?.roster)?AS.roster:[];
+  // Use the exact normalized current roster source used by Verbal Warnings.
+  const roster=Array.isArray(AS?.roster)?AS.roster.filter(c=>c&&c!=="temp"):[];
   const phase=currentLogScope==="phase2"?"phase2":"phase1";
-  return a
-    .filter(r=>r&&r!=="temp"&&!r.archived&&(r.phase||"phase1")===phase)
-    .map(r=>({id:String(r.id||r.residentId||nm(r)),name:nm(r)}))
-    .filter(r=>r.name)
-    .sort((a,b)=>a.name.localeCompare(b.name));
+  return roster
+    .filter(c=>String(c.phase||"phase1").toLowerCase()===phase)
+    .map(c=>({id:String(c.id||""),name:`${c.firstName||""} ${c.lastName||""}`.trim()}))
+    .filter(c=>c.id&&c.name);
 }
 function localNow(){let d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
 function oneSelect(){return `<select name="rid" required><option value="">Select resident…</option>${residents().map(r=>`<option value="${E(r.id)}">${E(r.name)}</option>`).join("")}</select>`}function multi(){return `<div class="lb-checks">${residents().map(r=>`<label class="lb-check"><input type="checkbox" name="rids" value="${E(r.id)}"> ${E(r.name)}</label>`).join("")||'<p class="hint">No active residents found.</p>'}</div>`}
@@ -42,5 +42,9 @@ function editEntry(id){let e=(LS.entries||[]).find(x=>x.id===id);if(!e)return al
 function entryDate(e){let v=e.type==="movement"&&e.eventTime?e.eventTime:e.createdAt,d=new Date(v);if(isNaN(d))return "";let p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
 function printReport(){let day=document.querySelector("#reportDate").value;if(!day)return alert("Select a report date.");let a=[...(LS.entries||[])].filter(e=>entryDate(e)===day).sort((x,y)=>String((x.eventTime||x.createdAt)||"").localeCompare(String((y.eventTime||y.createdAt)||"")));let title=new Date(day+"T12:00:00").toLocaleDateString([],{weekday:"long",year:"numeric",month:"long",day:"numeric"});let rows=a.map(e=>{let detail=e.type==="movement"?`${E(e.residentName)} — ${e.direction==="OUT"?"LEFT":"RETURNED"} at ${dt(e.eventTime)}`:e.type==="medication"?`${E(e.pharmacy)} — ${E((e.residentNames||[]).join(", "))}: ${E(e.delivered)}`:E(e.note||"");return `<tr><td>${dt(e.eventTime||e.createdAt)}</td><td>${E(e.summary||"Log Entry")}</td><td>${detail}</td><td>${E(e.enteredBy||"Unknown Staff")}</td></tr>`}).join("");let w=window.open("","_blank","width=1000,height=800");w.document.write(`<!doctype html><html><head><title>Log Book Report - ${E(title)}</title><style>body{font-family:Arial,sans-serif;margin:28px;color:#111}h1{margin-bottom:4px}p{margin-top:0}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #999;padding:8px;text-align:left;vertical-align:top}th{background:#eee}@media print{body{margin:12mm}}</style></head><body><h1>Ken Brown Recovery Home</h1><p><strong>${currentLogScope==="phase2"?"Phase 2":"Phase 1"} Digital Log Book — ${E(title)}</strong></p>${a.length?`<table><thead><tr><th>Time</th><th>Entry</th><th>Details</th><th>Entered By</th></tr></thead><tbody>${rows}</tbody></table>`:"<p>No log book entries for this date.</p>"}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),250)}
 async function subscribeLog(){if(logUnsub)logUnsub();LS={entries:[]};render();logUnsub=LOGDOC().onSnapshot(s=>{LS=s.exists?s.data():{entries:[]};render()},e=>console.error(e))}
-async function start(){let sel=document.querySelector("#logbookScope");if(canPhase2()){sel.insertAdjacentHTML("beforeend",'<option value="phase2">Phase 2 Log</option>')}else{document.querySelector("#logbookSelectorCard").style.display="none"}sel.value="phase1";sel.onchange=async()=>{let requested=sel.value;if(requested==="phase2"&&!canPhase2()){sel.value="phase1";return alert("You do not have access to the Phase 2 log book.")}currentLogScope=requested;await subscribeLog()};document.querySelector("#reportDate").value=new Date().toISOString().slice(0,10);document.querySelector("#printReportBtn").onclick=printReport;document.querySelectorAll("[data-reason]").forEach(b=>b.onclick=()=>({movement,medication:meds,note}[b.dataset.reason])());try{if(typeof loadAppState==="function")AS=await loadAppState()||{};if(typeof APP_DOC_REF==="function")APP_DOC_REF().onSnapshot(s=>{if(s.exists)AS=s.data()||{}})}catch(e){console.warn(e)}await subscribeLog()}
+async function start(){let sel=document.querySelector("#logbookScope");if(canPhase2()){sel.insertAdjacentHTML("beforeend",'<option value="phase2">Phase 2 Log</option>')}else{document.querySelector("#logbookSelectorCard").style.display="none"}sel.value="phase1";sel.onchange=async()=>{let requested=sel.value;if(requested==="phase2"&&!canPhase2()){sel.value="phase1";return alert("You do not have access to the Phase 2 log book.")}currentLogScope=requested;await subscribeLog()};document.querySelector("#reportDate").value=new Date().toISOString().slice(0,10);document.querySelector("#printReportBtn").onclick=printReport;document.querySelectorAll("[data-reason]").forEach(b=>b.onclick=()=>({movement,medication:meds,note}[b.dataset.reason])());try{
+  if(typeof loadAppState==="function")AS=await loadAppState()||{};
+  if(typeof listenToAppState==="function")listenToAppState(nextState=>{AS=nextState||{}});
+}catch(e){console.warn(e)}
+await subscribeLog()}
 auth.onAuthStateChanged(u=>{if(u)start()});

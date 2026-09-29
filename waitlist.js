@@ -540,6 +540,9 @@ function openApplicantActionsModal(applicantId) {
   document.getElementById("applicantActionsName").textContent =
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
+  const giveOfferButton = document.querySelector('#applicantActionsModal [data-applicant-action="giveOffer"]');
+  if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated";
+
   const undoButton = document.getElementById("undoLastCallInActionBtn");
   if (undoButton) {
     const canUndo = Array.isArray(applicant.callInHistory) && applicant.callInHistory.length > 0;
@@ -633,6 +636,7 @@ function savePositionChange() {
 
 async function giveOfferQuick(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
+  if(applicant.status==="Incarcerated"){ alert("Update the applicant status before giving an offer."); return; }
   const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
   applicant.status="Offer Given"; applicant.offerGivenAt=new Date().toISOString(); applicant.offerGivenBy=identity.name||identity.email||"Staff User";
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
@@ -641,6 +645,7 @@ async function giveOfferQuick(applicantId){
 function startPrescreenQuick(applicantId){ location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
   if(item.status==="Offer Given") return `<button type="button" class="primary-next-action" onclick="startPrescreenQuick('${item.id}')">Start Pre-Screening</button>`;
+  if(item.status==="Incarcerated") return `<button type="button" class="primary-next-action" onclick="startInlineEdit('${item.id}')">Update Status</button>`;
   return `<button type="button" class="primary-next-action" onclick="giveOfferQuick('${item.id}')">Give Offer</button>`;
 }
 

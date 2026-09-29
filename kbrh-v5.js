@@ -292,3 +292,58 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(sweep, 0));
   else setTimeout(sweep, 0);
 })();
+
+
+/* v5.5.46 mobile navigation */
+(() => {
+  "use strict";
+  function initMobileNavigation(){
+    if(document.body.classList.contains("page-login")||document.body.classList.contains("page-print")||document.body.classList.contains("page-meal-print"))return;
+    const header=document.querySelector("header");
+    const nav=header?.querySelector(".app-nav");
+    const top=header?.querySelector(".header-top");
+    if(!header||!nav||!top||header.querySelector(".mobile-nav-toggle"))return;
+
+    const toggle=document.createElement("button");
+    toggle.type="button";
+    toggle.className="mobile-nav-toggle";
+    toggle.setAttribute("aria-label","Open navigation");
+    toggle.setAttribute("aria-expanded","false");
+    toggle.innerHTML="☰";
+
+    const backdrop=document.createElement("div");
+    backdrop.className="mobile-nav-backdrop";
+    backdrop.setAttribute("aria-hidden","true");
+
+    const signout=document.createElement("button");
+    signout.type="button";
+    signout.className="logout-btn mobile-nav-signout";
+    signout.textContent="Sign Out";
+    signout.style.display="none";
+    signout.addEventListener("click",()=>typeof logout==="function"&&logout());
+    nav.appendChild(signout);
+
+    const close=()=>{
+      document.body.classList.remove("kbrh-mobile-nav-open");
+      toggle.setAttribute("aria-expanded","false");
+      toggle.setAttribute("aria-label","Open navigation");
+      toggle.innerHTML="☰";
+    };
+    const open=()=>{
+      document.body.classList.add("kbrh-mobile-nav-open");
+      toggle.setAttribute("aria-expanded","true");
+      toggle.setAttribute("aria-label","Close navigation");
+      toggle.innerHTML="×";
+    };
+    toggle.addEventListener("click",()=>document.body.classList.contains("kbrh-mobile-nav-open")?close():open());
+    backdrop.addEventListener("click",close);
+    nav.addEventListener("click",e=>{if(e.target.closest("a"))close();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+    window.addEventListener("resize",()=>{if(window.innerWidth>768)close();});
+
+    top.appendChild(toggle);
+    document.body.appendChild(backdrop);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initMobileNavigation);
+  else initMobileNavigation();
+})();

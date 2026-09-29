@@ -100,10 +100,31 @@ function determineSteps(r){
   return steps;
 }
 
+function completedPrescreenSteps(r){
+  const steps=determineSteps(r);
+  const saved=Array.isArray(r.completedSteps)?r.completedSteps:[];
+  if(r.status==="Completed") return steps.filter(step=>step!=="summary");
+  const currentIndex=steps.indexOf(currentStep);
+  const inferred=currentIndex>0?steps.slice(0,currentIndex):[];
+  return [...new Set([...saved,...inferred])].filter(step=>steps.includes(step)&&step!=="summary");
+}
+function goToPrescreenStep(step){
+  if(!currentRecord)return;
+  collectCurrentStep();
+  const allowed=new Set([...completedPrescreenSteps(currentRecord),currentStep]);
+  if(!allowed.has(step))return;
+  currentStep=step; currentRecord.step=step; renderForm(); $("prescreenForm").scrollTop=0;
+}
+window.goToPrescreenStep=goToPrescreenStep;
+
 function renderProgress(r){
-  const steps=determineSteps(r); const index=Math.max(0,steps.indexOf(currentStep));
+  const steps=determineSteps(r);
+  const completed=new Set(completedPrescreenSteps(r));
   const labels={opening:"Opening",interest:"Interest",remain:"Waitlist",removeConfirm:"Waitlist",permission:"Availability",callback:"Callback",sobriety:"Sobriety",sobrietyFail:"Decision",detoxPlan:"Detox",intakeSchedule:"Intake Date",expectations:"Expectations",legal:"Legal",health:"Health",medication:"Medication",treatment:"Treatment",income:"Income",goals:"Goals",summary:"Summary"};
-  $("prescreenProgress").innerHTML=steps.map((s,i)=>`<span class="prescreen-step-pill ${i<index?"done":i===index?"active":""}">${esc(labels[s])}</span>`).join("");
+  $("prescreenProgress").innerHTML=steps.map((step)=>{
+    const active=step===currentStep, enabled=active||completed.has(step);
+    return `<button type="button" class="prescreen-step-pill ${completed.has(step)?"done":""} ${active?"active":""}" ${enabled?`onclick="goToPrescreenStep('${step}')"`:"disabled"}>${esc(labels[step])}</button>`;
+  }).join("");
 }
 
 function stepHtml(step,r,a){
@@ -170,7 +191,11 @@ function suggestedOutcome(r){
     if(x.sobrietyAction==="schedule") return {code:"scheduled-intake",title:"Intake Scheduled — Offer Held",detail:`Applicant is scheduled for intake on ${x.scheduledIntakeDate||"the selected date"}${x.scheduledIntakeTime?` at ${x.scheduledIntakeTime}`:""}, after reaching the five-day sobriety requirement.`,kind:"neutral"};
     return {code:"returned-sobriety",title:"Return to Waitlist",detail:"Applicant does not meet the five-day sobriety requirement and the next eligible applicant should be contacted.",kind:"ineligible"};
   }
-  if(x.legalConflict==="yes" || x.legalConflict==="unknown" || x.healthConflict==="yes" || x.healthConflict==="unknown") return {code:"review",title:"Further Review Required",detail:"A possible legal or health participation conflict requires review before admission.",kind:"neutral"};
+  if(x.legalConflict==="yes" || x.legalConflict==="unknown" || x.healthConflict==="yes" || x.healthConflict==="unknown"){
+    if(r.reviewed && r.reviewDecision==="approved") return {code:"approved",title:"Further Review — Approved",detail:"The identified legal or health participation concern was reviewed and approved.",kind:"eligible"};
+    if(r.reviewed && r.reviewDecision==="denied") return {code:"review-denied",title:"Further Review — Denied",detail:"The identified legal or health participation concern was reviewed and denied.",kind:"ineligible"};
+    return {code:"review",title:"Further Review Required",detail:"A possible legal or health participation conflict requires review before admission.",kind:"neutral"};
+  }
   return {code:"approved",title:"Pre-Screening Complete — Eligible to Proceed",detail:"The applicant meets the documented pre-screening criteria.",kind:"eligible"};
 }
 
@@ -207,6 +232,28 @@ function renderForm(){
   $("prescreenApplicantName").textContent=`${applicantName(a)} · ${a.contact||a.phone||"No phone listed"}`;
   renderProgress(currentRecord);
   $("prescreenForm").innerHTML=stepHtml(currentStep,currentRecord,a);
+  if(currentStep==="summary"){
+    const result=suggestedOutcome(currentRecord);
+    if(result.code==="review" || currentRecord.reviewed){
+      const box=document.createElement("section");
+      box.className="prescreen-step prescreen-review-box";
+      box.innerHTML=`<h3>Further Review</h3><label class="prescreen-review-check"><input id="prescreenReviewedCheck" type="checkbox" ${currentRecord.reviewed?"checked":""}><span><strong>Reviewed</strong><small>Mark once the legal / health concern has been reviewed.</small></span></label>${currentRecord.reviewed?`<div class="eligibility-box ${currentRecord.reviewDecision==="approved"?"eligible":"ineligible"}"><strong>${currentRecord.reviewDecision==="approved"?"Approved":"Denied"}</strong><span>Reviewed by ${esc(currentRecord.reviewedBy||"Staff User")} · ${esc(currentRecord.reviewedAt?new Date(currentRecord.reviewedAt).toLocaleString("en-CA"):"")}</span></div>`:""}`;
+      $("prescreenForm").appendChild(box);
+      $("prescreenReviewedCheck").addEventListener("change",async e=>{
+        if(!e.target.checked){e.target.checked=true;return;}
+        const decision=String(prompt("Further review decision: type APPROVED or DENIED.")||"").trim().toLowerCase();
+        if(!["approved","denied"].includes(decision)){e.target.checked=false;alert("Review was not saved. Enter APPROVED or DENIED.");return;}
+        let identity={name:staffDisplayName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+        if(typeof getCurrentStaffIdentity==="function"){try{identity=await getCurrentStaffIdentity();}catch(_){}}
+        currentRecord.reviewed=true; currentRecord.reviewDecision=decision; currentRecord.reviewedAt=new Date().toISOString();
+        currentRecord.reviewedBy=identity.name||staffDisplayName(); currentRecord.reviewedByUid=identity.uid||""; currentRecord.reviewedByEmail=identity.email||"";
+        await persistCurrentPrescreen({complete:true,showAlert:false});
+        if(typeof writeAuditAction==="function") await writeAuditAction(`Pre-screening further review ${decision.toUpperCase()}`,`Applicant: ${applicantName(a)}`);
+        alert(`Further review marked ${decision.toUpperCase()}.`);
+        currentStep="summary"; renderForm();
+      });
+    }
+  }
   $("prescreenForm").querySelectorAll('.prescreen-choice input').forEach(input=>input.addEventListener('change',()=>{
     input.closest('.prescreen-choice-grid').querySelectorAll('.prescreen-choice').forEach(l=>l.classList.toggle('selected',l.contains(input)));
     collectCurrentStep();
@@ -412,6 +459,8 @@ async function completePrescreen(){
       a.status="N/A"; addWaitlistNote(a,`Pre-screening: applicant did not meet the five-day sobriety requirement and was returned to the waitlist. Last use: ${x.lastUseDate||"unknown"}; substance: ${x.lastUseSubstance||"not recorded"}. Contact the next eligible applicant.`);
     } else if(result.code==="review"){
       addWaitlistNote(a,"Pre-screening completed: further review required due to a possible legal or health participation conflict.");
+    } else if(result.code==="review-denied"){
+      addWaitlistNote(a,"Pre-screening further review completed: applicant was denied following review of the identified participation concern.");
     } else if(result.code==="approved"){
       addWaitlistNote(a,"Pre-screening completed: applicant meets documented pre-screening criteria and may proceed in the admissions process.");
     }
@@ -482,6 +531,8 @@ function closePrescreen(){ $("prescreenModal").classList.add("hidden"); document
 
 function nextStep(){
   collectCurrentStep(); if(!validateStep(currentStep,currentRecord))return;
+  currentRecord.completedSteps=Array.isArray(currentRecord.completedSteps)?currentRecord.completedSteps:[];
+  if(currentStep!=="summary"&&!currentRecord.completedSteps.includes(currentStep)) currentRecord.completedSteps.push(currentStep);
   const steps=determineSteps(currentRecord); const i=steps.indexOf(currentStep); if(i<steps.length-1){currentStep=steps[i+1]; currentRecord.step=currentStep; renderForm(); $("prescreenForm").scrollTop=0;}
 }
 function previousStep(){

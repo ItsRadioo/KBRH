@@ -1,3 +1,46 @@
+KBRH Professional v5.5.46 — Mobile UI Overhaul
+
+- Rebuilt phone navigation as an off-canvas hamburger menu with backdrop and mobile Sign Out.
+- Desktop navigation and desktop layout remain intact above the mobile breakpoint.
+- Cards, forms and controls now use the available phone width.
+- Form fields use mobile-safe 16px input sizing and larger touch targets.
+- Multi-column forms stack into one column on phones.
+- Modals become full-width bottom sheets with a 94dvh maximum height and internal scrolling.
+- Data tables are contained in deliberate touch-scroll panels instead of overflowing the page.
+- Table action columns remain visible at the right edge while scrolling.
+- Pre-Screening completed-step navigation is horizontally scrollable on phones.
+- Pre-Screening choices, dashboard actions and common action buttons are enlarged/reflowed for touch use.
+- Extra-small phone layout added below 420px.
+- Existing v5.5.45 Change Log, Further Review workflow, section navigation and v5.5.44 incarcerated workflow retained.
+
+KBRH Professional v5.5.45 — Change Log + Pre-Screening Review
+
+- Audit Log is restricted to admin@kbrh.local in both the UI and included Firestore rules.
+- All authenticated users can append audit records, but only admin@kbrh.local can read them.
+- Every button press and primary navigation action is logged with user, date/time and page.
+- Existing saved-state auditing continues to log notes and record changes.
+- Audit records cannot be edited or deleted by the application.
+- Further Review Required pre-screenings now have a Reviewed checkbox.
+- Marking Reviewed prompts for APPROVED or DENIED and records reviewer identity and timestamp.
+- Approved reviews can proceed through Pending Admission; denied reviews do not.
+- Completed pre-screening sections become clickable navigation buttons at the top.
+- Future/uncompleted sections remain locked.
+
+KBRH Professional v5.5.44 — Incarcerated Waitlist Status Workflow
+
+- Applicants marked Incarcerated no longer show Give Offer as their primary waitlist action.
+- Their primary action is now Update Status.
+- Update Status opens the applicant row for editing so staff can change the current status.
+- Give Offer is hidden from the More actions menu while the applicant remains Incarcerated.
+- The Give Offer function also blocks an incarcerated applicant as a safeguard until their status is updated.
+
+KBRH Professional v5.5.43 — Log Book Current Roster Fix
+
+- Digital Log Book now uses the same normalized live roster source as the Verbal Warning Log.
+- Phase 1 Log Book lists current Phase 1 roster residents from state.roster.
+- Phase 2 Log Book lists current Phase 2 roster residents from the same source.
+- Removed the raw Firestore listener that was replacing normalized roster data and causing an empty or incorrect resident list.
+
 KBRH Professional v5.5.42 — Active Log Book Residents Fix
 
 - Log Book resident selectors now use only the current active roster.
