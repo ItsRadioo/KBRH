@@ -1026,9 +1026,9 @@ function openResidentInfoModal(clientId) {
   html += `<section class="resident-info-section"><h3>Admission</h3><div class="resident-info-grid">`;
   html += residentInfoItem(phase === "phase1" ? "Entry Date" : "Phase 2 Entry Date", formatDate(phase === "phase1" ? client.entryDate : client.phase2AdmissionDate));
   html += residentInfoItem("Expected Discharge", formatDate(dischargeDate));
-  html += residentInfoItem("Days Remaining", daysRemaining);
+  html += residentInfoItem("Days Left", daysRemaining);
   html += residentInfoItem("OPOC", client.opocCompleted ? "Complete" : "Incomplete");
-  html += residentInfoItem("Admission Status", client.admissionCompleted ? "Complete" : "Incomplete");
+  html += residentInfoItem("Client Info", client.admissionCompleted ? "Complete" : "Incomplete");
   html += residentInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
   html += `</div></section>`;
 
