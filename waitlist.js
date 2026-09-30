@@ -396,11 +396,18 @@ function addWaitlistApplicant() {
     return;
   }
 
+  const returningResident = archivedRosterMatchWithinTwoYears(applicant);
   appendPersonActivity(applicant,"Application","Application added to waitlist",`Application date: ${applicant.dateApplied || "Not recorded"}`);
+  if (returningResident) {
+    appendPersonActivity(applicant,"Alert","At least 2 previous KBRH admissions found within the past 2 years","Applicant requires review under the repeat-admission treatment rule.");
+  }
   waitlistState.waitlist.push(applicant);
   clearWaitlistForm();
   renderWaitlist();
   saveWaitlist();
+  if (returningResident) {
+    alert("RETURNING RESIDENT ALERT\n\nThis applicant has at least 2 KBRH discharge records within the previous 2 years and is highlighted in blue.\n\nThey should be instructed to attend a more intensive treatment centre before qualifying for Ken Brown Recovery Home again.");
+  }
 }
 
 function clearWaitlistForm() {
@@ -1052,8 +1059,42 @@ function renderWaitlist() {
   renderCompactArchivedWaitlist();
 }
 
+function normalizeArchiveMatchName(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleUpperCase("en-CA")
+    .replace(/[.'’`-]/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function archivedRosterMatchesWithinTwoYears(item) {
+  if (!item || !Array.isArray(waitlistState?.roster)) return [];
+  const first = normalizeArchiveMatchName(item.firstName);
+  const last = normalizeArchiveMatchName(item.lastName);
+  if (!first || !last) return [];
+
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 2);
+
+  return waitlistState.roster.filter(resident => {
+    if (!resident || resident === "temp" || !resident.archived) return false;
+    if (normalizeArchiveMatchName(resident.firstName) !== first ||
+        normalizeArchiveMatchName(resident.lastName) !== last) return false;
+
+    const discharge = resident.archivedAt ? new Date(resident.archivedAt) : null;
+    return discharge && !Number.isNaN(discharge.getTime()) && discharge >= cutoff;
+  });
+}
+
+function archivedRosterMatchWithinTwoYears(item) {
+  // Repeat-admission flag requires TWO separate archived KBRH admissions
+  // within the current rolling 2-year retention window.
+  return archivedRosterMatchesWithinTwoYears(item).length >= 2;
+}
+
 function getWaitlistStatusClass(item) {
   const noCallCount = getConsecutiveNoCallCount(item);
+  if (archivedRosterMatchWithinTwoYears(item)) return "waitlist-returning-resident-row";
   return item.status === "Offer Given"
     ? "waitlist-offer-row"
     : item.status === "Incarcerated"

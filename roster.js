@@ -464,7 +464,6 @@ function handleRosterAction(clientId, action) {
   if (action === "waitlist") moveBackToWaitlist(clientId);
   if (action === "archive") archiveClient(clientId);
   if (action === "restore") restoreClient(clientId);
-  if (action === "delete") deleteArchivedClient(clientId);
 }
 
 let selectedRosterActionClientId = null;
@@ -486,7 +485,6 @@ function openRosterActionsModal(clientId) {
     actionList.innerHTML = isArchived
       ? `
         <button type="button" data-roster-action="restore">Restore</button>
-        <button type="button" class="danger" data-roster-action="delete">Delete Permanently</button>
       `
       : `
         <button type="button" data-roster-action="edit">Edit</button>
@@ -724,22 +722,6 @@ function restoreClient(clientId) {
     createdAt: new Date().toISOString()
   });
 
-  renderRoster();
-  saveRoster();
-}
-
-function deleteArchivedClient(clientId) {
-  const client = rosterState.roster.find(item => item.id === clientId);
-  if (!client) return;
-
-  if (!client.archived) {
-    alert("Only archived roster records can be permanently deleted.");
-    return;
-  }
-
-  if (!confirm(`Permanently delete archived record for ${client.firstName} ${client.lastName}? This cannot be undone.`)) return;
-
-  rosterState.roster = rosterState.roster.filter(item => item.id !== clientId);
   renderRoster();
   saveRoster();
 }

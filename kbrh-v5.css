@@ -297,7 +297,7 @@ tbody td{
   border-bottom:1px solid #e7edf3!important;
   color:#26384c;font-size:.83rem!important;padding:10px 11px!important;vertical-align:middle!important;
 }
-tbody tr:nth-child(even):not(.waitlist-follow-up-row):not(.waitlist-offer-row):not(.waitlist-incarcerated-row)>td{background:#fbfcfe;}
+tbody tr:nth-child(even):not(.waitlist-follow-up-row):not(.waitlist-offer-row):not(.waitlist-incarcerated-row):not(.waitlist-returning-resident-row)>td{background:#fbfcfe;}
 tbody tr:hover>td{background:#f3f8fb!important;}
 tbody tr:last-child td{border-bottom:0!important;}
 td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!important;}
@@ -307,6 +307,11 @@ td button{min-height:31px!important;padding:5px 9px!important;font-size:.74rem!i
 #waitlistBody tr.waitlist-follow-up-row:hover>td,#archivedWaitlistBody tr.waitlist-follow-up-row:hover>td,#compactWaitlistBody tr.waitlist-follow-up-row:hover>td,#compactArchivedWaitlistBody tr.waitlist-follow-up-row:hover>td{background:#f2c8cc!important;}
 #waitlistBody tr.waitlist-offer-row>td,#archivedWaitlistBody tr.waitlist-offer-row>td,#compactWaitlistBody tr.waitlist-offer-row>td,#compactArchivedWaitlistBody tr.waitlist-offer-row>td{background:#dff3e7!important;border-color:#b7ddc5!important;}
 #waitlistBody tr.waitlist-incarcerated-row>td,#archivedWaitlistBody tr.waitlist-incarcerated-row>td,#compactWaitlistBody tr.waitlist-incarcerated-row>td,#compactArchivedWaitlistBody tr.waitlist-incarcerated-row>td{background:#fff0c7!important;border-color:#ebd08a!important;}
+
+
+/* Returning resident: exact first/last-name match to a roster archive discharge within the past 2 years. */
+#waitlistBody tr.waitlist-returning-resident-row>td,#compactWaitlistBody tr.waitlist-returning-resident-row>td{background:#dbeafe!important;border-color:#93c5fd!important;}
+#waitlistBody tr.waitlist-returning-resident-row:hover>td,#compactWaitlistBody tr.waitlist-returning-resident-row:hover>td{background:#c7ddfb!important;}
 
 /* ----- Modal / case-work panel system ----- */
 .modal-backdrop,.kbrh-modal-backdrop{

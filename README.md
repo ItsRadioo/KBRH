@@ -1,3 +1,36 @@
+KBRH Professional v5.5.52 — Medication Delivery Resident Dropdown
+
+- Medication Delivery now uses a single Resident dropdown instead of the scrolling checkbox list.
+- The dropdown uses the same active Phase 1/Phase 2 resident source as the Log Book.
+- Existing medication log-entry storage remains compatible.
+
+KBRH Professional v5.5.51 — Two-Archive Repeat Admission Threshold
+
+- Blue returning-resident highlighting now requires TWO matching archived KBRH admission/discharge records within the rolling 2-year window.
+- A single archived admission does not trigger the blue warning.
+- The intensive-treatment-centre alert is shown only when at least two qualifying archive records match the applicant.
+- Rolling two-year automatic archive deletion from v5.5.50 remains unchanged.
+
+KBRH Professional v5.5.50 — Rolling 2-Year Retention + Repeat Admission Alert
+
+- Archived roster records are automatically removed individually once 2 years have elapsed from their recorded discharge/archive timestamp.
+- Retention is rolling per admission: e.g. when a 2026 record expires in 2028, a 2027 record remains until its own 2-year anniversary.
+- Cleanup runs when the application loads/receives the shared Firestore state and persists the removal back to Firestore.
+- Automatic retention deletions are written to the audit log.
+- Waitlist applicants matching an archived resident within the rolling 2-year window remain highlighted blue.
+- When such an applicant is added, the system displays a Returning Resident Alert instructing staff that the applicant should attend a more intensive treatment centre before qualifying for KBRH again.
+- The repeat-admission alert is also recorded in the applicant activity history.
+- Permanent manual deletion of archived roster records remains unavailable.
+
+KBRH Professional v5.5.49 — Roster Retention + Returning Resident Flag
+
+- Removed permanent deletion of archived roster resident records from the Roster UI and code.
+- Archived/discharged resident records are retained; this enforces at least the requested 2-year retention period.
+- Active waitlist names are automatically checked against archived roster residents discharged in the previous 2 years.
+- An exact normalized first-name + last-name match is highlighted blue on both desktop and compact/mobile waitlist views.
+- Matching ignores capitalization and common punctuation/spacing differences.
+- v5.5.48 Log Book active-resident filtering is retained.
+
 KBRH Professional v5.5.48 — Log Book Active Residents Fix
 
 - Digital Log Book resident selectors now exclude archived/discharged residents.

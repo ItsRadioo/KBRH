@@ -628,6 +628,56 @@ async function migrateExistingAutoCaseV5534(rawState) {
   return migrated;
 }
 
+const KBRH_ARCHIVE_RETENTION_YEARS = 2;
+let KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING = false;
+
+function expiredArchivedRosterRecords(state, now = new Date()) {
+  const roster = Array.isArray(state?.roster) ? state.roster : [];
+  const cutoff = new Date(now);
+  cutoff.setFullYear(cutoff.getFullYear() - KBRH_ARCHIVE_RETENTION_YEARS);
+
+  return roster.filter(record => {
+    if (!record || record === "temp" || !record.archived || !record.archivedAt) return false;
+    const dischargedAt = new Date(record.archivedAt);
+    return !Number.isNaN(dischargedAt.getTime()) && dischargedAt < cutoff;
+  });
+}
+
+async function enforceArchivedRosterRetention(rawState) {
+  if (KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING) return rawState;
+  const expired = expiredArchivedRosterRecords(rawState);
+  if (!expired.length) return rawState;
+
+  KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING = true;
+  try {
+    const expiredIds = new Set(expired.map(record => String(record.id || "")));
+    const retainedRoster = (Array.isArray(rawState.roster) ? rawState.roster : [])
+      .filter(record => !expiredIds.has(String(record?.id || "")));
+
+    await APP_DOC_REF().update({ roster: retainedRoster });
+
+    const user = auth.currentUser;
+    if (user) {
+      let identity = {uid:user.uid||"",email:user.email||"",name:user.displayName||user.email||"Staff User",position:""};
+      if (typeof getCurrentStaffIdentity === "function") {
+        try { identity = await getCurrentStaffIdentity(); } catch (_) {}
+      }
+      const changes = expired.map(record => {
+        const name = `${record.firstName || ""} ${record.lastName || ""}`.trim() || "Archived resident";
+        return `Automatically deleted ${name}'s archived roster record after the 2-year retention period elapsed.`;
+      });
+      await writeAuditEntry(changes, identity);
+    }
+
+    return { ...rawState, roster: retainedRoster };
+  } catch (error) {
+    console.warn("Archived roster retention cleanup failed", error);
+    return rawState;
+  } finally {
+    KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING = false;
+  }
+}
+
 async function loadAppState() {
   const snap = await APP_DOC_REF().get();
   if (!snap.exists) {
@@ -636,7 +686,8 @@ async function loadAppState() {
     KBRH_LAST_STATE = normalizeAppState(initial);
     return KBRH_LAST_STATE;
   }
-  const rawState = await migrateExistingAutoCaseV5534(snap.data());
+  let rawState = await migrateExistingAutoCaseV5534(snap.data());
+  rawState = await enforceArchivedRosterRetention(rawState);
   KBRH_LAST_STATE = normalizeAppState(rawState);
   return KBRH_LAST_STATE;
 }
@@ -670,7 +721,8 @@ function listenToAppState(callback) {
       callback(KBRH_LAST_STATE);
       return;
     }
-    const rawState = await migrateExistingAutoCaseV5534(snap.data());
+    let rawState = await migrateExistingAutoCaseV5534(snap.data());
+    rawState = await enforceArchivedRosterRetention(rawState);
     KBRH_LAST_STATE = normalizeAppState(rawState);
     callback(KBRH_LAST_STATE);
   });
