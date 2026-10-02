@@ -28,8 +28,90 @@ function residents(){
 }
 function localNow(){let d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
 function oneSelect(){return `<select name="rid" required><option value="">Select resident…</option>${residents().map(r=>`<option value="${E(r.id)}">${E(r.name)}</option>`).join("")}</select>`}function notificationFields(){return `<div class="lb-notify-box"><div class="lb-field"><label>Notification Priority</label><select name="notifyPriority"><option value="">Normal — no notification</option><option value="important">Important</option><option value="urgent">Urgent</option></select></div><div class="lb-field"><label>Notify Staff</label><select name="notifyRecipients" multiple size="5"><option disabled>Choose Important/Urgent to notify staff…</option></select><small class="hint">Ctrl/Cmd-click to select more than one person.</small></div></div>`;}
-async function populateNotificationRecipients(root){try{const snap=await db.collection("kbrh").doc("staffProfiles").get();const data=snap.exists?snap.data()||{}:{};const profiles=data.profiles&&typeof data.profiles==="object"?data.profiles:{};const select=root.querySelector('[name="notifyRecipients"]');if(!select)return;const rows=[];const seen=new Set();const walk=(node,key="",depth=0)=>{if(!node||typeof node!=="object"||Array.isArray(node)||depth>6)return;if((node.name||node.email)&&("active" in node||node.role||node.position)){const uid=String(node.uid||key||"");if(uid&&!seen.has(uid)){seen.add(uid);rows.push({uid,name:String(node.name||node.email||uid),email:String(node.email||""),active:node.active!==false})}return}Object.entries(node).forEach(([k,v])=>walk(v,k,depth+1))};walk(profiles);rows.sort((a,b)=>a.name.localeCompare(b.name));select.innerHTML=rows.filter(x=>x.active).map(x=>`<option value="${E(x.uid)}" data-name="${E(x.name)}">${E(x.name)}${x.email?` — ${E(x.email)}`:""}</option>`).join("")||'<option disabled>No active staff profiles found.</option>'; }catch(e){console.warn("Could not load notification recipients",e)}}
-async function createLogNotifications(entry,formData){const priority=String(formData.get("notifyPriority")||"");if(!priority)return;const recipientUids=formData.getAll("notifyRecipients").map(String).filter(Boolean);if(!recipientUids.length)throw Error("Select at least one staff member to notify, or set Notification Priority to Normal.");const identity=await staff();const snap=await db.collection("kbrh").doc("staffProfiles").get();const profiles=snap.exists?(snap.data()?.profiles||{}):{};const batch=db.batch();const now=new Date().toISOString();recipientUids.forEach(uid=>{const p=profiles[uid]||{};const ref=db.collection("kbrhNotifications").doc();batch.set(ref,{recipientUid:uid,recipientEmail:String(p.email||""),recipientName:String(p.name||""),priority,title:"Important Digital Log Book entry",source:"digital-logbook",logScope:currentLogScope,logEntryId:entry.id,link:`digital-logbook.html?entry=${encodeURIComponent(entry.id)}&scope=${encodeURIComponent(currentLogScope)}`,createdAtIso:now,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdByUid:identity.uid||"",createdByName:identity.name||"Staff",acknowledgedAt:""});});await batch.commit();}
+function staffDisplayName(profile){
+  const direct=String(profile?.name||"").trim().replace(/\s+/g," ");
+  if(direct)return direct;
+  const combined=[profile?.firstName,profile?.lastName].map(v=>String(v||"").trim()).filter(Boolean).join(" ");
+  return combined||String(profile?.email||"").trim();
+}
+function profileTimestamp(profile){
+  const value=profile?.updatedAt||profile?.createdAt||"";
+  const parsed=Date.parse(value);
+  return Number.isFinite(parsed)?parsed:0;
+}
+async function populateNotificationRecipients(root){
+  try{
+    const snap=await db.collection("kbrh").doc("staffProfiles").get();
+    const data=snap.exists?snap.data()||{}:{};
+    const profiles=data.profiles&&typeof data.profiles==="object"?data.profiles:{};
+    const select=root.querySelector('[name="notifyRecipients"]');
+    if(!select)return;
+    const candidates=[];
+    const seenUid=new Set();
+    const walk=(node,key="",depth=0)=>{
+      if(!node||typeof node!=="object"||Array.isArray(node)||depth>6)return;
+      if((node.name||node.firstName||node.lastName||node.email)&&("active" in node||node.role||node.position)){
+        const uid=String(node.uid||key||"").trim();
+        if(uid&&!seenUid.has(uid)){
+          seenUid.add(uid);
+          candidates.push({uid,name:staffDisplayName(node),email:String(node.email||"").trim(),active:node.active!==false,stamp:profileTimestamp(node)});
+        }
+        return;
+      }
+      Object.entries(node).forEach(([k,v])=>walk(v,k,depth+1));
+    };
+    walk(profiles);
+    candidates.sort((a,b)=>b.stamp-a.stamp);
+    const seenEmail=new Set();
+    const rows=candidates.filter(row=>{
+      if(!row.active)return false;
+      const emailKey=row.email.toLowerCase();
+      if(emailKey){
+        if(seenEmail.has(emailKey))return false;
+        seenEmail.add(emailKey);
+      }
+      return true;
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+    select.innerHTML=rows.map(row=>`<option value="${E(row.uid)}" data-name="${E(row.name)}">${E(row.name)}</option>`).join("")||'<option disabled>No active staff profiles found.</option>';
+  }catch(e){
+    console.warn("Could not load notification recipients",e);
+  }
+}
+async function createLogNotifications(entry,formData){
+  const priority=String(formData.get("notifyPriority")||"");
+  if(!priority)return;
+  const recipientUids=formData.getAll("notifyRecipients").map(String).filter(Boolean);
+  if(!recipientUids.length)throw Error("Select at least one staff member to notify, or set Notification Priority to Normal.");
+  const identity=await staff();
+  const snap=await db.collection("kbrh").doc("staffProfiles").get();
+  const profiles=snap.exists?(snap.data()?.profiles||{}):{};
+  const batch=db.batch();
+  const now=new Date().toISOString();
+  recipientUids.forEach(uid=>{
+    const p=profiles[uid]||{};
+    const ref=db.collection("kbrhNotifications").doc();
+    batch.set(ref,{
+      recipientUid:uid,
+      recipientEmail:String(p.email||""),
+      recipientName:staffDisplayName(p),
+      priority,
+      title:`${priority==="urgent"?"Urgent":"Important"} Digital Log Book entry`,
+      source:"digital-logbook",
+      requiresAcknowledgement:true,
+      logScope:currentLogScope,
+      logEntryId:entry.id,
+      link:`digital-logbook.html?entry=${encodeURIComponent(entry.id)}&scope=${encodeURIComponent(currentLogScope)}`,
+      createdAtIso:now,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdByUid:identity.uid||"",
+      createdByName:identity.name||"Staff",
+      acknowledgedAt:"",
+      acknowledgedByUid:"",
+      acknowledgedByName:""
+    });
+  });
+  await batch.commit();
+}
 function modal(title,body,save){let root=document.querySelector("#lbRoot");root.innerHTML=`<div class="lb-bg"><div class="lb-modal"><div class="lb-head"><h2>${E(title)}</h2><button type="button" id="lbx">×</button></div><form id="lbf"><div class="lb-body">${body}${notificationFields()}</div><div class="lb-foot"><button type="button" id="lbc">Cancel</button><button type="submit">Save Entry</button></div></form></div></div>`;populateNotificationRecipients(root);let close=()=>root.innerHTML="";root.querySelector("#lbx").onclick=close;root.querySelector("#lbc").onclick=close;root.querySelector(".lb-bg").onclick=e=>{if(e.target===e.currentTarget)close()};root.querySelector("#lbf").onsubmit=async e=>{e.preventDefault();try{const fd=new FormData(e.currentTarget);const saved=await save(fd);if(saved?.id)await createLogNotifications(saved,fd);const repeatPharmacy=title==="Medication Delivery"?String(fd.get("pharmacy")||""):"";close();if(repeatPharmacy&&confirm("Medication delivery saved. Record another delivery from the same pharmacy?"))setTimeout(()=>meds(repeatPharmacy),0)}catch(x){alert(x.message||"Unable to save.")}}}
 async function staff(){return typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||"",name:typeof currentStaffName==="function"?currentStaffName():"Staff User"}}
 async function updateEntry(id,patch){let st=await staff(),q=await LOGDOC().get(),d=q.exists?q.data():{},a=Array.isArray(d.entries)?d.entries:[],i=a.findIndex(e=>e.id===id);if(i<0)throw Error("Log entry was not found.");a[i]={...a[i],...patch,lastEditedAt:new Date().toISOString(),lastEditedBy:st.name||"Unknown Staff",lastEditedByUid:st.uid||""};await LOGDOC().set({entries:a,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}

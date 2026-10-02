@@ -1528,3 +1528,7 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
 .account-edit-grid{display:grid;gap:14px;margin:18px 0}
 @media(max-width:900px){.account-form-grid{grid-template-columns:1fr 1fr}.account-password-field{grid-column:1/-1}}
 @media(max-width:650px){.account-card-heading,.account-list-heading{display:grid}.account-form-grid{grid-template-columns:1fr}.account-password-row{grid-template-columns:1fr}.account-password-row button{width:100%}.account-form-actions{align-items:stretch;flex-direction:column}.account-row-actions{min-width:230px}}
+
+/* v5.6.5 notification acknowledgement */
+.kbrh-acknowledge-check{display:inline-flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.35;cursor:pointer;max-width:280px}
+.kbrh-acknowledge-check input{margin-top:2px;flex:0 0 auto}

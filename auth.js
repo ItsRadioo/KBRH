@@ -222,14 +222,79 @@ let kbrhNotificationUnsubscribe=null;
 function notificationEscape(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 function initializeKbrhNotifications(user=auth.currentUser){
   if(!user||document.getElementById("kbrhNotificationBell"))return;
-  const wrap=document.createElement("div");wrap.className="kbrh-notification-wrap";wrap.innerHTML=`<button id="kbrhNotificationBell" class="kbrh-notification-bell" type="button" aria-label="Notifications">🔔<span id="kbrhNotificationCount" hidden>0</span></button><section id="kbrhNotificationPanel" class="kbrh-notification-panel" hidden><div class="kbrh-notification-head"><strong>Notifications</strong><button type="button" id="kbrhNotificationClose">×</button></div><div id="kbrhNotificationList"><p class="hint">Loading…</p></div><button type="button" class="secondary" id="kbrhEnablePushBtn">Enable Browser Alerts</button></section>`;document.body.appendChild(wrap);
-  const panel=wrap.querySelector("#kbrhNotificationPanel");wrap.querySelector("#kbrhNotificationBell").onclick=()=>panel.hidden=!panel.hidden;wrap.querySelector("#kbrhNotificationClose").onclick=()=>panel.hidden=true;wrap.querySelector("#kbrhEnablePushBtn").onclick=enableKbrhBrowserNotifications;
+  const wrap=document.createElement("div");
+  wrap.className="kbrh-notification-wrap";
+  wrap.innerHTML=`<button id="kbrhNotificationBell" class="kbrh-notification-bell" type="button" aria-label="Notifications">🔔<span id="kbrhNotificationCount" hidden>0</span></button><section id="kbrhNotificationPanel" class="kbrh-notification-panel" hidden><div class="kbrh-notification-head"><strong>Notifications</strong><button type="button" id="kbrhNotificationClose">×</button></div><div id="kbrhNotificationList"><p class="hint">Loading…</p></div><button type="button" class="secondary" id="kbrhEnablePushBtn">Enable Browser Alerts</button></section>`;
+  document.body.appendChild(wrap);
+  const panel=wrap.querySelector("#kbrhNotificationPanel");
+  wrap.querySelector("#kbrhNotificationBell").onclick=()=>panel.hidden=!panel.hidden;
+  wrap.querySelector("#kbrhNotificationClose").onclick=()=>panel.hidden=true;
+  wrap.querySelector("#kbrhEnablePushBtn").onclick=enableKbrhBrowserNotifications;
   if(kbrhNotificationUnsubscribe)kbrhNotificationUnsubscribe();
   kbrhNotificationUnsubscribe=db.collection("kbrhNotifications").where("recipientUid","==",user.uid).limit(100).onSnapshot(snap=>{
-    const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAtIso||"").localeCompare(String(a.createdAtIso||""))).slice(0,40);const unread=rows.filter(n=>!n.acknowledgedAt).length;const badge=wrap.querySelector("#kbrhNotificationCount");badge.textContent=String(unread);badge.hidden=!unread;const list=wrap.querySelector("#kbrhNotificationList");list.innerHTML=rows.length?rows.map(n=>`<article class="kbrh-notification-item ${n.acknowledgedAt?"":"unread"}"><div><strong>${notificationEscape((n.priority||"important").toUpperCase())}: ${notificationEscape(n.title||"Log Book notification")}</strong><small>${notificationEscape(n.createdByName||"Staff")} · ${notificationEscape(n.createdAtIso?new Date(n.createdAtIso).toLocaleString("en-CA"):"")}</small></div><div class="kbrh-notification-actions"><a href="${notificationEscape(n.link||"digital-logbook.html")}">Open</a>${n.acknowledgedAt?'<span>✓ Acknowledged</span>':`<button type="button" onclick="acknowledgeKbrhNotification('${n.id}')">Acknowledge</button>`}</div></article>`).join(""):'<p class="hint">No notifications.</p>';
+    const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAtIso||"").localeCompare(String(a.createdAtIso||""))).slice(0,40);
+    const unread=rows.filter(n=>!n.acknowledgedAt).length;
+    const badge=wrap.querySelector("#kbrhNotificationCount");
+    badge.textContent=String(unread);
+    badge.hidden=!unread;
+    const list=wrap.querySelector("#kbrhNotificationList");
+    list.innerHTML=rows.length?rows.map(n=>{
+      const receipt=n.source==="acknowledgement-receipt"||n.requiresAcknowledgement===false;
+      const done=Boolean(n.acknowledgedAt);
+      const action=done
+        ? `<span>✓ ${receipt?"Read":"Acknowledged"}</span>`
+        : receipt
+          ? `<button type="button" onclick="acknowledgeKbrhNotification('${n.id}')">Mark read</button>`
+          : `<label class="kbrh-acknowledge-check"><input type="checkbox" onchange="acknowledgeKbrhNotification('${n.id}',this)"> I have read and acknowledge this note</label>`;
+      return `<article class="kbrh-notification-item ${done?"":"unread"}"><div><strong>${notificationEscape((n.priority||"important").toUpperCase())}: ${notificationEscape(n.title||"Log Book notification")}</strong><small>${notificationEscape(n.createdByName||"Staff")} · ${notificationEscape(n.createdAtIso?new Date(n.createdAtIso).toLocaleString("en-CA"):"")}</small></div><div class="kbrh-notification-actions"><a href="${notificationEscape(n.link||"digital-logbook.html")}">Open</a>${action}</div></article>`;
+    }).join(""):'<p class="hint">No notifications.</p>';
   },e=>console.warn("Notification subscription failed",e));
 }
-async function acknowledgeKbrhNotification(id){const user=auth.currentUser;if(!user)return;await db.collection("kbrhNotifications").doc(id).update({acknowledgedAt:new Date().toISOString(),acknowledgedByUid:user.uid});}
+async function acknowledgeKbrhNotification(id,checkbox=null){
+  const user=auth.currentUser;
+  if(!user)return;
+  if(checkbox)checkbox.disabled=true;
+  try{
+    const ref=db.collection("kbrhNotifications").doc(id);
+    const snap=await ref.get();
+    if(!snap.exists)throw new Error("Notification no longer exists.");
+    const notification=snap.data()||{};
+    if(notification.recipientUid!==user.uid)throw new Error("This notification is not assigned to your account.");
+    if(notification.acknowledgedAt)return;
+    const identity=await getCurrentStaffIdentity();
+    const now=new Date().toISOString();
+    const batch=db.batch();
+    batch.update(ref,{acknowledgedAt:now,acknowledgedByUid:user.uid,acknowledgedByName:identity.name||fallbackStaffName(user)});
+    const requiresReceipt=notification.requiresAcknowledgement!==false&&notification.source==="digital-logbook"&&Boolean(notification.createdByUid)&&notification.createdByUid!==user.uid;
+    if(requiresReceipt){
+      const receiptRef=db.collection("kbrhNotifications").doc();
+      const priority=String(notification.priority||"important").toLowerCase()==="urgent"?"urgent":"important";
+      const staffName=identity.name||fallbackStaffName(user);
+      batch.set(receiptRef,{
+        recipientUid:notification.createdByUid,
+        recipientName:notification.createdByName||"",
+        priority,
+        title:`${staffName} acknowledged your ${priority==="urgent"?"Urgent":"Important"} Digital Log Book note.`,
+        source:"acknowledgement-receipt",
+        requiresAcknowledgement:false,
+        originalNotificationId:id,
+        logScope:notification.logScope||"phase1",
+        logEntryId:notification.logEntryId||"",
+        link:notification.link||"digital-logbook.html",
+        createdAtIso:now,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        createdByUid:user.uid,
+        createdByName:staffName,
+        acknowledgedAt:""
+      });
+    }
+    await batch.commit();
+  }catch(error){
+    console.error("Could not acknowledge notification",error);
+    if(checkbox){checkbox.checked=false;checkbox.disabled=false;}
+    alert(error.message||"The notification could not be acknowledged.");
+  }
+}
 async function loadFirebaseMessagingSdk(){if(firebase.messaging)return;await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js";s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});}
 async function enableKbrhBrowserNotifications(){
   try{

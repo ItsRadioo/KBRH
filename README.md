@@ -1,3 +1,13 @@
+# KBRH Professional v5.6.5
+
+- Notify Staff now displays staff names only; email addresses and positions are no longer shown in the recipient selector.
+- Notification recipients are de-duplicated by Firebase UID and normalized email, preferring the most recently maintained active profile when stale duplicate profiles exist.
+- Important and Urgent Digital Log Book notifications now require an explicit read-and-acknowledge checkbox.
+- Acknowledgement records the staff member and exact acknowledgement time and cannot be undone from the notification panel.
+- The staff member who created the Important/Urgent notification receives an acknowledgement receipt identifying who acknowledged it.
+- Multiple recipients acknowledge independently and each acknowledgement generates its own receipt for the original sender.
+- Browser push alerts distinguish acknowledgement receipts from new protected Digital Log Book notifications.
+
 KBRH Professional v5.6.2 — Staff Account UI + Flat Backend Fix
 
 - Rebuilt Staff Accounts into a clean responsive form with properly aligned Name, Email, Position and Temporary Password fields.
