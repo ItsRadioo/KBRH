@@ -1532,3 +1532,18 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
 /* v5.6.5 notification acknowledgement */
 .kbrh-acknowledge-check{display:inline-flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.35;cursor:pointer;max-width:280px}
 .kbrh-acknowledge-check input{margin-top:2px;flex:0 0 auto}
+
+/* v5.6.6 mandatory Important/Urgent acknowledgement gate */
+body.kbrh-ack-lock{overflow:hidden}
+.kbrh-required-ack-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.78);display:grid;place-items:center;padding:20px;backdrop-filter:blur(2px)}
+.kbrh-required-ack-dialog{width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:24px;display:grid;gap:16px}
+.kbrh-required-ack-priority{font-weight:800;letter-spacing:.04em;padding:10px 12px;border-radius:9px;background:#fff7ed;border:2px solid #c2410c;color:#9a3412}
+.kbrh-required-ack-priority.urgent{background:#fef2f2;border-color:#b91c1c;color:#991b1b}
+.kbrh-required-ack-dialog h2{margin:0;font-size:1.45rem}
+.kbrh-required-ack-meta{margin:0;color:#5f6874}
+.kbrh-required-ack-message{margin:0;padding:16px;border:1px solid #d7dde5;border-radius:10px;background:#f8fafc;white-space:pre-wrap;font-size:1rem;line-height:1.5}
+.kbrh-required-ack-remaining{margin:0;font-weight:700;color:#7c2d12}
+.kbrh-required-ack-check{display:flex;gap:10px;align-items:flex-start;font-weight:700;line-height:1.4;padding:12px;border:1px solid #cbd5e1;border-radius:10px}
+.kbrh-required-ack-check input{width:20px;height:20px;flex:0 0 auto;margin-top:1px}
+.kbrh-required-ack-dialog button{width:100%;min-height:46px;font-weight:800}
+.kbrh-required-ack-dialog button:disabled{opacity:.5;cursor:not-allowed}

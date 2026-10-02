@@ -1,3 +1,12 @@
+# KBRH Professional v5.6.6
+
+- Important and Urgent Digital Log Book notifications now open as a mandatory full-site acknowledgement gate.
+- Staff cannot dismiss the gate or continue using KBRH until they check the acknowledgement and record it.
+- Multiple pending notifications are presented one at a time, oldest first.
+- New notifications include the relevant log-entry text/summary in the acknowledgement gate so the recipient can read what they are acknowledging.
+- Existing v5.6.5 acknowledgement receipts back to the notification creator are preserved.
+- Notification recipient names remain first/last name only and duplicate recipient profiles remain suppressed.
+
 # KBRH Professional v5.6.5
 
 - Notify Staff now displays staff names only; email addresses and positions are no longer shown in the recipient selector.

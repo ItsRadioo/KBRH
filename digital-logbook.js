@@ -96,6 +96,7 @@ async function createLogNotifications(entry,formData){
       recipientName:staffDisplayName(p),
       priority,
       title:`${priority==="urgent"?"Urgent":"Important"} Digital Log Book entry`,
+      message:String(entry.note||entry.delivered||entry.summary||"").trim(),
       source:"digital-logbook",
       requiresAcknowledgement:true,
       logScope:currentLogScope,

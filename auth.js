@@ -248,7 +248,37 @@ function initializeKbrhNotifications(user=auth.currentUser){
           : `<label class="kbrh-acknowledge-check"><input type="checkbox" onchange="acknowledgeKbrhNotification('${n.id}',this)"> I have read and acknowledge this note</label>`;
       return `<article class="kbrh-notification-item ${done?"":"unread"}"><div><strong>${notificationEscape((n.priority||"important").toUpperCase())}: ${notificationEscape(n.title||"Log Book notification")}</strong><small>${notificationEscape(n.createdByName||"Staff")} · ${notificationEscape(n.createdAtIso?new Date(n.createdAtIso).toLocaleString("en-CA"):"")}</small></div><div class="kbrh-notification-actions"><a href="${notificationEscape(n.link||"digital-logbook.html")}">Open</a>${action}</div></article>`;
     }).join(""):'<p class="hint">No notifications.</p>';
+    showRequiredKbrhAcknowledgement(rows);
   },e=>console.warn("Notification subscription failed",e));
+}
+function showRequiredKbrhAcknowledgement(rows){
+  const pending=rows.filter(n=>n.requiresAcknowledgement!==false&&n.source==="digital-logbook"&&!n.acknowledgedAt);
+  let overlay=document.getElementById("kbrhRequiredAckOverlay");
+  if(!pending.length){
+    if(overlay)overlay.remove();
+    document.body.classList.remove("kbrh-ack-lock");
+    return;
+  }
+  const n=pending.slice().sort((a,b)=>String(a.createdAtIso||"").localeCompare(String(b.createdAtIso||"")))[0];
+  if(!overlay){
+    overlay=document.createElement("div");
+    overlay.id="kbrhRequiredAckOverlay";
+    overlay.className="kbrh-required-ack-overlay";
+    document.body.appendChild(overlay);
+  }
+  document.body.classList.add("kbrh-ack-lock");
+  const priority=String(n.priority||"important").toLowerCase()==="urgent"?"URGENT":"IMPORTANT";
+  const message=String(n.message||"").trim();
+  const remaining=pending.length>1?`<p class="kbrh-required-ack-remaining">${pending.length-1} additional notification${pending.length===2?"":"s"} waiting after this one.</p>`:"";
+  overlay.innerHTML=`<section class="kbrh-required-ack-dialog" role="alertdialog" aria-modal="true" aria-labelledby="kbrhRequiredAckTitle"><div class="kbrh-required-ack-priority ${priority.toLowerCase()}">${priority} — ACKNOWLEDGEMENT REQUIRED</div><h2 id="kbrhRequiredAckTitle">${notificationEscape(n.title||"Digital Log Book notification")}</h2><p class="kbrh-required-ack-meta">From ${notificationEscape(n.createdByName||"Staff")} · ${notificationEscape(n.createdAtIso?new Date(n.createdAtIso).toLocaleString("en-CA"):"")}</p>${message?`<div class="kbrh-required-ack-message">${notificationEscape(message)}</div>`:`<p class="kbrh-required-ack-message">A protected Digital Log Book entry requires your attention.</p>`}${remaining}<label class="kbrh-required-ack-check"><input id="kbrhRequiredAckCheck" type="checkbox"> <span>I have read and acknowledge this notification.</span></label><button id="kbrhRequiredAckButton" type="button" disabled>Acknowledge and Continue</button></section>`;
+  const check=overlay.querySelector("#kbrhRequiredAckCheck");
+  const button=overlay.querySelector("#kbrhRequiredAckButton");
+  check.onchange=()=>{button.disabled=!check.checked;};
+  button.onclick=async()=>{
+    if(!check.checked)return;
+    check.disabled=true;button.disabled=true;button.textContent="Recording acknowledgement…";
+    await acknowledgeKbrhNotification(n.id,check);
+  };
 }
 async function acknowledgeKbrhNotification(id,checkbox=null){
   const user=auth.currentUser;
