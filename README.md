@@ -1,3 +1,36 @@
+KBRH Professional v5.6.1 — Shared Admin Access + In-App Administration
+
+- admin@kbrh.local and executivedirector@kbrh.local now have identical administrative access throughout KBRH Professional.
+- Both can access System Settings, Audit Log and Staff Accounts and use all administrator-only application controls.
+- Firestore rules grant both accounts the same Settings and Audit Log permissions.
+- Staff account creation, temporary passwords, enable/disable controls and password-reset links remain available from Staff Accounts.
+- The Web Push public VAPID key can now be maintained from System Settings instead of editing firebase-config.js for routine changes.
+- System Settings now provides direct links to Staff Accounts and Audit Log.
+- Routine operational administration is performed inside KBRH Professional after the backend is initially deployed.
+
+DEPLOYMENT BOUNDARY
+The live browser application cannot safely replace its own hosted source code or its own security backend. The initial v5.6.1 deployment, and future releases that change source code, Functions or Firestore rules, still require deployment to the hosting/backend service. This intentionally avoids storing GitHub/Firebase deployment credentials inside the KBRH web application. Once v5.6.1 is deployed, normal account administration, workflow settings, notification configuration and access management are handled from within KBRH Professional.
+
+KBRH Professional v5.6.0 — Safeguards, Notifications, Account Management & Cleanup
+
+- Roster “Days Remaining” labels changed to “Days Left” everywhere.
+- Removed obsolete medication multi-resident checkbox helper after the dropdown workflow replaced it.
+- Repeat-admission matching still requires TWO archived admissions inside the rolling 2-year window; DOB is used as a secondary discriminator when available.
+- Repeat-admission warning is persistent in Applicant Info and advancement is held unless Admin/Executive Director records an override reason.
+- Archived roster records store discharge/retention metadata and display Retention Until.
+- Discharge confirmation now shows resident, date and reason and explains the 2-year-history effect.
+- Automatic 2-year deletion creates a restricted 30-day recovery backup; included scheduled Cloud Function also enforces retention even when the website is closed and purges recovery copies after 30 days.
+- Digital Log Book entries can be marked Important/Urgent and sent to selected staff. Recipients get in-app notifications with acknowledgement tracking.
+- Optional Firebase Cloud Messaging browser push is included; external notifications intentionally contain no resident or clinical details. Add the Web Push VAPID public key to firebase-config.js to enable it.
+- Staff Accounts page added for admin@kbrh.local and executivedirector@kbrh.local. It supports create, enable/disable and password reset workflows.
+- New accounts can use a temporary password and are forced to replace it before accessing KBRH Professional. Temporary passwords are never stored in Firestore.
+- Privileged account actions use Firebase Cloud Functions/Admin SDK; deploy the included functions and Firestore rules before using Staff Accounts.
+
+DEPLOYMENT REQUIRED FOR NEW BACKEND FEATURES
+1. Install Firebase CLI and authenticate.
+2. From this project folder run: firebase deploy --only firestore:rules,functions
+3. In Firebase Console > Project Settings > Cloud Messaging, create/copy the Web Push certificate public key and set window.KBRH_FCM_VAPID_KEY in firebase-config.js if browser push is desired. In-app notifications do not require the VAPID key.
+
 KBRH Professional v5.5.52 — Medication Delivery Resident Dropdown
 
 - Medication Delivery now uses a single Resident dropdown instead of the scrolling checkbox list.

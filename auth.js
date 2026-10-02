@@ -3,8 +3,17 @@ let kbrhStaffProfile = null;
 let kbrhStaffProfilePromise = null;
 
 
+const KBRH_ADMIN_EMAILS = new Set([
+  "admin@kbrh.local",
+  "executivedirector@kbrh.local"
+]);
+
 function isKbrhAdmin(user=auth.currentUser){
-  return String(user?.email||"").trim().toLowerCase()==="admin@kbrh.local";
+  return KBRH_ADMIN_EMAILS.has(String(user?.email||"").trim().toLowerCase());
+}
+
+function isKbrhAccountManager(user=auth.currentUser){
+  return isKbrhAdmin(user);
 }
 
 function applyAdminVisibility(user=auth.currentUser){
@@ -18,6 +27,11 @@ function applyAdminVisibility(user=auth.currentUser){
       // rendered document so non-admin staff cannot see or focus the link.
       el.remove();
     }
+  });
+  const accountManagerAllowed=isKbrhAccountManager(user);
+  document.querySelectorAll("[data-account-manager-only]").forEach(el=>{
+    if(accountManagerAllowed){ el.hidden=false; el.removeAttribute("aria-hidden"); }
+    else el.remove();
   });
 }
 
@@ -91,6 +105,7 @@ async function loadCurrentStaffProfile(force = false) {
           role: "",
           position: "",
           active: true,
+          mustChangePassword: false,
           missing: true
         };
       } else {
@@ -101,6 +116,7 @@ async function loadCurrentStaffProfile(force = false) {
           role: String(data.role || "Staff").trim(),
           position: String(data.position || data.role || "").trim(),
           active: data.active !== false,
+          mustChangePassword: data.mustChangePassword === true,
           missing: false
         };
       }
@@ -116,6 +132,7 @@ async function loadCurrentStaffProfile(force = false) {
         role: "",
         position: "",
         active: true,
+        mustChangePassword: false,
         missing: true,
         lookupFailed: true
       };
@@ -169,16 +186,28 @@ async function requireLogin() {
     }
 
     applyAdminVisibility(user);
+    if(isKbrhAccountManager(user) && !document.querySelector('a[href="staff-accounts.html"]')){const nav=document.querySelector(".app-nav");if(nav){const a=document.createElement("a");a.className="app-nav-link";a.href="staff-accounts.html";a.textContent="Staff Accounts";nav.appendChild(a);}}
     const profile = await loadCurrentStaffProfile();
     // Do not block a valid Firebase login if the staff profile has not been
     // configured yet. When a profile exists, its name is used for auditing.
     // Otherwise the app temporarily falls back to the authenticated account
     // display name/email so staff can continue working.
+    if (profile?.mustChangePassword && page !== "change-password.html") {
+      window.location.replace("change-password.html");
+      return;
+    }
+    if (!profile?.mustChangePassword && page === "change-password.html") {
+      window.location.replace("index.html");
+      return;
+    }
+
     if (profile && profile.active === false) {
       sessionStorage.removeItem(KBRH_SESSION_KEY);
       try { await auth.signOut(); } catch (_) {}
       if (page !== "login.html") window.location.replace("login.html?profile=inactive");
+      return;
     }
+    if(page !== "login.html" && page !== "change-password.html") initializeKbrhNotifications(user);
   });
 }
 
@@ -186,4 +215,31 @@ async function logout() {
   sessionStorage.removeItem(KBRH_SESSION_KEY);
   kbrhStaffProfile = null;
   try { await auth.signOut(); } finally { window.location.replace("login.html"); }
+}
+
+
+let kbrhNotificationUnsubscribe=null;
+function notificationEscape(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+function initializeKbrhNotifications(user=auth.currentUser){
+  if(!user||document.getElementById("kbrhNotificationBell"))return;
+  const wrap=document.createElement("div");wrap.className="kbrh-notification-wrap";wrap.innerHTML=`<button id="kbrhNotificationBell" class="kbrh-notification-bell" type="button" aria-label="Notifications">🔔<span id="kbrhNotificationCount" hidden>0</span></button><section id="kbrhNotificationPanel" class="kbrh-notification-panel" hidden><div class="kbrh-notification-head"><strong>Notifications</strong><button type="button" id="kbrhNotificationClose">×</button></div><div id="kbrhNotificationList"><p class="hint">Loading…</p></div><button type="button" class="secondary" id="kbrhEnablePushBtn">Enable Browser Alerts</button></section>`;document.body.appendChild(wrap);
+  const panel=wrap.querySelector("#kbrhNotificationPanel");wrap.querySelector("#kbrhNotificationBell").onclick=()=>panel.hidden=!panel.hidden;wrap.querySelector("#kbrhNotificationClose").onclick=()=>panel.hidden=true;wrap.querySelector("#kbrhEnablePushBtn").onclick=enableKbrhBrowserNotifications;
+  if(kbrhNotificationUnsubscribe)kbrhNotificationUnsubscribe();
+  kbrhNotificationUnsubscribe=db.collection("kbrhNotifications").where("recipientUid","==",user.uid).limit(100).onSnapshot(snap=>{
+    const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.createdAtIso||"").localeCompare(String(a.createdAtIso||""))).slice(0,40);const unread=rows.filter(n=>!n.acknowledgedAt).length;const badge=wrap.querySelector("#kbrhNotificationCount");badge.textContent=String(unread);badge.hidden=!unread;const list=wrap.querySelector("#kbrhNotificationList");list.innerHTML=rows.length?rows.map(n=>`<article class="kbrh-notification-item ${n.acknowledgedAt?"":"unread"}"><div><strong>${notificationEscape((n.priority||"important").toUpperCase())}: ${notificationEscape(n.title||"Log Book notification")}</strong><small>${notificationEscape(n.createdByName||"Staff")} · ${notificationEscape(n.createdAtIso?new Date(n.createdAtIso).toLocaleString("en-CA"):"")}</small></div><div class="kbrh-notification-actions"><a href="${notificationEscape(n.link||"digital-logbook.html")}">Open</a>${n.acknowledgedAt?'<span>✓ Acknowledged</span>':`<button type="button" onclick="acknowledgeKbrhNotification('${n.id}')">Acknowledge</button>`}</div></article>`).join(""):'<p class="hint">No notifications.</p>';
+  },e=>console.warn("Notification subscription failed",e));
+}
+async function acknowledgeKbrhNotification(id){const user=auth.currentUser;if(!user)return;await db.collection("kbrhNotifications").doc(id).update({acknowledgedAt:new Date().toISOString(),acknowledgedByUid:user.uid});}
+async function loadFirebaseMessagingSdk(){if(firebase.messaging)return;await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js";s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});}
+async function enableKbrhBrowserNotifications(){
+  try{
+    let vapidKey=String(window.KBRH_FCM_VAPID_KEY||"").trim();
+    try{
+      const settingsSnap=await db.collection("kbrh").doc("settings").get();
+      vapidKey=String(settingsSnap.exists?(settingsSnap.data()?.webPushVapidKey||vapidKey):vapidKey).trim();
+    }catch(error){console.warn("Could not load Web Push key from System Settings.",error);}
+    if(!vapidKey){alert("Browser alerts are not configured yet. An Administrator or the Executive Director can add the Web Push public key under System Settings. In-app notifications remain active.");return;}
+    if(!(await Notification.requestPermission()==="granted"))return;
+    await loadFirebaseMessagingSdk();const registration=await navigator.serviceWorker.register("firebase-messaging-sw.js");const token=await firebase.messaging().getToken({vapidKey,serviceWorkerRegistration:registration});if(!token)throw new Error("No push token returned.");const user=auth.currentUser;await db.collection("kbrhPushTokens").doc(user.uid).set({uid:user.uid,email:user.email||"",tokens:firebase.firestore.FieldValue.arrayUnion(token),updatedAt:new Date().toISOString()},{merge:true});alert("Browser alerts are enabled on this device.");
+  }catch(error){console.error(error);alert("Browser alerts could not be enabled. In-app notifications will continue to work.");}
 }

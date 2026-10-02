@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Staff Login | Resident Chore Rotator</title>
 <link href="style.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/>
-<link href="kbrh-v5.css?v=5.5.52" rel="stylesheet"/>
+<link href="kbrh-v5.css?v=5.6.1" rel="stylesheet"/>
 </head>
 <body class="login-body page-login">
 <main class="login-wrap">
@@ -56,6 +56,7 @@
             error.textContent = "This staff account is inactive. Contact the administrator.";
             return;
           }
+          if (profile?.mustChangePassword === true) { window.location.replace("change-password.html"); return; }
         } catch (profileError) {
           console.warn("Staff profile lookup failed; continuing with authenticated Firebase identity.", profileError);
         }

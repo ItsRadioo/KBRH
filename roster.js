@@ -633,7 +633,7 @@ async function confirmDischarge() {
   const dischargeNotes = document.getElementById("dischargeNotes").value.trim();
   if (!outcomeCode) { alert("Select a discharge reason."); return; }
 
-  if (!confirm(`Archive ${localClient.firstName} ${localClient.lastName}?\n\nReason: ${outcomeLabel}\n\nThis removes the resident from the active roster and keeps the record in Archived Residents.`)) return;
+  if (!confirm(`Confirm discharge / archive\n\nResident: ${localClient.firstName} ${localClient.lastName}\nDischarge date: ${new Date().toLocaleDateString("en-CA")}\nReason: ${outcomeLabel}\n\nThis starts the 2-year retention period and contributes to repeat-admission history.`)) return;
 
   const user = auth.currentUser;
   if (!user) { alert("Your login session has expired. Please sign in again before archiving a resident."); return; }
@@ -645,6 +645,9 @@ async function confirmDischarge() {
   }
 
   const archivedAt = new Date().toISOString();
+  const retentionDate = new Date(archivedAt);
+  retentionDate.setFullYear(retentionDate.getFullYear() + 2);
+  const retentionUntil = retentionDate.toISOString();
   const archiveReason = outcomeLabel;
   const appRef = APP_DOC_REF();
 
@@ -660,6 +663,8 @@ async function confirmDischarge() {
     const resident = { ...roster[index] };
     resident.archived = true;
     resident.archivedAt = archivedAt;
+    resident.dischargedAt = archivedAt;
+    resident.retentionUntil = retentionUntil;
     resident.archiveReason = archiveReason;
     resident.dischargeOutcomeCode = outcomeCode;
     resident.dischargeOutcomeLabel = outcomeLabel;
@@ -1008,7 +1013,7 @@ function openResidentInfoModal(clientId) {
   html += `<section class="resident-info-section"><h3>Admission</h3><div class="resident-info-grid">`;
   html += residentInfoItem(phase === "phase1" ? "Entry Date" : "Phase 2 Entry Date", formatDate(phase === "phase1" ? client.entryDate : client.phase2AdmissionDate));
   html += residentInfoItem("Expected Discharge", formatDate(dischargeDate));
-  html += residentInfoItem("Days Remaining", daysRemaining);
+  html += residentInfoItem("Days Left", daysRemaining);
   html += residentInfoItem("OPOC", client.opocCompleted ? "Complete" : "Incomplete");
   html += residentInfoItem("Admission Status", client.admissionCompleted ? "Complete" : "Incomplete");
   html += residentInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
@@ -1175,6 +1180,7 @@ function renderArchivedRoster() {
             <td>${escapeHtml(formatDate(client.entryDate))}</td>
             <td>${escapeHtml(formatDate(getDischargeDate(client)))}</td>
             <td>${escapeHtml(formatDateTime(client.archivedAt))}</td>
+            <td>${escapeHtml(formatDate(client.retentionUntil))}</td>
             <td>${escapeHtml(client.archiveReason)}</td>
             <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
             <td>
@@ -1183,7 +1189,7 @@ function renderArchivedRoster() {
           </tr>
         `;
       }).join("")
-    : `<tr><td colspan="11" class="empty">No archived roster records.</td></tr>`;
+    : `<tr><td colspan="12" class="empty">No archived roster records.</td></tr>`;
 }
 
 function escapeHtml(value) {

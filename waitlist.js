@@ -641,15 +641,32 @@ function savePositionChange() {
   saveWaitlist();
 }
 
+async function authorizeRepeatAdmissionOverride(applicant, actionLabel){
+  if(!archivedRosterMatchWithinTwoYears(applicant)) return true;
+  if(!isKbrhAccountManager(auth.currentUser)){
+    alert(`REPEAT ADMISSION HOLD\n\n${applicant.firstName||""} ${applicant.lastName||""} has at least two matching KBRH archive records within the rolling 2-year window.\n\nA more intensive treatment centre is required before KBRH readmission. Only the Administrator or Executive Director can override this hold.`);
+    return false;
+  }
+  if(!confirm(`REPEAT ADMISSION HOLD\n\nThis applicant has at least two qualifying KBRH archives. Override the hold to ${actionLabel}?`)) return false;
+  const reason=prompt("Enter the reason for this authorized override:","");
+  if(!reason?.trim()) return false;
+  const identity=await getCurrentStaffIdentity();
+  applicant.repeatAdmissionOverride={action:actionLabel,reason:reason.trim(),at:new Date().toISOString(),by:identity.name||identity.email||"Authorized Staff",byUid:identity.uid||""};
+  appendPersonActivity(applicant,"Override","Repeat-admission hold overridden",`${actionLabel}: ${reason.trim()}`,identity);
+  if(typeof writeAuditEntry==="function") await writeAuditEntry([`Repeat-admission hold overridden for ${applicant.firstName||""} ${applicant.lastName||""}: ${actionLabel} — ${reason.trim()}`],identity);
+  return true;
+}
+
 async function giveOfferQuick(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
   if(applicant.status==="Incarcerated"){ alert("Update the applicant status before giving an offer."); return; }
+  if(!(await authorizeRepeatAdmissionOverride(applicant,"give an offer"))) return;
   const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
   applicant.status="Offer Given"; applicant.offerGivenAt=new Date().toISOString(); applicant.offerGivenBy=identity.name||identity.email||"Staff User";
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
   await saveWaitlist(); renderWaitlist();
 }
-function startPrescreenQuick(applicantId){ location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
   if(item.status==="Offer Given") return `<button type="button" class="primary-next-action" onclick="startPrescreenQuick('${item.id}')">Start Pre-Screening</button>`;
   if(item.status==="Incarcerated") return `<button type="button" class="primary-next-action" onclick="startInlineEdit('${item.id}')">Update Status</button>`;
@@ -1080,6 +1097,9 @@ function archivedRosterMatchesWithinTwoYears(item) {
     if (!resident || resident === "temp" || !resident.archived) return false;
     if (normalizeArchiveMatchName(resident.firstName) !== first ||
         normalizeArchiveMatchName(resident.lastName) !== last) return false;
+    const applicantDob=String(item.dob||"").trim();
+    const residentDob=String(resident.dob||"").trim();
+    if(applicantDob && residentDob && applicantDob !== residentDob) return false;
 
     const discharge = resident.archivedAt ? new Date(resident.archivedAt) : null;
     return discharge && !Number.isNaN(discharge.getTime()) && discharge >= cutoff;
@@ -1179,7 +1199,8 @@ function openApplicantInfoModal(applicantId) {
   const noCallCount = getConsecutiveNoCallCount(item);
 
   document.getElementById("applicantInfoModalSubtitle").textContent = fullName;
-  let html = `<section class="applicant-info-section"><h3>Applicant</h3><div class="applicant-info-grid">`;
+  let html = archivedRosterMatchWithinTwoYears(item) ? `<div class="repeat-admission-banner"><strong>REPEAT ADMISSION FLAG</strong><span>Two previous KBRH admissions were identified within the rolling two-year window. More intensive treatment is required before readmission to KBRH unless an authorized override is documented.</span></div>` : "";
+  html += `<section class="applicant-info-section"><h3>Applicant</h3><div class="applicant-info-grid">`;
   html += applicantInfoItem(item.archived ? "Archived Position" : "Waitlist Position", position || "—");
   html += applicantInfoItem("First Name", item.firstName);
   html += applicantInfoItem("Last Name", item.lastName);

@@ -11,10 +11,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="auth.js"></script>
-<script src="data-store.js?v=5.5.52"></script>
+<script src="auth.js?v=5.6.1"></script>
+<script src="data-store.js?v=5.6.1"></script>
 <script>requireLogin();</script>
-<link href="kbrh-v5.css?v=5.5.52" rel="stylesheet"/>
+<link href="kbrh-v5.css?v=5.6.1" rel="stylesheet"/>
 </head>
 <body class="page-roster">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
@@ -67,7 +67,7 @@
 <label><input checked="" data-roster-column="contactPhone" type="checkbox"/> Contact #</label>
 <label><input checked="" data-roster-column="entryDate" type="checkbox"/> Entry Date</label>
 <label><input checked="" data-roster-column="dischargeDate" type="checkbox"/> Discharge Date</label>
-<label><input checked="" data-roster-column="daysRemaining" type="checkbox"/> Days Remaining</label>
+<label><input checked="" data-roster-column="daysRemaining" type="checkbox"/> Days Left</label>
 <label><input checked="" data-roster-column="opoc" type="checkbox"/> OPOC</label>
 <label><input checked="" data-roster-column="admissionStatus" type="checkbox"/> Admission Status</label>
 <label><input checked="" data-roster-column="notes" type="checkbox"/> Notes</label>
@@ -92,7 +92,7 @@
 <th class="phone-col">Contact #</th>
 <th>Entry Date</th>
 <th>Discharge Date</th>
-<th>Days Remaining</th>
+<th>Days Left</th>
 <th class="opoc-col">OPOC</th>
 <th>Admission Status</th>
 <th>Notes</th>
@@ -121,7 +121,7 @@
 <th class="phone-col">Phone</th>
 <th>Phase 2 Entry Date</th>
 <th>Discharge Date</th>
-<th>Days Remaining</th>
+<th>Days Left</th>
 <th>Admission Status</th>
 <th>Notes</th>
 <th>Actions</th>
@@ -149,6 +149,7 @@
 <th>Entry Date</th>
 <th>Discharge Date</th>
 <th>Archived</th>
+<th>Retention Until</th>
 <th>Reason</th>
 <th>Notes</th>
 <th>Actions</th>
@@ -254,8 +255,8 @@
 </form>
 </div>
 </div>
-<script src="roster.js?v=5.5.52"></script>
+<script src="roster.js?v=5.6.1"></script>
 <script src="kbrh-ui-upgrade.js"></script>
-<script src="kbrh-v5.js?v=5.5.52"></script>
+<script src="kbrh-v5.js?v=5.6.1"></script>
 </body>
 </html>

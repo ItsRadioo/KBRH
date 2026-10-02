@@ -471,6 +471,7 @@ async function completePrescreen(){
     if(localApplicant){ Object.assign(localApplicant,a); }
   }
 
+  if(["approved","scheduled-intake","detox"].includes(result.code) && !(await authorizePrescreenRepeatOverride(a,"advance to Pending Admission"))) return;
   currentRecord.status="Completed";
   currentRecord.completedAt=currentRecord.completedAt||new Date().toISOString();
   currentRecord.outcome=result.code;
@@ -498,6 +499,7 @@ async function confirmPrescreenMoveRoster(){
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closePrescreenMoveRoster();return;}
   const applicant=prescreenState.waitlist[applicantIndex];const name=applicantName(applicant);const entryDate=$("prescreenMoveEntryDate").value;
   if(!entryDate){alert("Select the admission / entry date.");return;}
+  if(!(await authorizePrescreenRepeatOverride(applicant,"admit to active roster")))return;
   if(!confirm(`Confirm admission of ${name} on ${entryDate}?`))return;
   prescreenState.roster=Array.isArray(prescreenState.roster)?prescreenState.roster.filter(r=>r&&r!=="temp"):[];prescreenState.transferHistory=Array.isArray(prescreenState.transferHistory)?prescreenState.transferHistory:[];
   const prevW=structuredClone(prescreenState.waitlist),prevR=structuredClone(prescreenState.roster),prevT=structuredClone(prescreenState.transferHistory);

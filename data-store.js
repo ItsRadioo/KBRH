@@ -15,6 +15,7 @@ function defaultKbrhSettings(){
     noCallWarningThreshold: 2,
     choreRolloverDay: "Monday",
     choreRolloverTime: "00:01",
+    webPushVapidKey: "",
     timeZone: "America/Toronto"
   };
 }
@@ -208,6 +209,7 @@ function normalizeAppState(state) {
         id: item.id || crypto.randomUUID(),
         lastName: kbrhUpperName(item.lastName || ""),
         firstName: kbrhUpperName(item.firstName || ""),
+        dob: item.dob || "",
         contact: item.contact || "",
         status: item.status || "",
         city: item.city || "",
@@ -222,7 +224,8 @@ function normalizeAppState(state) {
         activityHistory: normalizeActivityHistory(item.activityHistory),
         preScreeningStatus: item.preScreeningStatus || "",
         preScreeningCompletedAt: item.preScreeningCompletedAt || "",
-        preScreeningRecordId: item.preScreeningRecordId || ""
+        preScreeningRecordId: item.preScreeningRecordId || "",
+        repeatAdmissionOverride: item.repeatAdmissionOverride && typeof item.repeatAdmissionOverride === "object" ? item.repeatAdmissionOverride : null
       }))
     : [];
 
@@ -246,6 +249,8 @@ function normalizeAppState(state) {
         phase2AdmissionDate: client.phase2AdmissionDate || "",
         archived: client.archived || false,
         archivedAt: client.archivedAt || "",
+        dischargedAt: client.dischargedAt || client.archivedAt || "",
+        retentionUntil: client.retentionUntil || (client.archivedAt ? (()=>{const d=new Date(client.archivedAt);if(Number.isNaN(d.getTime()))return "";d.setFullYear(d.getFullYear()+2);return d.toISOString();})() : ""),
         archiveReason: client.archiveReason || "",
         dischargeOutcomeCode: client.dischargeOutcomeCode || "",
         dischargeOutcomeLabel: client.dischargeOutcomeLabel || "",
@@ -638,7 +643,7 @@ function expiredArchivedRosterRecords(state, now = new Date()) {
 
   return roster.filter(record => {
     if (!record || record === "temp" || !record.archived || !record.archivedAt) return false;
-    const dischargedAt = new Date(record.archivedAt);
+    const dischargedAt = new Date(record.dischargedAt || record.archivedAt);
     return !Number.isNaN(dischargedAt.getTime()) && dischargedAt < cutoff;
   });
 }
@@ -654,6 +659,13 @@ async function enforceArchivedRosterRetention(rawState) {
     const retainedRoster = (Array.isArray(rawState.roster) ? rawState.roster : [])
       .filter(record => !expiredIds.has(String(record?.id || "")));
 
+    const backupBatch=db.batch();
+    const recoveryUntil=new Date(); recoveryUntil.setDate(recoveryUntil.getDate()+30);
+    expired.forEach(record=>{
+      const ref=db.collection("kbrhRetentionBackups").doc(`${record.id || crypto.randomUUID()}-${Date.now()}`);
+      backupBatch.set(ref,{record,deletedFromRosterAt:new Date().toISOString(),recoveryUntil:recoveryUntil.toISOString(),reason:"Automatic 2-year roster retention cleanup"},{merge:true});
+    });
+    await backupBatch.commit();
     await APP_DOC_REF().update({ roster: retainedRoster });
 
     const user = auth.currentUser;
