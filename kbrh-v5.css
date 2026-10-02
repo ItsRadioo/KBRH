@@ -1498,3 +1498,33 @@ button:hover,.button-link:hover{transform:none!important;box-shadow:0 4px 12px r
 .repeat-admission-banner{display:grid;gap:6px;padding:14px 16px;margin:0 0 16px;border:2px solid #2563eb;background:#dbeafe;border-radius:10px}.repeat-admission-banner strong{color:#1e3a8a}.repeat-admission-banner span{color:#172554}.kbrh-notification-wrap{position:fixed;right:18px;bottom:18px;z-index:12000}.kbrh-notification-bell{position:relative;width:52px;height:52px;border-radius:50%;font-size:22px;box-shadow:0 6px 24px #0003}.kbrh-notification-bell span{position:absolute;right:-4px;top:-5px;background:#b91c1c;color:#fff;border-radius:999px;min-width:21px;height:21px;display:grid;place-items:center;font-size:12px;padding:0 4px}.kbrh-notification-panel{position:absolute;right:0;bottom:62px;width:min(430px,calc(100vw - 30px));max-height:70vh;overflow:auto;background:#fff;border:1px solid #ccd3dc;border-radius:14px;box-shadow:0 12px 40px #0004;padding:12px}.kbrh-notification-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd;padding-bottom:8px}.kbrh-notification-item{padding:10px;border-bottom:1px solid #e5e7eb;display:grid;gap:8px}.kbrh-notification-item.unread{background:#fff7ed}.kbrh-notification-item small{display:block;color:#66707c;margin-top:3px}.kbrh-notification-actions{display:flex;gap:10px;align-items:center}.lb-notify-box{border-top:1px solid #ddd;margin-top:18px;padding-top:18px}.inline-field{display:flex;gap:8px}.inline-field input{flex:1}
 .lb-entry.lb-important{border-left-color:#d97706;background:#fffbeb}.lb-entry.lb-urgent{border-left-color:#b91c1c;background:#fef2f2}
 .lb-entry.lb-deep-link{outline:3px solid #2563eb;outline-offset:2px}
+
+/* v5.6.2 Staff Account Administration */
+.staff-account-page{display:grid;gap:18px}
+.account-card-heading,.account-list-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.account-card-heading h2,.account-list-heading h2{margin-bottom:4px}
+.account-service-badge{display:inline-flex;align-items:center;white-space:nowrap;border-radius:999px;padding:7px 11px;font-size:.78rem;font-weight:800;border:1px solid #cbd5e1;background:#f8fafc;color:#475569}
+.account-service-badge.online{border-color:#86efac;background:#f0fdf4;color:#166534}
+.account-service-badge.offline{border-color:#fecaca;background:#fef2f2;color:#991b1b}
+.account-service-badge.checking{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+.account-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px}
+.account-form-grid label,.account-edit-grid label{display:grid;gap:7px;font-weight:750;color:#344054}
+.account-form-grid input,.account-edit-grid input{width:100%;min-height:44px;box-sizing:border-box}
+.account-password-field{grid-column:1/-1}
+.account-password-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.account-password-row button{min-width:110px}
+.account-form-actions{display:flex;align-items:center;gap:16px;min-height:44px;margin-top:18px}
+.account-form-actions .hint{margin:0}
+.staff-account-table td{vertical-align:middle}
+.account-row-actions{display:flex;flex-wrap:wrap;gap:7px;min-width:290px}
+.account-row-actions button{white-space:nowrap}
+.account-status{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:.76rem;font-weight:800}
+.account-status.active{background:#dcfce7;color:#166534}
+.account-status.disabled{background:#fee2e2;color:#991b1b}
+.account-first-login{font-weight:750;color:#92400e}
+.account-service-error{padding:18px!important;background:#fff7ed;color:#9a3412;font-weight:650}
+.account-empty{padding:18px!important;color:#667085}
+.account-edit-modal{max-width:620px}
+.account-edit-grid{display:grid;gap:14px;margin:18px 0}
+@media(max-width:900px){.account-form-grid{grid-template-columns:1fr 1fr}.account-password-field{grid-column:1/-1}}
+@media(max-width:650px){.account-card-heading,.account-list-heading{display:grid}.account-form-grid{grid-template-columns:1fr}.account-password-row{grid-template-columns:1fr}.account-password-row button{width:100%}.account-form-actions{align-items:stretch;flex-direction:column}.account-row-actions{min-width:230px}}

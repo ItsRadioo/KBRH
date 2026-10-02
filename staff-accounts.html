@@ -1,1 +1,112 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Accounts | KBRH</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="kbrh-modern.css"><link rel="stylesheet" href="kbrh-v5.css?v=5.6.1"><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script><script src="firebase-config.js"></script><script src="auth.js?v=5.6.1"></script><script>requireLogin();</script></head><body><header><div class="header-top"><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>Staff Accounts</h1><p>Authentication and access administration.</p></div><button class="logout-btn" onclick="logout()">Sign Out</button></div></header><main><section class="card wide"><h2>Create Staff Account</h2><p class="hint">Available to the Administrator and Executive Director with identical administrative access. Temporary passwords are never stored in Firestore.</p><div class="form-grid"><label>Name<input id="acctName"></label><label>Email<input id="acctEmail" type="email"></label><label>Position<input id="acctPosition"></label><label>Temporary Password<div class="inline-field"><input id="acctPassword" type="text"><button type="button" id="generatePassword">Generate</button></div></label></div><button type="button" id="createAccount">Create Account</button><p id="accountStatus" class="hint"></p></section><section class="card wide"><div class="section-title-row"><div><h2>Staff Accounts</h2><p class="hint">Enable/disable access or generate a Firebase password-reset link for secure delivery to the staff member.</p></div><button id="refreshAccounts" type="button" class="secondary">Refresh</button></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Position</th><th>Status</th><th>First Login</th><th>Actions</th></tr></thead><tbody id="accountsBody"><tr><td colspan="6">Loading…</td></tr></tbody></table></div></section></main><script src="staff-accounts.js?v=5.6.1"></script><script src="kbrh-v5.js?v=5.6.1"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Staff Accounts | KBRH</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="kbrh-modern.css">
+  <link rel="stylesheet" href="kbrh-v5.css?v=5.6.2">
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth.js?v=5.6.2"></script>
+  <script>requireLogin();</script>
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <div class="page-heading">
+      <span class="app-name">Ken Brown Recovery Home</span>
+      <h1>Staff Accounts</h1>
+      <p>Create and manage staff access.</p>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+</header>
+
+<main class="staff-account-page">
+  <section class="card wide account-create-card">
+    <div class="account-card-heading">
+      <div>
+        <h2>Create Staff Account</h2>
+        <p class="hint">Administrator and Executive Director have identical access. Temporary passwords are never stored.</p>
+      </div>
+      <div id="accountServiceBadge" class="account-service-badge checking">Checking account service…</div>
+    </div>
+
+    <div class="account-form-grid">
+      <label>
+        <span>Name</span>
+        <input id="acctName" autocomplete="name" placeholder="Staff member name">
+      </label>
+      <label>
+        <span>Email</span>
+        <input id="acctEmail" type="email" autocomplete="off" placeholder="name@kbrh.local">
+      </label>
+      <label>
+        <span>Position</span>
+        <input id="acctPosition" autocomplete="off" placeholder="Position / role">
+      </label>
+      <label class="account-password-field">
+        <span>Temporary Password</span>
+        <div class="account-password-row">
+          <input id="acctPassword" type="text" autocomplete="off" placeholder="Enter or generate a temporary password">
+          <button type="button" id="generatePassword" class="secondary">Generate</button>
+        </div>
+      </label>
+    </div>
+
+    <div class="account-form-actions">
+      <button type="button" id="createAccount">Create Account</button>
+      <span id="accountStatus" class="hint" role="status"></span>
+    </div>
+  </section>
+
+  <section class="card wide">
+    <div class="section-title-row account-list-heading">
+      <div>
+        <h2>Staff Accounts</h2>
+        <p class="hint">Edit staff details, enable or disable access, or issue a secure password-reset link.</p>
+      </div>
+      <button id="refreshAccounts" type="button" class="secondary">Refresh</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="staff-account-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Position</th><th>Status</th><th>First Login</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="accountsBody"><tr><td colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div id="accountEditModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-content account-edit-modal">
+    <div class="modal-header">
+      <h2>Edit Staff Account</h2>
+      <button type="button" id="closeAccountEdit" class="secondary">Close</button>
+    </div>
+    <input id="editAccountUid" type="hidden">
+    <div class="account-edit-grid">
+      <label><span>Name</span><input id="editAccountName"></label>
+      <label><span>Email</span><input id="editAccountEmail" type="email"></label>
+      <label><span>Position</span><input id="editAccountPosition"></label>
+    </div>
+    <p class="hint">Changing the email updates the Firebase sign-in email for this account.</p>
+    <div class="button-row">
+      <button type="button" id="saveAccountEdit">Save Changes</button>
+      <button type="button" id="cancelAccountEdit" class="secondary">Cancel</button>
+    </div>
+    <p id="editAccountStatus" class="hint" role="status"></p>
+  </div>
+</div>
+
+<script src="staff-accounts.js?v=5.6.2"></script>
+<script src="kbrh-v5.js?v=5.6.2"></script>
+</body>
+</html>

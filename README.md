@@ -1,3 +1,13 @@
+KBRH Professional v5.6.2 — Staff Account UI + Flat Backend Fix
+
+- Rebuilt Staff Accounts into a clean responsive form with properly aligned Name, Email, Position and Temporary Password fields.
+- Added an Account Service status indicator instead of presenting backend failures as if they were staff records.
+- Added Edit Staff Account for name, sign-in email and position.
+- Existing enable/disable and password-reset controls remain.
+- Firebase Functions configuration is now compatible with the required completely flat release package: firebase.json uses the ZIP root as the Functions source.
+- No folders or subdirectories are included in the release ZIP.
+- Once the Functions backend has been deployed once, staff account creation and modification are performed from KBRH Professional itself.
+
 KBRH Professional v5.6.1 — Shared Admin Access + In-App Administration
 
 - admin@kbrh.local and executivedirector@kbrh.local now have identical administrative access throughout KBRH Professional.
