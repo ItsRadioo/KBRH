@@ -1,0 +1,49 @@
+name: Deploy KBRH Firebase Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.js"
+      - "package.json"
+      - "package-lock.json"
+      - "firebase.json"
+      - "firestore.rules"
+      - ".github/workflows/firebase-backend.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy Firebase Functions and Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout KBRH
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: kbrh-chore-assignment
+          workload_identity_provider: projects/13613958689/locations/global/workloadIdentityPools/kbrh-github-deployments/providers/kbrh-github
+          service_account: kbrh-github-deployment@kbrh-chore-assignment.iam.gserviceaccount.com
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firebase backend
+        run: firebase deploy --project kbrh-chore-assignment --only functions,firestore:rules
