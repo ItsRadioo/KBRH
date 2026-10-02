@@ -46,4 +46,4 @@ jobs:
         run: npm install --global firebase-tools
 
       - name: Deploy Firebase backend
-        run: firebase deploy --project kbrh-chore-assignment --only functions,firestore:rules
+        run: firebase deploy --project kbrh-chore-assignment --only functions,firestore:rules --force
