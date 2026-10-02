@@ -1,10 +1,3 @@
-# v5.6.3 — Pre-Screening Completion Fix
-
-- Fixed Complete Pre-Screening failing when an eligible intake advances to Pending Admission.
-- Restored the repeat-admission safeguard directly on the Pre-Screening page; the page no longer depends on a helper that only exists in waitlist.js.
-- Preserved the two-archive / rolling-two-year rule, DOB secondary match, Administrator/Executive Director override, written override reason, and audit entry.
-- Updated Pre-Screening cache-busting references so browsers load the corrected script immediately after deployment.
-
 KBRH Professional v5.6.2 — Staff Account UI + Flat Backend Fix
 
 - Rebuilt Staff Accounts into a clean responsive form with properly aligned Name, Email, Position and Temporary Password fields.

@@ -181,7 +181,7 @@
     ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html","pending-admissions.html","reports.html"]],
     ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html","tool-signout.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
-    ["Staff", ["staff-list.html","audit-log.html","staff-profile.html","settings.html"]]
+    ["Staff", ["staff-list.html","audit-log.html","staff-accounts.html","staff-profile.html","settings.html"]]
   ];
   const labels={"index.html":"Dashboard","pending-admissions.html":"Pending Admissions","reports.html":"Reports"};
   function basename(h){try{return new URL(h,location.href).pathname.split('/').pop()||'index.html';}catch(_){return h;}}
