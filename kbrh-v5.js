@@ -335,9 +335,24 @@
       toggle.setAttribute("aria-label","Close navigation");
       toggle.innerHTML="×";
     };
-    toggle.addEventListener("click",()=>document.body.classList.contains("kbrh-mobile-nav-open")?close():open());
-    backdrop.addEventListener("click",close);
-    nav.addEventListener("click",e=>{if(e.target.closest("a"))close();});
+    toggle.addEventListener("click",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      document.body.classList.contains("kbrh-mobile-nav-open") ? close() : open();
+    });
+    backdrop.addEventListener("click",e=>{
+      e.preventDefault();
+      close();
+    });
+
+    // Interacting with controls inside the mobile drawer must never be treated
+    // as an outside click. Only an actual navigation link closes the drawer.
+    nav.addEventListener("click",e=>{
+      e.stopPropagation();
+      const link=e.target.closest("a.app-nav-link");
+      if(link) close();
+    });
+    nav.addEventListener("touchstart",e=>e.stopPropagation(),{passive:true});
     document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
     window.addEventListener("resize",()=>{if(window.innerWidth>768)close();});
 

@@ -1,3 +1,10 @@
+# v5.6.7 — Mobile Navigation Interaction Fix
+
+- Fixed mobile navigation drawer interactions so expanding/collapsing navigation groups and using controls inside the drawer no longer closes it.
+- The drawer now closes only when an actual navigation destination is selected, the backdrop is tapped, the menu toggle is used, or Escape is pressed.
+- Added touch-event isolation inside the drawer for mobile browsers.
+- Updated the shared KBRH UI asset cache version to v5.6.7 so mobile devices do not continue using an older cached navigation script.
+
 # KBRH Professional v5.6.6
 
 - Important and Urgent Digital Log Book notifications now open as a mandatory full-site acknowledgement gate.
