@@ -1,3 +1,11 @@
+# KBRH Professional v5.6.11
+
+- Verbal Warning Log: existing warnings can be opened with Edit and corrected in place.
+- Original creation metadata is preserved; corrections record Last Edited By and Last Edited date/time.
+- Verbal Warning deletion was removed so historical resident documentation cannot silently disappear.
+- Verbal Warning edits continue through the existing significant-change audit trail.
+- Built from v5.6.10; pre-screening completion, mobile navigation, dashboard, and notification acknowledgement changes are retained.
+
 KBRH Professional v5.6.10
 
 Prescreening completion regression fix:

@@ -171,11 +171,12 @@ async function saveWarningFromModal() {
 
 function startEditWarning(id) { openWarningModal(id); }
 
-function deleteWarning(id) {
-  const warning = (warningState.verbalWarnings || []).find(item => item.id === id);
-  if (!warning || !confirm(`Delete warning for ${warning.residentName}?`)) return;
-  warningState.verbalWarnings = warningState.verbalWarnings.filter(item => item.id !== id);
-  renderWarnings(); saveWarnings();
+function formatEditedDetails(warning) {
+  if (!warning?.updatedAt) return "—";
+  const when = new Date(warning.updatedAt);
+  const stamp = Number.isNaN(when.getTime()) ? String(warning.updatedAt) : when.toLocaleString();
+  const editor = warning.updatedBy || warning.updatedByEmail || "Staff";
+  return `${editor} · ${stamp}`;
 }
 
 function renderWarnings() {
@@ -184,8 +185,8 @@ function renderWarnings() {
   body.innerHTML = warnings.length ? warnings.map(w => {
     const issuer = w.issuer || w.staffUser || '';
     const enteredBy = w.enteredBy && String(w.enteredBy).trim().toLocaleLowerCase() !== String(issuer).trim().toLocaleLowerCase() ? w.enteredBy : '';
-    return `<tr><td>${escapeHtml(w.date)}</td><td>${escapeHtml(w.time)}</td><td>${escapeHtml(w.residentName)}</td><td>${escapeHtml(issuer)}</td><td>${enteredBy ? escapeHtml(enteredBy) : ''}</td><td>${escapeHtml(w.incident)}</td><td>${escapeHtml(w.staffAction)}</td><td>${escapeHtml(w.residentResponse)}</td><td><div class="actions"><button type="button" class="secondary" onclick="startEditWarning('${w.id}')">Edit</button><button type="button" class="danger" onclick="deleteWarning('${w.id}')">Delete</button></div></td></tr>`;
-  }).join('') : '<tr><td colspan="9" class="empty">No verbal warnings logged.</td></tr>';
+    return `<tr><td>${escapeHtml(w.date)}</td><td>${escapeHtml(w.time)}</td><td>${escapeHtml(w.residentName)}</td><td>${escapeHtml(issuer)}</td><td>${enteredBy ? escapeHtml(enteredBy) : ''}</td><td>${escapeHtml(w.incident)}</td><td>${escapeHtml(w.staffAction)}</td><td>${escapeHtml(w.residentResponse)}</td><td>${escapeHtml(formatEditedDetails(w))}</td><td><div class="actions"><button type="button" class="secondary" onclick="startEditWarning('${w.id}')">Edit</button></div></td></tr>`;
+  }).join('') : '<tr><td colspan="10" class="empty">No verbal warnings logged.</td></tr>';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
