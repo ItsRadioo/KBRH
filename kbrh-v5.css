@@ -1547,3 +1547,45 @@ body.kbrh-ack-lock{overflow:hidden}
 .kbrh-required-ack-check input{width:20px;height:20px;flex:0 0 auto;margin-top:1px}
 .kbrh-required-ack-dialog button{width:100%;min-height:46px;font-weight:800}
 .kbrh-required-ack-dialog button:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* =========================================================
+   v5.6.8 — Dashboard + definitive mobile navigation repair
+   ========================================================= */
+.v568-dashboard-link{font-weight:850!important;border:1px solid rgba(255,255,255,.18)!important;margin:4px 0 8px!important}
+.v568-dashboard-link::before{content:"⌂";display:inline-block;margin-right:9px;font-size:1.05em}
+.v568-dashboard-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0 0 18px}
+.v568-kpi{display:grid;gap:5px;padding:16px;border:1px solid #dbe4ee;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.04)}
+.v568-kpi>span{font-size:.76rem;font-weight:800;letter-spacing:.035em;text-transform:uppercase;color:#667085}.v568-kpi>strong{font-size:1.85rem;line-height:1.05;color:#172033}.v568-kpi>small{color:#667085;line-height:1.35}.v568-kpi.attention{border-color:#f2c94c;background:#fffdf3}.v568-kpi.urgent{border-color:#f1a5a5;background:#fff7f7}.v568-kpi.urgent>strong{color:#a61b1b}.v568-kpi.success>strong{color:#176b45}
+.v568-dashboard-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}.v568-dashboard-grid>.card{margin:0!important}.v568-urgent-item{border-color:#ef9a9a!important;background:#fff1f1!important}.v568-neutral-item{border-color:#d8dee8!important;background:#f8fafc!important}
+@media(max-width:1200px){.v568-dashboard-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:768px){
+  /* Desktop sidebar controls must not participate in the phone layout. */
+  .v5-sidebar-toggle{display:none!important}
+  body.kbrh-v5.v5-sidebar-collapsed>header,
+  body.kbrh-v5>header{transform:none!important}
+  body.kbrh-v5.v5-sidebar-collapsed>main,
+  body.kbrh-v5>main{margin-left:0!important;width:100%!important}
+  /* The drawer has one authoritative mobile state. Internal controls cannot hide it. */
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav{
+    display:flex!important;position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;
+    width:min(88vw,360px)!important;height:100dvh!important;max-width:360px!important;margin:0!important;
+    padding:72px 14px 24px!important;z-index:1002!important;flex-direction:column!important;flex-wrap:nowrap!important;
+    overflow-y:auto!important;overflow-x:hidden!important;transform:translate3d(105%,0,0)!important;
+    transition:transform .2s ease!important;visibility:hidden!important;pointer-events:none!important;
+    background:var(--sidebar-bg,#172033)!important;overscroll-behavior:contain!important;
+  }
+  body.kbrh-mobile-nav-open:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav{
+    transform:translate3d(0,0,0)!important;visibility:visible!important;pointer-events:auto!important;
+  }
+  body.kbrh-mobile-nav-open .mobile-nav-backdrop{display:block!important;position:fixed!important;inset:0!important;z-index:1000!important}
+  .mobile-nav-toggle{position:relative!important;z-index:1004!important}
+  header .app-nav .v55-nav-group{flex:0 0 auto!important}
+  header .app-nav .v55-nav-group-title{min-height:44px!important;touch-action:manipulation!important}
+  header .app-nav .v55-nav-group-links{flex:0 0 auto!important}
+  .v568-dashboard-link{flex:0 0 auto!important;min-height:48px!important}
+  .v568-dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .v568-kpi{padding:13px}.v568-kpi>strong{font-size:1.5rem}
+  .v568-dashboard-grid{grid-template-columns:1fr;gap:12px}
+}
+@media(max-width:430px){.v568-dashboard-kpis{grid-template-columns:1fr 1fr}.v568-kpi>span{font-size:.68rem}.v568-kpi>strong{font-size:1.35rem}}

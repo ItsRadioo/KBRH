@@ -1,3 +1,11 @@
+# KBRH Professional v5.6.8
+
+- Dashboard is now a permanent top-level navigation destination.
+- Dashboard now surfaces Phase 1 occupancy (18-bed capacity), Phase 2 count, waitlist, pending admissions, outcome success rate, required acknowledgements, upcoming intakes and priority follow-up items.
+- Success rate uses the same definition as Reports: Program Completed / (Program Completed + Involuntary Discharge / Removed) for classified retained discharge records.
+- Mobile navigation was rebuilt with authoritative mobile CSS state; internal menu interactions cannot dismiss the drawer. Only the menu button, backdrop, Escape, or navigation to another page ends the current drawer interaction.
+- Existing v5.6.7 functionality is retained.
+
 # v5.6.7 — Mobile Navigation Interaction Fix
 
 - Fixed mobile navigation drawer interactions so expanding/collapsing navigation groups and using controls inside the drawer no longer closes it.

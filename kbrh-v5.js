@@ -178,7 +178,7 @@
 (() => {
   "use strict";
   const NAV_GROUPS = [
-    ["Residents", ["index.html","roster.html","waitlist.html","prescreening.html","pending-admissions.html","reports.html"]],
+    ["Residents", ["roster.html","waitlist.html","prescreening.html","pending-admissions.html","reports.html"]],
     ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html","tool-signout.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-accounts.html","staff-profile.html","settings.html"]]
@@ -198,6 +198,13 @@
     if(!map.has('pending-admissions.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='pending-admissions.html';a.textContent='Pending Admissions';map.set('pending-admissions.html',a);}
     if(!map.has('reports.html')){const a=document.createElement('a');a.className='app-nav-link';a.href='reports.html';a.textContent='Reports';map.set('reports.html',a);}
     nav.innerHTML='';
+    const dashboardLink=map.get('index.html');
+    if(dashboardLink){
+      dashboardLink.textContent='Dashboard';
+      dashboardLink.classList.add('v568-dashboard-link');
+      nav.appendChild(dashboardLink);
+      map.delete('index.html');
+    }
     NAV_GROUPS.forEach(([title,files],i)=>{
       const section=document.createElement('section'); section.className='v55-nav-group';
       const head=document.createElement('button'); head.type='button'; head.className='v55-nav-group-title'; head.innerHTML=`<span>${title}</span><span aria-hidden="true">⌄</span>`;
@@ -347,12 +354,11 @@
 
     // Interacting with controls inside the mobile drawer must never be treated
     // as an outside click. Only an actual navigation link closes the drawer.
-    nav.addEventListener("click",e=>{
-      e.stopPropagation();
-      const link=e.target.closest("a.app-nav-link");
-      if(link) close();
+    // Nothing inside the drawer closes it. Destination links navigate naturally;
+    // only the explicit menu button, backdrop, or Escape dismisses the drawer.
+    ["click","pointerdown","touchstart"].forEach(type=>{
+      nav.addEventListener(type,e=>e.stopPropagation(),{passive:type!=="click"});
     });
-    nav.addEventListener("touchstart",e=>e.stopPropagation(),{passive:true});
     document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
     window.addEventListener("resize",()=>{if(window.innerWidth>768)close();});
 
