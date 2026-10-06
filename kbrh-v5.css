@@ -1589,3 +1589,38 @@ body.kbrh-ack-lock{overflow:hidden}
   .v568-dashboard-grid{grid-template-columns:1fr;gap:12px}
 }
 @media(max-width:430px){.v568-dashboard-kpis{grid-template-columns:1fr 1fr}.v568-kpi>span{font-size:.68rem}.v568-kpi>strong{font-size:1.35rem}}
+
+/* =========================================================
+   v5.6.9 — Mobile drawer stacking-context correction
+   The page backdrop must sit below the entire header stacking context.
+   Previously the backdrop and header both occupied z-index 1000; because
+   the backdrop is appended after the header, Safari could paint it over
+   the drawer and intercept touches even though .app-nav had z-index 1002.
+   ========================================================= */
+@media (max-width:768px){
+  body:not(.page-login):not(.page-print):not(.page-meal-print)>header{
+    position:relative!important;
+    z-index:901!important;
+  }
+  body.kbrh-mobile-nav-open:not(.page-login):not(.page-print):not(.page-meal-print)>header{
+    z-index:1001!important;
+  }
+  .mobile-nav-backdrop{
+    z-index:900!important;
+    pointer-events:auto!important;
+  }
+  body.kbrh-mobile-nav-open .mobile-nav-backdrop{
+    display:block!important;
+    z-index:900!important;
+    pointer-events:auto!important;
+  }
+  body.kbrh-mobile-nav-open:not(.page-login):not(.page-print):not(.page-meal-print)>header .app-nav{
+    z-index:1002!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+  }
+  body.kbrh-mobile-nav-open .mobile-nav-toggle{
+    z-index:1004!important;
+    pointer-events:auto!important;
+  }
+}

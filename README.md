@@ -1,4 +1,9 @@
-# KBRH Professional v5.6.8
+KBRH Professional v5.6.9
+
+- Corrected the mobile navigation stacking context so the page backdrop remains behind the drawer and cannot intercept drawer taps on iOS/Safari.
+- Preserves the v5.6.8 operational dashboard and all prior notification/account features.
+
+# KBRH Professional v5.6.9
 
 - Dashboard is now a permanent top-level navigation destination.
 - Dashboard now surfaces Phase 1 occupancy (18-bed capacity), Phase 2 count, waitlist, pending admissions, outcome success rate, required acknowledgements, upcoming intakes and priority follow-up items.
