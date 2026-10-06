@@ -1,3 +1,14 @@
+KBRH Professional v5.6.10
+
+Prescreening completion regression fix:
+- Restores the missing authorizePrescreenRepeatOverride() workflow used when completing an eligible pre-screening or admitting from pre-screening.
+- Preserves the two archived admissions within the rolling two-year hold rule.
+- Uses DOB as a secondary identity check when both records contain DOB.
+- Only Administrator / Executive Director accounts may override the hold.
+- Requires a written override reason and records the override in applicant activity and audit history.
+- Bumps the prescreening script cache version so browsers load the corrected code.
+- Retains all v5.6.9 mobile drawer and v5.6.8 dashboard functionality.
+
 KBRH Professional v5.6.9
 
 - Corrected the mobile navigation stacking context so the page backdrop remains behind the drawer and cannot intercept drawer taps on iOS/Safari.

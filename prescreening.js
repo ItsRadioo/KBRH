@@ -434,6 +434,82 @@ async function saveDraft(showAlert=true){
   return persistCurrentPrescreen({complete:false,showAlert});
 }
 
+function normalizePrescreenArchiveMatchName(value){
+  return String(value || "")
+    .trim()
+    .toLocaleUpperCase("en-CA")
+    .replace(/[.'’`-]/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function prescreenArchivedRosterMatchesWithinTwoYears(applicant){
+  if(!applicant || !Array.isArray(prescreenState?.roster)) return [];
+  const first=normalizePrescreenArchiveMatchName(applicant.firstName);
+  const last=normalizePrescreenArchiveMatchName(applicant.lastName);
+  if(!first || !last) return [];
+
+  const cutoff=new Date();
+  cutoff.setFullYear(cutoff.getFullYear()-2);
+
+  return prescreenState.roster.filter(resident=>{
+    if(!resident || resident==="temp" || !resident.archived) return false;
+    if(normalizePrescreenArchiveMatchName(resident.firstName)!==first ||
+       normalizePrescreenArchiveMatchName(resident.lastName)!==last) return false;
+
+    const applicantDob=String(applicant.dob||"").trim();
+    const residentDob=String(resident.dob||"").trim();
+    if(applicantDob && residentDob && applicantDob!==residentDob) return false;
+
+    const archivedDate=new Date(resident.dischargedAt||resident.archivedAt||0);
+    return !Number.isNaN(archivedDate.getTime()) && archivedDate>=cutoff;
+  });
+}
+
+function prescreenHasRepeatAdmissionHold(applicant){
+  return prescreenArchivedRosterMatchesWithinTwoYears(applicant).length>=2;
+}
+
+async function authorizePrescreenRepeatOverride(applicant,actionLabel){
+  if(!prescreenHasRepeatAdmissionHold(applicant)) return true;
+
+  if(typeof isKbrhAccountManager!=="function" || !isKbrhAccountManager(auth.currentUser)){
+    alert(`REPEAT ADMISSION HOLD\n\n${applicantName(applicant)} has at least two matching KBRH archive records within the rolling 2-year window.\n\nA more intensive treatment centre is required before KBRH readmission. Only the Administrator or Executive Director can override this hold.`);
+    return false;
+  }
+
+  if(!confirm(`REPEAT ADMISSION HOLD\n\n${applicantName(applicant)} has at least two qualifying KBRH archive records within the rolling 2-year window.\n\nOverride the hold to ${actionLabel}?`)) return false;
+
+  const reason=String(prompt("Enter the reason for this authorized override:","")||"").trim();
+  if(!reason){
+    alert("An override reason is required. The repeat-admission hold remains in place.");
+    return false;
+  }
+
+  let identity={name:staffDisplayName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
+  if(typeof getCurrentStaffIdentity==="function"){
+    try{ identity=await getCurrentStaffIdentity(); }catch(error){ console.warn("Staff identity lookup failed during repeat-admission override",error); }
+  }
+
+  applicant.repeatAdmissionOverride={
+    action:actionLabel,
+    reason,
+    at:new Date().toISOString(),
+    by:identity.name||identity.email||"Authorized Staff",
+    byUid:identity.uid||"",
+    byEmail:identity.email||""
+  };
+  appendPersonActivity(applicant,"Override","Repeat-admission hold overridden",`${actionLabel}: ${reason}`,identity);
+
+  if(typeof writeAuditEntry==="function"){
+    try{
+      await writeAuditEntry([`Repeat-admission hold overridden for ${applicantName(applicant)}: ${actionLabel} — ${reason}`],identity);
+    }catch(error){
+      console.warn("Repeat-admission override audit write failed",error);
+    }
+  }
+  return true;
+}
+
 async function completePrescreen(){
   collectCurrentStep();
   const a=getApplicants().find(x=>x.id===currentApplicantId); if(!a)return;
