@@ -611,3 +611,6 @@ v5.5.40 — Restricted Phase 2 Log Book
 
 ## v5.6.13 — Expired recent-resident status
 When a 90-day hold expires, status becomes N/A on waitlist load; prior discharge date and actual call-in priority/history are preserved. No call-in is generated.
+
+
+v5.6.14: Normalize recent-resident discharge dates (ISO and DD.MM.YYYY), recover verified archive dates, require dates for new Recent Resident entries, block offers if date is unresolved, preserve call-in history.

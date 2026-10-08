@@ -225,6 +225,10 @@ function normalizeAppState(state) {
         preScreeningStatus: item.preScreeningStatus || "",
         preScreeningCompletedAt: item.preScreeningCompletedAt || "",
         preScreeningRecordId: item.preScreeningRecordId || "",
+        recentResident: item.recentResident === true || item.status === "Recent Resident",
+        recentDischargeDate: item.recentDischargeDate || "",
+        previousDischargeDate: item.previousDischargeDate || "",
+        lastDischargeDate: item.lastDischargeDate || "",
         repeatAdmissionOverride: item.repeatAdmissionOverride && typeof item.repeatAdmissionOverride === "object" ? item.repeatAdmissionOverride : null
       }))
     : [];
