@@ -607,3 +607,7 @@ v5.5.40 — Restricted Phase 2 Log Book
 - Add/edit Recent Resident status, archive-assisted discharge date and 90-day eligibility.
 - Restricted applicants rank below late callers and above No Calls; Give Offer disabled until eligible.
 - Offer, pre-screen and roster transfer entry points enforce the restriction.
+
+
+## v5.6.13 — Expired recent-resident status
+When a 90-day hold expires, status becomes N/A on waitlist load; prior discharge date and actual call-in priority/history are preserved. No call-in is generated.

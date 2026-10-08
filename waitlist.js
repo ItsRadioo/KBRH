@@ -166,6 +166,22 @@ function isRecentResidentHold(item) {
   const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
   return !!item?.recentResident && !!eligible && today < eligible;
 }
+// Expiration is a status transition, not a call-in. Never modify call-in
+// history, callPriority, or create a new timestamp when lifting the hold.
+function expireRecentResidentStatuses() {
+  let changed = false;
+  for (const applicant of waitlistState.waitlist || []) {
+    if (!applicant || applicant.archived || applicant.status !== "Recent Resident") continue;
+    if (!applicant.recentResident || !recentEligibilityDate(applicant)) continue;
+    if (isRecentResidentHold(applicant)) continue;
+    applicant.status = "N/A";
+    applicant.recentResident = false;
+    // Preserve recentDischargeDate as historical evidence.
+    changed = true;
+  }
+  return changed;
+}
+
 function formatRecentEligibility(item) {
   const date = recentEligibilityDate(item);
   return date ? date.split("-").reverse().join(".") : "";
@@ -1190,7 +1206,7 @@ function getWaitlistStatusClass(item) {
 
 function applicantDisplayStatus(item) {
   if(isRecentResidentHold(item)) return `Recent Resident — Eligible ${formatRecentEligibility(item)}`;
-  if(item?.status === "Recent Resident") return "Recent Resident — Eligible";
+  if(item?.status === "Recent Resident") return "Recent Resident — Eligibility date unavailable";
   const noCallCount = getConsecutiveNoCallCount(item);
   if (noCallCount >= noCallWarningThreshold()) return `⚠ No Call (${noCallCount})`;
   const prescreen = Array.isArray(waitlistState.preScreenings)
@@ -1570,8 +1586,12 @@ auth.onAuthStateChanged(async user => {
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
 
-    // Never-called applicants are displayed by Application Date. Applicants
-    // with call-in history retain their persisted waitlistPosition.
+    // Lift expired 90-day holds without inventing call-ins or bonus priority.
+    // Save once; subsequent snapshots see N/A and cannot repeat the transition.
+    const expiredRecentResident = expireRecentResidentStatuses();
     renderWaitlist();
+    if (expiredRecentResident) {
+      saveWaitlist().then(() => renderWaitlist());
+    }
   });
 });
