@@ -614,3 +614,7 @@ When a 90-day hold expires, status becomes N/A on waitlist load; prior discharge
 
 
 v5.6.14: Normalize recent-resident discharge dates (ISO and DD.MM.YYYY), recover verified archive dates, require dates for new Recent Resident entries, block offers if date is unresolved, preserve call-in history.
+
+
+## v5.6.17 — Phase 1 visual presence board
+Dashboard and digital logbook share a visual-only In/Out status board for active Phase 1 residents. No logbook entries, timestamps, notifications, or roster updates are created. Presence data is held separately in Firestore kbrh/phase1Presence.

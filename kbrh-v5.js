@@ -368,3 +368,24 @@
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initMobileNavigation);
   else initMobileNavigation();
 })();
+
+/* v5.6.16: consistent phone and address formatting on editable fields. */
+(() => {
+  function phoneField(el) {
+    if (!(el instanceof HTMLInputElement)) return false;
+    const key = `${el.id || ""} ${el.name || ""}`.toLowerCase();
+    return el.type === "tel" || /(?:phone|editcontact-|^contact$)/.test(key) && !/(?:name|email|note)/.test(key);
+  }
+  function format(el) {
+    if (!(el instanceof HTMLInputElement) || el.disabled || el.readOnly) return;
+    if (phoneField(el)) {
+      const digits = el.value.replace(/\D/g, "");
+      if (digits.length === 10 || (digits.length === 11 && digits.startsWith("1"))) {
+        if (typeof kbrhDisplayPhone === "function") el.value = kbrhDisplayPhone(el.value);
+      }
+    }
+  }
+  document.addEventListener("change", e => format(e.target), true);
+  document.addEventListener("blur", e => format(e.target), true);
+  document.addEventListener("focusout", e => format(e.target), true);
+})();

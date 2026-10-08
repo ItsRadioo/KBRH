@@ -174,6 +174,18 @@ function getWaitlistCallPriority(item) {
   return "late";
 }
 
+// Normalize structured contact fields on both reads and writes.
+function kbrhDisplayPhone(value) {
+  const original = String(value || "").trim();
+  const digits = original.replace(/\D/g, "");
+  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits[0] === "1") return `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+  return original; // Do not silently discard extensions or incomplete numbers.
+}
+function kbrhDisplayAddress(value) {
+  return typeof value === "string" ? kbrhStoredTitleCase(value.trim()) : (value || "");
+}
+
 function normalizeAppState(state) {
   const base = defaultAppState();
   const merged = { ...base, ...(state || {}) };
@@ -210,7 +222,7 @@ function normalizeAppState(state) {
         lastName: kbrhUpperName(item.lastName || ""),
         firstName: kbrhUpperName(item.firstName || ""),
         dob: item.dob || "",
-        contact: item.contact || "",
+        contact: kbrhDisplayPhone(item.contact),
         status: item.status || "",
         city: item.city || "",
         dateApplied: item.dateApplied || "",
@@ -241,11 +253,11 @@ function normalizeAppState(state) {
         firstName: kbrhUpperName(client.firstName || ""),
         lastName: kbrhUpperName(client.lastName || ""),
         dob: client.dob || "",
-        phone: client.phone || "",
-        address: client.address || "",
+        phone: kbrhDisplayPhone(client.phone),
+        address: kbrhDisplayAddress(client.address),
         city: client.city || "",
         contact: kbrhUpperFullName(client.contact || ""),
-        contactPhone: client.contactPhone || "",
+        contactPhone: kbrhDisplayPhone(client.contactPhone),
         entryDate: client.entryDate || "",
         expectedDischargeDate: client.expectedDischargeDate || "",
         opocCompleted: client.opocCompleted || false,

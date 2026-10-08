@@ -15,9 +15,7 @@ function getInputValue(id) {
 }
 
 function formatPhoneNumber(value) {
-  const digits = String(value || "").replace(/\D/g, "");
-  if (digits.length === 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  return String(value || "");
+  return kbrhDisplayPhone(value);
 }
 
 // v5.5.33: whenever a resident edit is saved, normalize person-name fields before persistence.
@@ -57,7 +55,7 @@ function addClient() {
     clientId: getInputValue("clientId"),
     dob: getInputValue("dob"),
     phone: formatPhoneNumber(getInputValue("phone")),
-    address: getInputValue("address"),
+    address: kbrhDisplayAddress(getInputValue("address")),
     city: getInputValue("city"),
     contact: getInputValue("contact"),
     contactPhone: formatPhoneNumber(getInputValue("contactPhone")),
@@ -323,7 +321,7 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
   }
 
   if ((client.phase || "phase1") === "phase1") {
-    client.address = getInputValue(`editAddress-${clientId}`);
+    client.address = kbrhDisplayAddress(getInputValue(`editAddress-${clientId}`));
     client.city = getInputValue(`editCity-${clientId}`);
     client.contact = getInputValue(`editContact-${clientId}`);
     client.contactPhone = formatPhoneNumber(getInputValue(`editContactPhone-${clientId}`));
