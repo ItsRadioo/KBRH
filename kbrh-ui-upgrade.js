@@ -269,6 +269,43 @@
     if (modalType === "roster-add") await addRosterRecord();
   }
 
+  function recentResidentFields(prefix, applicant = {}) {
+    const checked = !!applicant.recentResident;
+    return `<div class="kbrh-recent-fields" style="grid-column:1/-1">
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="${prefix}Recent" ${checked ? "checked" : ""}>Was this applicant a resident of the home within the last 90 days?</label>
+      <label id="${prefix}DischargeWrap" style="display:${checked ? "block" : "none"}">Previous discharge date
+        <input type="date" id="${prefix}Discharge" value="${applicant.recentDischargeDate || ""}">
+        <small>Archive match auto-fills the discharge date. If no match exists, enter it manually.</small>
+      </label></div>`;
+  }
+  function setupRecentFields(prefix, firstId, lastId, statusId) {
+    const checkbox = document.getElementById(`${prefix}Recent`);
+    const discharge = document.getElementById(`${prefix}Discharge`);
+    const wrapper = document.getElementById(`${prefix}DischargeWrap`);
+    const status = document.getElementById(statusId);
+    function sync() {
+      if (status?.value === "Recent Resident") checkbox.checked = true;
+      wrapper.style.display = checkbox.checked ? "block" : "none";
+      if (checkbox.checked && !discharge.value && typeof recentArchiveDischarge === "function") {
+        discharge.value = recentArchiveDischarge(valueOf(firstId), valueOf(lastId));
+      }
+    }
+    checkbox?.addEventListener("change", () => { if(!checkbox.checked && status?.value === "Recent Resident")status.value="N/A"; sync(); });
+    status?.addEventListener("change", sync);
+    document.getElementById(firstId)?.addEventListener("blur", sync);
+    document.getElementById(lastId)?.addEventListener("blur", sync);
+    sync();
+  }
+  function recentValues(prefix, first, last) {
+    const checked = !!document.getElementById(`${prefix}Recent`)?.checked;
+    const dischargeInput = document.getElementById(`${prefix}Discharge`);
+    const discharge = checked ? (typeof recentArchiveDischarge === "function" ? recentArchiveDischarge(first,last) : "") || dischargeInput?.value || "" : "";
+    if (checked && (!/^\d{4}-\d{2}-\d{2}$/.test(discharge) || Number.isNaN(new Date(`${discharge}T12:00:00`).getTime()))) {
+      alert("A valid previous discharge date is required for a recent resident."); return null;
+    }
+    return {recentResident: checked, recentDischargeDate: discharge};
+  }
+
   function openAddWaitlistModal() {
     openModal(
       "waitlist-add",
@@ -279,7 +316,8 @@
         inputField("kwaFirst", "First Name", "", "text", true),
         inputField("kwaLast", "Last Name", "", "text", true),
         inputField("kwaContact", "Contact / Phone Number"),
-        selectField("kwaStatus", "Status", "N/A", ["N/A", "Incarcerated", "Offer Given"], true),
+        selectField("kwaStatus", "Status", "N/A", ["N/A", "Incarcerated", "Recent Resident", "Offer Given"], true),
+        recentResidentFields("kwa"),
         inputField("kwaCity", "City"),
         inputField("kwaDate", "Date Applied", new Date().toISOString().slice(0, 10), "date"),
         textareaField("kwaNotes", "Initial Note"),
@@ -288,6 +326,7 @@
       "Add Applicant"
     );
     configureOfferNote("kwaStatus", "kwaOfferNote");
+    setupRecentFields("kwa", "kwaFirst", "kwaLast", "kwaStatus");
   }
 
   async function addWaitlistRecord() {
@@ -298,6 +337,9 @@
     const initialNote = valueOf("kwaNotes");
     const offerNote = valueOf("kwaOfferNote");
     const status = valueOf("kwaStatus") || "N/A";
+    const recent = recentValues("kwa", valueOf("kwaFirst"), valueOf("kwaLast"));
+    if (!recent) return;
+    if (recent.recentResident && status === "Offer Given" && isRecentResidentHold(recent)) { alert("Applicant is not eligible for an offer during the 90-day restriction."); return; }
     const createdAt = new Date().toISOString();
     const notes = [];
     if (initialNote) notes.push({ id: crypto.randomUUID(), text: initialNote, createdAt });
@@ -312,7 +354,8 @@
       contact: typeof formatPhoneNumber === "function"
         ? formatPhoneNumber(valueOf("kwaContact"))
         : valueOf("kwaContact"),
-      status,
+      status: recent.recentResident ? "Recent Resident" : status,
+      ...recent,
       city: valueOf("kwaCity"),
       dateApplied: valueOf("kwaDate"),
       archived: false,
@@ -352,23 +395,29 @@
         inputField("kwFirst", "First Name", applicant.firstName, "text", true),
         inputField("kwLast", "Last Name", applicant.lastName, "text", true),
         inputField("kwContact", "Contact", applicant.contact),
-        selectField("kwStatus", "Status", applicant.status || "N/A", ["N/A", "Incarcerated", "Offer Given"], true),
+        selectField("kwStatus", "Status", applicant.status || "N/A", ["N/A", "Incarcerated", "Recent Resident", "Offer Given"], true),
+        recentResidentFields("kw", applicant),
         inputField("kwCity", "City", applicant.city),
         inputField("kwDate", "Date Applied", applicant.dateApplied, "date"),
         offerNoteField("kwOfferNote")
       ].join("")
     );
     configureOfferNote("kwStatus", "kwOfferNote");
+    setupRecentFields("kw", "kwFirst", "kwLast", "kwStatus");
   }
 
   async function saveWaitlistRecord() {
     const applicant = (waitlistState.waitlist || []).find(item => item?.id === recordId);
     if (!applicant) return;
 
+    const recent = recentValues("kw", valueOf("kwFirst"), valueOf("kwLast"));
+    if (!recent) return;
+    if (valueOf("kwStatus") === "Offer Given" && isRecentResidentHold(recent)) { alert("Applicant is not eligible for an offer during the 90-day restriction."); return; }
+    Object.assign(applicant, recent);
     applicant.firstName = valueOf("kwFirst");
     applicant.lastName = valueOf("kwLast");
     applicant.contact = valueOf("kwContact");
-    applicant.status = valueOf("kwStatus") || "N/A";
+    applicant.status = recent.recentResident ? "Recent Resident" : (valueOf("kwStatus") || "N/A");
     applicant.city = valueOf("kwCity");
     applicant.dateApplied = valueOf("kwDate");
 

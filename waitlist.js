@@ -148,6 +148,47 @@ function applicationDateSortValue(item) {
   return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
 }
 
+// Recent-resident eligibility uses local calendar dates (not UTC timestamps).
+function recentDischargeDate(item) {
+  return String(item?.recentDischargeDate || "").slice(0, 10);
+}
+function recentEligibilityDate(item) {
+  const value = recentDischargeDate(item);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setDate(date.getDate() + 90);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
+function isRecentResidentHold(item) {
+  const eligible = recentEligibilityDate(item);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  return !!item?.recentResident && !!eligible && today < eligible;
+}
+function formatRecentEligibility(item) {
+  const date = recentEligibilityDate(item);
+  return date ? date.split("-").reverse().join(".") : "";
+}
+function recentArchiveDischarge(first, last, dob = "") {
+  if (!Array.isArray(waitlistState?.roster)) return "";
+  const matches = waitlistState.roster.filter(r => r && r !== "temp" && r.archived &&
+    normalizeArchiveMatchName(r.firstName) === normalizeArchiveMatchName(first) &&
+    normalizeArchiveMatchName(r.lastName) === normalizeArchiveMatchName(last) &&
+    (!dob || !r.dob || String(dob).slice(0,10) === String(r.dob).slice(0,10)));
+  return matches.map(r => String(r.dischargedAt || r.archivedAt || "").slice(0,10))
+    .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().reverse()[0] || "";
+}
+function recentStatusFields(item) {
+  if (!item?.recentResident) return "";
+  return `Recent Resident: discharged ${recentDischargeDate(item) || "unknown"}; eligible ${formatRecentEligibility(item) || "unknown"}`;
+}
+function confirmRecentAdmission(item) {
+  if (!isRecentResidentHold(item)) return true;
+  alert(`This applicant is not eligible for readmission until ${formatRecentEligibility(item)} (90 days after discharge).`);
+  return false;
+}
+
 function getActiveWaitlist() {
   const active = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived && item.admissionStage !== "Pending Admission")
@@ -200,11 +241,12 @@ function getActiveWaitlist() {
     else calledAboveNoCall.push(entry.item);
   });
 
-  return [
-    ...calledAboveNoCall,
-    ...uncalled.map(entry => entry.item),
-    ...noCall
-  ];
+  // All ordinary active/late applicants, including newly added applicants,
+  // outrank restricted residents. No-call applicants remain below the hold.
+  const regular = [...calledAboveNoCall, ...uncalled.map(entry => entry.item)];
+  return [...regular.filter(item => !isRecentResidentHold(item)),
+    ...regular.filter(isRecentResidentHold), ...noCall.filter(isRecentResidentHold),
+    ...noCall.filter(item => !isRecentResidentHold(item))];
 }
 
 function getArchivedWaitlist() {
@@ -279,8 +321,9 @@ function rebuildWaitlist(activeList, archivedList) {
 
 function priorityRank(item) {
   const priority = getCallPriority(item);
+  if (isRecentResidentHold(item)) return 2;
   if (priority === "late") return 1;
-  if (priority === "nocall") return 2;
+  if (priority === "nocall") return 3;
   return 0;
 }
 
@@ -301,9 +344,11 @@ function enforceCallPriorityOrder() {
   const calledIn = [];
   const late = [];
   const uncalled = [];
+  const recent = [];
   const noCall = [];
 
   active.forEach(item => {
+    if (isRecentResidentHold(item)) { recent.push(item); return; }
     if (!hasCallInRecord(item)) {
       uncalled.push(item);
       return;
@@ -324,7 +369,7 @@ function enforceCallPriorityOrder() {
   });
 
   // Never-called applicants deliberately sit immediately above No Call.
-  const ordered = [...calledIn, ...late, ...uncalled, ...noCall];
+  const ordered = [...calledIn, ...late, ...uncalled, ...recent, ...noCall];
   const after = ordered.map(item => item.id).join("|");
   rebuildWaitlist(ordered, archived);
 
@@ -351,7 +396,7 @@ function moveApplicantToEndOfPriorityGroup(applicantId) {
     const firstLowerPriority = active.findIndex(item => priorityRank(item) > 0);
     insertAt = firstLowerPriority === -1 ? active.length : firstLowerPriority;
   } else if (rank === 1) {
-    const firstNoCall = active.findIndex(item => priorityRank(item) === 2);
+    const firstNoCall = active.findIndex(item => priorityRank(item) >= 2);
     insertAt = firstNoCall === -1 ? active.length : firstNoCall;
   }
 
@@ -436,6 +481,21 @@ function saveInlineEdit(applicantId) {
   applicant.contact = formatPhoneNumber(getInputValue(`editContact-${applicantId}`));
   const previousStatus = applicant.status || "N/A";
   const newStatus = getInputValue(`editStatus-${applicantId}`) || "N/A";
+  if (newStatus === "Recent Resident") {
+    const discharge = recentArchiveDischarge(applicant.firstName, applicant.lastName, applicant.dob) || recentDischargeDate(applicant);
+    const supplied = prompt("Previous discharge date (YYYY-MM-DD):", discharge);
+    if (supplied === null) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(supplied) || Number.isNaN(new Date(`${supplied}T12:00:00`).getTime())) {
+      alert("Enter a valid discharge date in YYYY-MM-DD format."); return;
+    }
+    applicant.recentResident = true;
+    applicant.recentDischargeDate = supplied;
+    appendPersonActivity(applicant,"Eligibility","90-day recent-resident restriction",`Discharged ${supplied}; eligible ${formatRecentEligibility(applicant)}`);
+  } else if (previousStatus === "Recent Resident") {
+    applicant.recentResident = false;
+    applicant.recentDischargeDate = "";
+  }
+  if (newStatus === "Offer Given" && isRecentResidentHold(applicant)) { alert("Applicant is still within the 90-day restriction."); return; }
   applicant.status = newStatus;
   applicant.city = getInputValue(`editCity-${applicantId}`);
   applicant.dateApplied = getInputValue(`editDateApplied-${applicantId}`);
@@ -488,6 +548,7 @@ async function confirmMoveToRoster(){
   const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
   const entryDate=document.getElementById("moveRosterEntryDate")?.value||"";
+  if(!confirmRecentAdmission(waitlistState.waitlist[applicantIndex]))return;
   if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return;}
   const applicant=waitlistState.waitlist[applicantIndex];
   const name=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
@@ -548,7 +609,7 @@ function openApplicantActionsModal(applicantId) {
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
   const giveOfferButton = document.querySelector('#applicantActionsModal [data-applicant-action="giveOffer"]');
-  if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated";
+  if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated" || isRecentResidentHold(applicant);
 
   const undoButton = document.getElementById("undoLastCallInActionBtn");
   if (undoButton) {
@@ -659,6 +720,7 @@ async function authorizeRepeatAdmissionOverride(applicant, actionLabel){
 
 async function giveOfferQuick(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
+  if (!confirmRecentAdmission(applicant)) return;
   if(applicant.status==="Incarcerated"){ alert("Update the applicant status before giving an offer."); return; }
   if(!(await authorizeRepeatAdmissionOverride(applicant,"give an offer"))) return;
   const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
@@ -666,8 +728,9 @@ async function giveOfferQuick(applicantId){
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
   await saveWaitlist(); renderWaitlist();
 }
-async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
+  if(isRecentResidentHold(item)) return `<button type="button" class="secondary" disabled title="90-day readmission restriction">Eligible on ${formatRecentEligibility(item)}</button>`;
   if(item.status==="Offer Given") return `<button type="button" class="primary-next-action" onclick="startPrescreenQuick('${item.id}')">Start Pre-Screening</button>`;
   if(item.status==="Incarcerated") return `<button type="button" class="primary-next-action" onclick="startInlineEdit('${item.id}')">Update Status</button>`;
   return `<button type="button" class="primary-next-action" onclick="giveOfferQuick('${item.id}')">Give Offer</button>`;
@@ -1114,6 +1177,7 @@ function archivedRosterMatchWithinTwoYears(item) {
 
 function getWaitlistStatusClass(item) {
   const noCallCount = getConsecutiveNoCallCount(item);
+  if (isRecentResidentHold(item)) return "waitlist-returning-resident-row";
   if (archivedRosterMatchWithinTwoYears(item)) return "waitlist-returning-resident-row";
   return item.status === "Offer Given"
     ? "waitlist-offer-row"
@@ -1125,6 +1189,8 @@ function getWaitlistStatusClass(item) {
 }
 
 function applicantDisplayStatus(item) {
+  if(isRecentResidentHold(item)) return `Recent Resident — Eligible ${formatRecentEligibility(item)}`;
+  if(item?.status === "Recent Resident") return "Recent Resident — Eligible";
   const noCallCount = getConsecutiveNoCallCount(item);
   if (noCallCount >= noCallWarningThreshold()) return `⚠ No Call (${noCallCount})`;
   const prescreen = Array.isArray(waitlistState.preScreenings)
@@ -1202,6 +1268,7 @@ function openApplicantInfoModal(applicantId) {
   let html = archivedRosterMatchWithinTwoYears(item) ? `<div class="repeat-admission-banner"><strong>REPEAT ADMISSION FLAG</strong><span>Two previous KBRH admissions were identified within the rolling two-year window. More intensive treatment is required before readmission to KBRH unless an authorized override is documented.</span></div>` : "";
   html += `<section class="applicant-info-section"><h3>Applicant</h3><div class="applicant-info-grid">`;
   html += applicantInfoItem(item.archived ? "Archived Position" : "Waitlist Position", position || "—");
+  if(item.recentResident) html += applicantInfoItem("90-day readmission", recentStatusFields(item));
   html += applicantInfoItem("First Name", item.firstName);
   html += applicantInfoItem("Last Name", item.lastName);
   html += applicantInfoItem("Contact", item.contact);
@@ -1258,6 +1325,7 @@ function renderActiveWaitlist() {
                 <select id="editStatus-${item.id}">
                   <option value="N/A" ${(item.status || "N/A") === "N/A" ? "selected" : ""}>N/A</option>
                   <option value="Incarcerated" ${item.status === "Incarcerated" ? "selected" : ""}>Incarcerated</option>
+                  <option value="Recent Resident" ${item.status === "Recent Resident" ? "selected" : ""}>Recent Resident</option>
                   <option value="Offer Given" ${item.status === "Offer Given" ? "selected" : ""}>Offer Given</option>
                 </select>
               </td>

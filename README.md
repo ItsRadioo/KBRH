@@ -601,3 +601,9 @@ v5.5.40 — Restricted Phase 2 Log Book
 - Authorized users can switch between Phase 1 and Phase 2 logs.
 - Phase 2 resident selectors show current Phase 2 residents only; Phase 1 selectors show current Phase 1 residents.
 - Entries, edits, live display, and date reports remain separated by log book.
+
+
+## v5.6.12 Recent-resident waitlist eligibility
+- Add/edit Recent Resident status, archive-assisted discharge date and 90-day eligibility.
+- Restricted applicants rank below late callers and above No Calls; Give Offer disabled until eligible.
+- Offer, pre-screen and roster transfer entry points enforce the restriction.
