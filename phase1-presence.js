@@ -21,9 +21,9 @@ function mount(){
  unsubscribeRoster=listenToAppState(s=>{people=(s.roster||[]).filter(isPhase1).map(r=>({id:String(r.id),name:fullName(r)})).filter(r=>r.id).sort((a,b)=>a.name.localeCompare(b.name));selected=new Set([...selected].filter(id=>people.some(p=>p.id===id)));render()});
  unsubscribePresence=doc().onSnapshot(s=>{statuses=s.exists?(s.data()?.statuses||{}):{};render()},err=>{console.error('Presence board unavailable',err);document.getElementById('p1Counts').textContent='Presence status unavailable';document.getElementById('p1Error').textContent='Could not load shared statuses.'});
 }
-function render(){const counts=document.getElementById('p1Counts');if(!counts)return;const inside=people.filter(p=>statuses[p.id]==='In').length,outside=people.filter(p=>statuses[p.id]==='Out').length,unknown=people.length-inside-outside;
- counts.innerHTML=`<span class="p1-in">In: <strong>${inside}</strong></span><span class="p1-out">Out: <strong>${outside}</strong></span><span>Not Set: <strong>${unknown}</strong></span><span>Total: <strong>${people.length}</strong></span>`;
- const list=document.getElementById('p1List');if(!list)return;list.innerHTML=people.length?people.map(p=>`<label class="p1-resident"><input type="checkbox" data-p1-id="${esc(p.id)}" ${selected.has(p.id)?'checked':''}><span>${esc(p.name)}</span><strong class="${statuses[p.id]==='In'?'p1-in':statuses[p.id]==='Out'?'p1-out':''}">${esc(statuses[p.id]||'Not Set')}</strong></label>`).join(''):'<p>No active Phase 1 residents.</p>';
+function render(){const counts=document.getElementById('p1Counts');if(!counts)return;const outside=people.filter(p=>statuses[p.id]==='Out').length,inside=people.length-outside;
+ counts.innerHTML=`<span class="p1-in">In: <strong>${inside}</strong></span><span class="p1-out">Out: <strong>${outside}</strong></span><span>Total: <strong>${people.length}</strong></span>`;
+ const list=document.getElementById('p1List');if(!list)return;list.innerHTML=people.length?people.map(p=>`<label class="p1-resident"><input type="checkbox" data-p1-id="${esc(p.id)}" ${selected.has(p.id)?'checked':''}><span>${esc(p.name)}</span><strong class="${statuses[p.id]==='Out'?'p1-out':'p1-in'}">${statuses[p.id]==='Out'?'Out':'In'}</strong></label>`).join(''):'<p>No active Phase 1 residents.</p>';
 }
 function openModal(){selected.clear();document.getElementById('p1Error').textContent='';document.getElementById('p1Modal').hidden=false;render();document.getElementById('p1Close').focus()}
 function closeModal(){document.getElementById('p1Modal').hidden=true;selected.clear()}
