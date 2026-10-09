@@ -115,8 +115,47 @@ async function createLogNotifications(entry,formData){
 }
 function modal(title,body,save){let root=document.querySelector("#lbRoot");root.innerHTML=`<div class="lb-bg"><div class="lb-modal"><div class="lb-head"><h2>${E(title)}</h2><button type="button" id="lbx">×</button></div><form id="lbf"><div class="lb-body">${body}${notificationFields()}</div><div class="lb-foot"><button type="button" id="lbc">Cancel</button><button type="submit">Save Entry</button></div></form></div></div>`;populateNotificationRecipients(root);let close=()=>root.innerHTML="";root.querySelector("#lbx").onclick=close;root.querySelector("#lbc").onclick=close;root.querySelector(".lb-bg").onclick=e=>{if(e.target===e.currentTarget)close()};root.querySelector("#lbf").onsubmit=async e=>{e.preventDefault();try{const fd=new FormData(e.currentTarget);const saved=await save(fd);if(saved?.id)await createLogNotifications(saved,fd);const repeatPharmacy=title==="Medication Delivery"?String(fd.get("pharmacy")||""):"";close();if(repeatPharmacy&&confirm("Medication delivery saved. Record another delivery from the same pharmacy?"))setTimeout(()=>meds(repeatPharmacy),0)}catch(x){alert(x.message||"Unable to save.")}}}
 async function staff(){return typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||"",name:typeof currentStaffName==="function"?currentStaffName():"Staff User"}}
-async function updateEntry(id,patch){let st=await staff(),q=await LOGDOC().get(),d=q.exists?q.data():{},a=Array.isArray(d.entries)?d.entries:[],i=a.findIndex(e=>e.id===id);if(i<0)throw Error("Log entry was not found.");a[i]={...a[i],...patch,lastEditedAt:new Date().toISOString(),lastEditedBy:st.name||"Unknown Staff",lastEditedByUid:st.uid||""};await LOGDOC().set({entries:a,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})}
-async function add(x){let s=await staff(),e={logScope:currentLogScope,id:`log-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,...x,enteredBy:s.name||"Unknown Staff",enteredByUid:s.uid||"",enteredByEmail:s.email||"",createdAt:new Date().toISOString()},q=await LOGDOC().get(),d=q.exists?q.data():{},a=Array.isArray(d.entries)?d.entries:[];await LOGDOC().set({entries:[...a,e],updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});return e}
+const PRESENCEDOC=()=>db.collection('kbrh').doc('phase1Presence');
+function applyLatestPresence(transaction,presenceRef,entries,residentIds){
+ const movements=entries.filter(e=>e.type==='movement'&&e.logScope!=='phase2'&&e.residentId&&['IN','OUT'].includes(e.direction));
+ for(const id of residentIds){
+  const latest=movements.filter(e=>String(e.residentId)===String(id)).sort((a,b)=>String(b.eventTime||b.createdAt||'').localeCompare(String(a.eventTime||a.createdAt||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0];
+  if(latest)transaction.set(presenceRef,{statuses:{[String(id)]:latest.direction==='OUT'?'Out':'In'},updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+ }
+}
+async function updateEntry(id,patch){
+ const st=await staff(),logRef=LOGDOC(),presenceRef=PRESENCEDOC();
+ await db.runTransaction(async tx=>{
+  const q=await tx.get(logRef);const old=q.exists?q.data():{};const a=Array.isArray(old.entries)?old.entries.slice():[];
+  const i=a.findIndex(e=>e.id===id);if(i<0)throw Error('Log entry was not found.');
+  const previous=a[i];a[i]={...previous,...patch,lastEditedAt:new Date().toISOString(),lastEditedBy:st.name||'Unknown Staff',lastEditedByUid:st.uid||''};
+  if(currentLogScope==='phase1'&&previous.type==='movement'){
+   const pSnap=await tx.get(presenceRef);const existing=pSnap.exists?(pSnap.data().statuses||{}):{};
+   const changes={};for(const rid of new Set([previous.residentId,a[i].residentId])){
+    if(!rid)continue;
+    const latest=a.filter(e=>e.type==='movement'&&String(e.residentId)===String(rid)&&['IN','OUT'].includes(e.direction)).sort((x,y)=>String(y.eventTime||y.createdAt||'').localeCompare(String(x.eventTime||x.createdAt||''))||String(y.createdAt||'').localeCompare(String(x.createdAt||'')))[0];
+    changes['statuses.'+String(rid)]=latest?(latest.direction==='OUT'?'Out':'In'):(existing[String(rid)]||'In');
+   }
+   tx.set(presenceRef,{...changes,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  }
+  tx.set(logRef,{entries:a,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+ });
+}
+async function add(x){
+ const st=await staff(),e={logScope:currentLogScope,id:`log-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,...x,enteredBy:st.name||'Unknown Staff',enteredByUid:st.uid||'',enteredByEmail:st.email||'',createdAt:new Date().toISOString()};
+ const logRef=LOGDOC();
+ await db.runTransaction(async tx=>{
+  const q=await tx.get(logRef);const d=q.exists?q.data():{};const a=Array.isArray(d.entries)?d.entries:[];
+  // Read presence before writes to keep movement and dashboard status atomic.
+  const isMovement=currentLogScope==='phase1'&&e.type==='movement'&&e.residentId&&['IN','OUT'].includes(e.direction);
+  const presenceRef=PRESENCEDOC();if(isMovement)await tx.get(presenceRef);
+  tx.set(logRef,{entries:[...a,e],updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  if(isMovement){
+   const latest=[...a,e].filter(v=>v.type==='movement'&&String(v.residentId)===String(e.residentId)&&['IN','OUT'].includes(v.direction)).sort((x,y)=>String(y.eventTime||y.createdAt||'').localeCompare(String(x.eventTime||x.createdAt||''))||String(y.createdAt||'').localeCompare(String(x.createdAt||'')))[0];
+   tx.set(presenceRef,{['statuses.'+String(e.residentId)]:latest.direction==='OUT'?'Out':'In',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  }
+ });return e;
+}
 function movement(){modal("Resident In / Out",`<div class="lb-field"><label>Time</label><input type="datetime-local" name="time" value="${localNow()}" required></div><div class="lb-field"><label>Resident</label>${oneSelect()}</div><div class="lb-field"><label>In / Out</label><select name="dir" required><option value="">Select…</option><option value="OUT">Out — Resident Left</option><option value="IN">In — Resident Returned</option></select></div>`,async f=>{let r=residents().find(x=>x.id===f.get("rid"));if(!r)throw Error("Select a resident.");let dir=f.get("dir"),t=f.get("time");return await add({type:"movement",residentId:r.id,residentName:r.name,direction:dir,eventTime:new Date(t).toISOString(),summary:`${r.name} — ${dir==="OUT"?"LEFT":"RETURNED"}`,notificationPriority:String(f.get("notifyPriority")||"")})})}
 function meds(prefillPharmacy=""){modal("Medication Delivery",`<div class="lb-field"><label>Pharmacy</label><select name="pharmacy" required><option value="">Select…</option><option ${prefillPharmacy==="Medicine Shoppe"?"selected":""}>Medicine Shoppe</option><option ${prefillPharmacy==="Pharmaright"?"selected":""}>Pharmaright</option></select></div><div class="lb-field"><label>Resident</label>${oneSelect()}</div><div class="lb-field"><label>What was delivered?</label><textarea name="delivered" rows="5" required placeholder="Type what was delivered…"></textarea></div>`,async f=>{let id=String(f.get("rid")||"");if(!id)throw Error("Select a resident.");let r=residents().find(x=>x.id===id);if(!r)throw Error("Selected resident is no longer active.");let d=String(f.get("delivered")||"").trim();if(!d)throw Error("Enter what was delivered.");return await add({type:"medication",pharmacy:f.get("pharmacy"),residentIds:[r.id],residentNames:[r.name],delivered:d,summary:`Medication Delivery — ${f.get("pharmacy")}`,notificationPriority:String(f.get("notifyPriority")||"")})})}
 function note(){modal("Log Book Note",`<div class="lb-field"><label>Note</label><textarea name="note" rows="7" required placeholder="Enter details…"></textarea></div>`,async f=>{let n=String(f.get("note")||"").trim();if(!n)throw Error("Enter a note.");return await add({type:"note",note:n,summary:"Staff Note",notificationPriority:String(f.get("notifyPriority")||"")})})}
