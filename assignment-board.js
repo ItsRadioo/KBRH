@@ -1,11 +1,28 @@
-const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;', '"':'&quot;',"'":'&#39;'}[c]));
-let current=null;
-function draw(s){current=s;const meal=s.mealSchedule||{},today=new Date(),iso=today.toLocaleDateString('en-CA');const monday=new Date(today);monday.setDate(today.getDate()-(today.getDay()+6)%7);const wk=`${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
- document.getElementById('week').textContent=`Week beginning ${meal.weekStart||wk}`;
- const names=new Map([...(s.roster||[]).map(p=>[p.id,`${p.firstName||''} ${p.lastName||''}`.trim()]),...(s.pendingAdmissions||[]).map(p=>[`pending:${p.id}`,p.applicantName||'Pending admission'])]);
- document.getElementById('meals').innerHTML=meal.published&&meal.weekStart===wk?DAYS.map((day,i)=>{const row=meal.weekSchedule?.[day]||{},dt=new Date(`${wk}T12:00:00`);dt.setDate(dt.getDate()+i);const currentDay=dt.toLocaleDateString('en-CA')===iso;return `<div class="entry ${currentDay?'today':''}"><b>${day}</b><div>Lunch: <span class="name">${esc(names.get(row.lunch)||'Unassigned')}</span></div><div>Dinner: <span class="name">${esc(names.get(row.supper1)||'Unassigned')} · ${esc(names.get(row.supper2)||'Unassigned')}</span></div></div>`;}).join(''):'<div class="entry">No published meal schedule for this week.</div>';
- const residents=(s.residents||[]).filter(p=>p&&p.status!=='away'&&p.status!=='archived');const chores=s.chores||[];
- document.getElementById('chores').innerHTML=s.tableGenerated?residents.map(p=>{const chore=p.lockedChore||chores[(Number(p.choreIndex??p.currentChoreIndex??-1)+chores.length)%chores.length]||'See house chore schedule';return `<div class="entry"><b>${esc(chore)}</b><div>${esc(p.name||'Resident')}</div></div>`;}).join(''):'<div class="entry">No published weekly house chores.</div>';
+/* KBRH v5.6.22 — read-only assignment board, synced to application state. */
+const BOARD_DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const boardEsc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const boardDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const boardMonday=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return boardDate(x);};
+const boardWeekOffset=(week,i)=>{const d=new Date(week+'T12:00:00');d.setDate(d.getDate()+i);return boardDate(d);};
+let boardState=null,boardSelectedWeek=null;
+function boardDraw(){
+ if(!boardState)return;
+ const s=boardState, meal=s.mealSchedule||{}, currentWeek=boardMonday(new Date()), week=boardSelectedWeek||currentWeek;
+ const published=!!meal.published&&meal.weekStart===week;
+ document.getElementById('week').textContent='Week beginning '+week;
+ document.getElementById('boardWeek').value=week;
+ document.getElementById('clock').textContent=new Date().toLocaleString('en-CA',{weekday:'short',hour:'numeric',minute:'2-digit'});
+ const names=new Map();
+ for(const p of s.roster||[])names.set(String(p.id),p.name||[p.firstName,p.lastName].filter(Boolean).join(' ').trim()||'Resident');
+ for(const p of s.pendingAdmissions||[])names.set('pending:'+p.id,p.applicantName||p.name||[p.firstName,p.lastName].filter(Boolean).join(' ')||'Pending admission');
+ const label=id=>boardEsc(names.get(String(id))|| (id?'Resident not found':'Unassigned'));
+ document.getElementById('meals').innerHTML=published?BOARD_DAYS.map((day,i)=>{const row=meal.weekSchedule?.[day]||{},today=boardWeekOffset(week,i)===boardDate(new Date());return `<div class="entry ${today?'today':''}"><b>${day}</b><div>Lunch: <span class="name">${label(row.lunch)}</span></div><div>Dinner: <span class="name">${label(row.supper1)} · ${label(row.supper2)}</span></div></div>`;}).join(''):'<div class="entry">No published meal schedule for this week. Staff must publish the schedule in Meal Chores.</div>';
+ const chores=Array.isArray(s.chores)?s.chores:[];
+ const residents=(s.residents||[]).filter(p=>p&&p.status!=='away'&&p.status!=='archived'&&p.status!=='inactive');
+ document.getElementById('chores').innerHTML=s.tableGenerated&&residents.length?residents.map(p=>{const idx=Number(p.choreIndex);const chore=p.lockedChore||(Number.isInteger(idx)&&idx>=0&&idx<chores.length?chores[idx]:'Unassigned');return `<div class="entry"><b>${boardEsc(chore)}</b><div>${boardEsc(p.name||'Resident')}</div></div>`;}).join(''):'<div class="entry">No generated house chore assignments. Staff must generate the table in House Chores.</div>';
+ document.getElementById('notice').textContent='Read-only display · '+(published?'Meal schedule published':'Meal schedule not published for selected week')+' · '+(s.tableGenerated?'House chores generated':'House chores not generated');
 }
-auth.onAuthStateChanged(u=>{if(u)listenToAppState(draw);});setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleString('en-CA',{weekday:'short',hour:'numeric',minute:'2-digit'});if(current)draw(current);},60000);
+document.getElementById('boardWeek').addEventListener('change',e=>{if(e.target.value){boardSelectedWeek=boardMonday(new Date(e.target.value+'T12:00:00'));boardDraw();}});
+document.getElementById('boardCurrent').addEventListener('click',()=>{boardSelectedWeek=null;boardDraw();});
+setInterval(boardDraw,60000);
+auth.onAuthStateChanged(user=>{if(!user){document.getElementById('notice').textContent='Sign in to view assignments.';return;}listenToAppState(s=>{boardState=s;boardDraw();});});
