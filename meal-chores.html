@@ -24,15 +24,17 @@
 <section class="card wide">
 <h2>Weekly Meal Schedule</h2>
 <p class="hint">Click Generate Meal Week to fill Monday–Sunday using the active resident list. Away and archived residents are omitted.</p>
-<div class="button-row">
+<p><label>Scheduling week (Monday): <input type="date" id="mealWeek" /></label> <strong id="mealStatus"></strong></p><div class="button-row">
 <button id="generateMealBtn" type="button">Generate Meal Week</button>
 <button class="warning" id="randomMealBtn" type="button">Random Meal Week</button>
-<button id="saveMealBtn" type="button">Save Meal Schedule</button>
+<button id="saveMealBtn" type="button">Publish &amp; Lock Schedule</button>
+<button class="secondary" id="unlockMealBtn" type="button">Unlock Schedule</button>
 <button class="secondary" id="clearMealBtn" type="button">Clear Meal Schedule</button>
 <button class="secondary" id="printMealBtn" type="button">Print Simple Table</button>
+<a class="button-link" href="assignment-board.html" target="_blank">Open Resident Assignment Board</a>
 <a class="button-link" href="meal-print.html">Open Printable Meal Template</a>
 </div>
-<div class="table-wrap">
+<div id="mealWarnings" style="padding:12px;margin:12px 0;background:#f1f4f7;border-radius:8px"></div><div class="table-wrap">
 <table class="meal-week-table">
 <thead>
 <tr>
@@ -46,9 +48,10 @@
 </table>
 </div>
 </section>
+<section class="card wide"><h2>Resident Availability</h2><p>Exclude individual dates or recurring weekdays for lunch, dinner or the entire day.</p><div id="mealRoster"></div></section>
 <div style="text-align:center; margin:18px 0 4px; line-height:1;"><a aria-label="Weekend Menu Builder" href="weekend-menu-builder.html" style="font-size:6px; opacity:0.18; color:inherit; text-decoration:none;" title="Weekend Menu Builder">weekend menu builder</a></div>
 </main>
-<script src="meal-chores.js?v=5.5.37"></script>
+<script src="meal-chores.js?v=5.6.20"></script>
 <script src="kbrh-v5.js?v=5.6.9"></script>
 </body>
 </html>
