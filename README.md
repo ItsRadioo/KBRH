@@ -618,3 +618,6 @@ v5.6.14: Normalize recent-resident discharge dates (ISO and DD.MM.YYYY), recover
 
 ## v5.6.17 — Phase 1 visual presence board
 Dashboard and digital logbook share a visual-only In/Out status board for active Phase 1 residents. No logbook entries, timestamps, notifications, or roster updates are created. Presence data is held separately in Firestore kbrh/phase1Presence.
+
+
+v5.6.25: Assignment Board links open in the same tab to preserve sessionStorage; unauthenticated navigation preserves a safe return target and login returns to the board.

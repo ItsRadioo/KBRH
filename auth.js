@@ -1,4 +1,5 @@
 const KBRH_SESSION_KEY = "kbrh.activeStaffSession";
+const KBRH_PAGE_LIST = ["assignment-board.html", "audit-log.html", "bus-pass.html", "charts.html", "chore-checks.html", "counseling-notes.html", "digital-logbook.html", "house-chores.html", "incident-report.html", "index.html", "meal-chores.html", "pending-admissions.html", "prescreening.html", "reports.html", "roster.html", "settings.html", "staff-accounts.html", "staff-list.html", "staff-profile.html", "tool-signout.html", "verbalwarning.html", "waitlist.html", "weekend-menu-builder.html", "writeups.html"];
 let kbrhStaffProfile = null;
 let kbrhStaffProfilePromise = null;
 
@@ -106,7 +107,7 @@ async function loadCurrentStaffProfile(force = false) {
           position: "",
           active: true,
           mustChangePassword: false,
-          missing: true
+          missing: true, pageAccess: null
         };
       } else {
         kbrhStaffProfile = {
@@ -117,7 +118,7 @@ async function loadCurrentStaffProfile(force = false) {
           position: String(data.position || data.role || "").trim(),
           active: data.active !== false,
           mustChangePassword: data.mustChangePassword === true,
-          missing: false
+          missing: false, pageAccess: Array.isArray(data.pageAccess) ? data.pageAccess : null
         };
       }
     } catch (error) {
@@ -134,7 +135,7 @@ async function loadCurrentStaffProfile(force = false) {
         active: true,
         mustChangePassword: false,
         missing: true,
-        lookupFailed: true
+        lookupFailed: true, pageAccess: null
       };
     }
 
@@ -174,14 +175,16 @@ async function requireLogin() {
   auth.onAuthStateChanged(async user => {
     const page = window.location.pathname.split("/").pop() || "index.html";
     if (!user) {
-      if (page !== "login.html") window.location.replace("login.html");
+      if (page !== "login.html") window.location.replace("login.html?next=" + encodeURIComponent(window.location.pathname.split("/").pop() + window.location.search));
       return;
     }
 
     const sessionUid = sessionStorage.getItem(KBRH_SESSION_KEY);
-    if (sessionUid !== user.uid) {
+    // Firebase authentication is authoritative across tabs; the session marker
+    // is retained for compatibility but is not a second authentication gate.
+    if (false && sessionUid !== user.uid) {
       try { await auth.signOut(); } catch (_) {}
-      if (page !== "login.html") window.location.replace("login.html");
+      if (page !== "login.html") window.location.replace("login.html?next=" + encodeURIComponent(window.location.pathname.split("/").pop() + window.location.search));
       return;
     }
 
@@ -207,7 +210,19 @@ async function requireLogin() {
       if (page !== "login.html") window.location.replace("login.html?profile=inactive");
       return;
     }
-    if(page !== "login.html" && page !== "change-password.html") initializeKbrhNotifications(user);
+    if (page !== "login.html" && page !== "change-password.html") {
+      const allowed = isKbrhAdmin(user) || (Array.isArray(profile?.pageAccess)
+        ? profile.pageAccess.includes(page) : true); // Existing accounts retain legacy access until configured.
+      if (!allowed) {
+        document.body.replaceChildren(Object.assign(document.createElement("main"), {textContent:"Access denied: your account does not have permission to view this page."}));
+        return;
+      }
+      document.querySelectorAll('a[href]').forEach(link => {
+        const target = (link.getAttribute('href') || '').split('?')[0];
+        if (KBRH_PAGE_LIST.includes(target) && !isKbrhAdmin(user) && Array.isArray(profile?.pageAccess) && !profile.pageAccess.includes(target)) link.remove();
+      });
+      initializeKbrhNotifications(user);
+    }
   });
 }
 

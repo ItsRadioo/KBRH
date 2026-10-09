@@ -80,6 +80,7 @@
     </div>
 
     <div class="account-form-actions">
+      <fieldset class="page-access-fieldset"><legend>Page Access</legend><p class="hint">Select which application pages this account can open. Administrators and the Executive Director always have full access.</p><div id="createPageAccess" class="page-access-grid"></div></fieldset>
       <button type="button" id="createAccount">Create Account</button>
       <span id="accountStatus" class="hint" role="status"></span>
     </div>
@@ -117,7 +118,7 @@
       <label><span>Email</span><input id="editAccountEmail" type="email"></label>
       <label><span>Position</span><input id="editAccountPosition"></label>
     </div>
-    <p class="hint">Changing the email updates the Firebase sign-in email for this account.</p>
+    <fieldset class="page-access-fieldset"><legend>Page Access</legend><div id="editPageAccess" class="page-access-grid"></div></fieldset><p class="hint">Changing the email updates the Firebase sign-in email for this account.</p>
     <div class="button-row">
       <button type="button" id="saveAccountEdit">Save Changes</button>
       <button type="button" id="cancelAccountEdit" class="secondary">Cancel</button>
@@ -126,6 +127,7 @@
   </div>
 </div>
 
+<style>.page-access-fieldset{border:1px solid #ccd5de;border-radius:8px;padding:14px;margin:15px 0}.page-access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}.page-access-grid label{display:flex;gap:8px;align-items:center}.page-access-grid input{width:auto}</style>
 <script src="staff-accounts.js?v=5.6.4"></script>
 <script src="kbrh-v5.js?v=5.6.9"></script>
 </body>

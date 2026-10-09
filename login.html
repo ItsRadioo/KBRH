@@ -27,6 +27,13 @@
 <script src="firebase-config.js"></script>
 <script>
     const SESSION_KEY = "kbrh.activeStaffSession";
+    // Accept only local, explicitly allowlisted destination pages.
+    function destinationAfterLogin() {
+      const next = new URLSearchParams(window.location.search).get("next") || "";
+      const allowed = new Set(["assignment-board.html"]);
+      const page = next.split("?")[0];
+      return allowed.has(page) ? next : "index.html";
+    }
 
     async function handleLogin() {
       const email = document.getElementById("email").value.trim();
@@ -60,7 +67,7 @@
         } catch (profileError) {
           console.warn("Staff profile lookup failed; continuing with authenticated Firebase identity.", profileError);
         }
-        window.location.replace("index.html");
+        window.location.replace(destinationAfterLogin());
       } catch (err) {
         console.error(err);
         error.textContent = "Login failed. Check the email and password.";

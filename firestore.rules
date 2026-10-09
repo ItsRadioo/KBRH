@@ -2,7 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /kbrh/choreTracker { allow read, write: if request.auth != null; }
-    match /kbrh/staffProfiles { allow read: if request.auth != null; allow write: if false; }
+    match /kbrh/staffProfiles {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null &&
+        (request.auth.token.email == 'admin@kbrh.local' || request.auth.token.email == 'executivedirector@kbrh.local') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profiles']);
+      allow create, delete: if false;
+    }
     match /kbrh/settings {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (request.auth.token.email == 'admin@kbrh.local' || request.auth.token.email == 'executivedirector@kbrh.local');
