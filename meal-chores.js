@@ -17,9 +17,37 @@ const people=()=>{
  const pending=(state.pendingAdmissions||[]).filter(p=>p.status==='Pending Admission'&&p.expectedIntakeDate&&p.expectedIntakeDate>=week()&&p.expectedIntakeDate<=dayDate(week(),6)).map(p=>({id:`pending:${p.id}`,name:p.applicantName||'Pending admission',start:p.expectedIntakeDate,end:'',pending:true}));
  return [...active,...pending];
 };
+const MINUTES = t => {const parts=String(t||'').split(':').map(Number);return parts.length===2&&parts.every(Number.isFinite)?parts[0]*60+parts[1]:0;};
+// Editable meal windows; a restriction applies only if its time interval overlaps a meal.
+const MEAL_WINDOWS={lunch:[660,900],dinner:[960,1260]};
+const dateDiff=(a,b)=>Math.round((new Date(`${a}T12:00:00`)-new Date(`${b}T12:00:00`))/86400000);
+function matchesRule(rule,day){
+ if(rule.type==='once')return day>=rule.startDate&&day<=(rule.endDate||rule.startDate);
+ if(rule.type==='weekly'||rule.type==='biweekly'){
+  if(rule.startDate&&day<rule.startDate)return false;
+  if(rule.endDate&&day>rule.endDate)return false;
+  const weekday=DAYS[(new Date(`${day}T12:00:00`).getDay()+6)%7];
+  if(!rule.days?.includes(weekday))return false;
+  if(rule.type==='biweekly'){
+   const anchor=mondayOf(rule.startDate||week());
+   return Math.floor(dateDiff(mondayOf(day),anchor)/7)%2===0;
+  }
+  return true;
+ }
+ return false;
+}
 const blocked=(p,day,slot)=>{
  const r=restrictions()[p.id]||{};
- return (r.dates?.[day]?.includes('all')||r.dates?.[day]?.includes(slot==='lunch'?'lunch':'dinner')||r.recurring?.[DAYS[new Date(`${day}T12:00:00`).getDay()===0?6:new Date(`${day}T12:00:00`).getDay()-1]]?.includes('all')||r.recurring?.[DAYS[new Date(`${day}T12:00:00`).getDay()===0?6:new Date(`${day}T12:00:00`).getDay()-1]]?.includes(slot==='lunch'?'lunch':'dinner'))||false;
+ const meal=slot==='lunch'?'lunch':'dinner';
+ const weekday=DAYS[(new Date(`${day}T12:00:00`).getDay()+6)%7];
+ if(r.dates?.[day]?.some(x=>x==='all'||x===meal)||r.recurring?.[weekday]?.some(x=>x==='all'||x===meal))return true;
+ return (r.rules||[]).some(rule=>{
+  if(!matchesRule(rule,day))return false;
+  if(rule.scope==='all')return true;
+  if(rule.scope==='lunch'||rule.scope==='dinner')return rule.scope===meal;
+  const [start,end]=MEAL_WINDOWS[meal];
+  return MINUTES(rule.startTime)<end&&MINUTES(rule.endTime)>start;
+ });
 };
 const eligible=(p,day,slot)=> (!p.start||day>=p.start)&&(!p.end||day<p.end)&&!blocked(p,day,slot);
 const isNew=(p,day)=>p.pending||!!(p.start&&Math.floor((new Date(`${day}T12:00:00`)-new Date(`${p.start}T12:00:00`))/86400000)<7);
@@ -58,7 +86,52 @@ function render(){const rows=draft||schedule().weekSchedule||emptyRows(),roster=
  el('mealStatus').textContent=`${schedule().locked?'LOCKED':'Editable'} · ${schedule().published?'Published':'Not published'}${dirty?' · Unsaved preview':''}`;
  el('mealRoster').innerHTML=roster.map(p=>`<div style="padding:6px;border-bottom:1px solid #ddd"><b>${esc(p.name)}</b> ${p.pending?'(Pending admission)':''}<div style="font-size:12px">${esc(p.start||'No intake date')} – ${esc(p.end||'No exit date')}</div><button class="secondary" onclick="editAvailability('${esc(p.id)}')">Availability</button></div>`).join('');
 }
-function editAvailability(id){const p=people().find(x=>x.id===id);if(!p)return;const day=prompt(`Availability for ${p.name}: enter YYYY-MM-DD for a specific date, or weekday name (e.g. Tuesday) for a recurring restriction.`);if(!day)return;const kind=prompt('Exclude: all, lunch, or dinner?','all')?.toLowerCase();if(!['all','lunch','dinner'].includes(kind))return;state.mealAvailability=state.mealAvailability||{};const r=state.mealAvailability[id]||{dates:{},recurring:{}};const weekday=DAYS.find(x=>x.toLowerCase()===day.trim().toLowerCase());const target=weekday?(r.recurring=r.recurring||{}):(r.dates=r.dates||{});const key=weekday||day.trim();if(!weekday&&!/^\d{4}-\d{2}-\d{2}$/.test(key)){alert('Invalid date or weekday.');return;}target[key]=[...new Set([...(target[key]||[]),kind])];state.mealAvailability[id]=r;saveAppState(state);render();}
+let editingAvailabilityId=null;
+const availabilityModal=()=>el('availabilityModal');
+const availabilityFields=()=>({type:el('availabilityType').value,startDate:el('availabilityStart').value,endDate:el('availabilityEnd').value,days:[...document.querySelectorAll('[name="availabilityDay"]:checked')].map(x=>x.value),scope:el('availabilityScope').value,startTime:el('availabilityFrom').value,endTime:el('availabilityTo').value});
+function updateAvailabilityFields(){
+ const type=el('availabilityType').value,scope=el('availabilityScope').value;
+ el('availabilityWeekdays').hidden=type==='once';
+ el('availabilityEndWrap').hidden=type!=='once';
+ el('availabilityTimes').hidden=scope!=='time';
+ el('availabilityAnchorHelp').textContent=type==='biweekly'?'Select a date in the first active week. The selected weekdays repeat every other week from that week.':type==='weekly'?'Restrictions repeat every week starting with the selected date.':'Select the first and last date of the absence.';
+}
+function editAvailability(id){
+ const p=people().find(x=>x.id===id);if(!p)return;
+ editingAvailabilityId=id;editingRuleIndex=null;el('availabilitySaveRule').textContent='Add restriction';el('availabilityResident').textContent=p.name;
+ el('availabilityType').value='weekly';el('availabilityScope').value='time';
+ el('availabilityStart').value=week();el('availabilityEnd').value=week();
+ el('availabilityFrom').value='16:00';el('availabilityTo').value='19:00';
+ document.querySelectorAll('[name="availabilityDay"]').forEach(x=>x.checked=false);
+ updateAvailabilityFields();renderAvailabilityRules();availabilityModal().hidden=false;
+}
+function closeAvailability(){availabilityModal().hidden=true;editingAvailabilityId=null;}
+function renderAvailabilityRules(){
+ const r=restrictions()[editingAvailabilityId]||{};
+ const items=(r.rules||[]).map((x,i)=>`<li>${esc(x.type==='once'?`${x.startDate} to ${x.endDate||x.startDate}`:`${x.type==='biweekly'?'Every other':'Every'} ${x.days?.join(', ')||'day'} from ${x.startDate}`)} · ${esc(x.scope==='time'?`${x.startTime}–${x.endTime}`:x.scope)} <button type="button" class="secondary" onclick="loadAvailabilityRule(${i})">Edit</button> <button type="button" class="secondary" onclick="removeAvailabilityRule(${i})">Remove</button></li>`).join('');
+ el('availabilityRules').innerHTML=items||'<li>No restrictions saved.</li>';
+}
+let editingRuleIndex=null;
+function loadAvailabilityRule(i){const r=restrictions()[editingAvailabilityId]?.rules?.[i];if(!r)return;editingRuleIndex=i;
+ el('availabilityType').value=r.type;el('availabilityScope').value=r.scope;
+ el('availabilityStart').value=r.startDate||week();el('availabilityEnd').value=r.endDate||r.startDate||week();
+ el('availabilityFrom').value=r.startTime||'16:00';el('availabilityTo').value=r.endTime||'19:00';
+ document.querySelectorAll('[name="availabilityDay"]').forEach(x=>x.checked=(r.days||[]).includes(x.value));updateAvailabilityFields();
+ el('availabilitySaveRule').textContent='Update restriction';
+}
+async function removeAvailabilityRule(i){const r=state.mealAvailability?.[editingAvailabilityId];if(!r)return;r.rules.splice(i,1);await saveAppState(state);renderAvailabilityRules();render();}
+async function saveAvailabilityRule(){
+ const v=availabilityFields();if(!v.startDate){alert('Select a starting date.');return;}
+ if(v.type==='once'&&(!v.endDate||v.endDate<v.startDate)){alert('Select a valid end date.');return;}
+ if(v.type!=='once'&&!v.days.length){alert('Select at least one weekday.');return;}
+ if(v.scope==='time'&&MINUTES(v.endTime)<=MINUTES(v.startTime)){alert('End time must be later than start time.');return;}
+ state.mealAvailability=state.mealAvailability||{};
+ const r=state.mealAvailability[editingAvailabilityId]||{dates:{},recurring:{},rules:[]};r.rules=r.rules||[];
+ const rule={...v,endDate:v.type==='once'?v.endDate:'',days:v.type==='once'?[]:v.days};
+ if(editingRuleIndex===null)r.rules.push(rule);else r.rules[editingRuleIndex]=rule;
+ state.mealAvailability[editingAvailabilityId]=r;
+ await saveAppState(state);editingRuleIndex=null;el('availabilitySaveRule').textContent='Add restriction';renderAvailabilityRules();render();
+}
 async function publish(){if(schedule().locked){alert('Unlock before publishing changes.');return;}const rows=draft||schedule().weekSchedule||emptyRows(),issues=validate(rows);if(issues.length){alert(`Resolve all schedule conflicts before publishing:\n${issues.join('\n')}`);return;}state.mealSchedule={...schedule(),weekStart:week(),weekSchedule:structuredClone(rows),published:true,locked:true,publishedAt:new Date().toISOString(),dinnerIntroduced:[...new Set([...(schedule().dinnerIntroduced||[]),...DAYS.flatMap(d=>[rows[d].supper1,rows[d].supper2]).filter(Boolean)])]};await saveAppState(state);draft=null;dirty=false;render();}
 async function unlock(){if(!confirm('Unlock the published schedule for editing? Changes will need to be published again.'))return;state.mealSchedule={...schedule(),locked:false,published:false};await saveAppState(state);render();}
 function resetDraft(){if(schedule().locked){alert('Unlock before clearing.');return;}draft=emptyRows();dirty=true;render();}
@@ -66,3 +139,8 @@ function printWeek(){window.print();}
 el('mealWeek').value=schedule().weekStart||mondayOf(dateISO(new Date()));
 el('mealWeek').addEventListener('change',()=>{draft=null;render();});el('generateMealBtn').onclick=generate;el('randomMealBtn').onclick=generate;el('saveMealBtn').onclick=publish;el('clearMealBtn').onclick=resetDraft;el('printMealBtn').onclick=printWeek;el('unlockMealBtn').onclick=unlock;
 auth.onAuthStateChanged(u=>{if(u)listenToAppState(s=>{state=s; if(!dirty)el('mealWeek').value=schedule().weekStart||el('mealWeek').value;render();});});
+
+el('availabilityType').addEventListener('change',updateAvailabilityFields);
+el('availabilityScope').addEventListener('change',updateAvailabilityFields);
+el('availabilitySaveRule').addEventListener('click',saveAvailabilityRule);
+el('availabilityClose').addEventListener('click',closeAvailability);
