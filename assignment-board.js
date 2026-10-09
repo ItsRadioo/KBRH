@@ -26,3 +26,38 @@ document.getElementById('boardWeek').addEventListener('change',e=>{if(e.target.v
 document.getElementById('boardCurrent').addEventListener('click',()=>{boardSelectedWeek=null;boardDraw();});
 setInterval(boardDraw,60000);
 auth.onAuthStateChanged(user=>{if(!user){document.getElementById('notice').textContent='Sign in to view assignments.';return;}listenToAppState(s=>{boardState=s;boardDraw();});});
+
+
+// v5.6.27 display controls: independent full-screen panels with automatic rotation.
+let boardActivePanel='meal',boardRotationTimer=null;
+function boardShowPanel(which){
+ boardActivePanel=which==='chore'?'chore':'meal';
+ document.getElementById('mealPanel').classList.toggle('active',boardActivePanel==='meal');
+ document.getElementById('chorePanel').classList.toggle('active',boardActivePanel==='chore');
+}
+function boardStopRotation(){if(boardRotationTimer){clearInterval(boardRotationTimer);boardRotationTimer=null;}}
+function boardStartRotation(){
+ boardStopRotation();
+ const seconds=Number(document.getElementById('boardInterval').value)||30;
+ boardRotationTimer=setInterval(()=>boardShowPanel(boardActivePanel==='meal'?'chore':'meal'),seconds*1000);
+}
+document.getElementById('boardMeals').addEventListener('click',()=>{boardShowPanel('meal');if(document.body.classList.contains('display-mode'))boardStartRotation();});
+document.getElementById('boardChores').addEventListener('click',()=>{boardShowPanel('chore');if(document.body.classList.contains('display-mode'))boardStartRotation();});
+document.getElementById('boardInterval').addEventListener('change',()=>{if(document.body.classList.contains('display-mode'))boardStartRotation();});
+function boardExitDisplay(){
+ document.body.classList.remove('display-mode');
+ boardStopRotation();
+ document.getElementById('boardDisplay').textContent='Start Display Mode';
+}
+document.getElementById('boardDisplay').addEventListener('click',async()=>{
+ if(document.body.classList.contains('display-mode')){
+  if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen().catch(()=>{});
+  boardExitDisplay();return;
+ }
+ document.body.classList.add('display-mode');
+ document.getElementById('boardDisplay').textContent='Exit Display Mode';
+ boardStartRotation();
+ if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen().catch(()=>{});
+});
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('display-mode'))boardExitDisplay();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('display-mode'))boardExitDisplay();});
