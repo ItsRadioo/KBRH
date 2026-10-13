@@ -763,6 +763,14 @@ function clearResidentLock() {
   saveAndRender();
 }
 
+async function clearAllChoreLocks() {
+  const locked = (state.residents || []).filter(resident => resident.lockedChore);
+  if (!locked.length) { alert('There are no chore locks to clear.'); return; }
+  if (!confirm(`Clear all ${locked.length} resident chore locks? This will not change current assignments or blocked chores.`)) return;
+  locked.forEach(resident => { resident.lockedChore = ''; });
+  await saveAndRender();
+}
+
 function clearHistory() {
   const confirmed = confirm(
     "Clear the full rotation history log? Clearing history also resets the record used to determine Outside Yardwork eligibility."
@@ -1197,6 +1205,8 @@ document
 document
   .getElementById("clearLockBtn")
   ?.addEventListener("click", clearResidentLock);
+
+document.getElementById("clearAllLocksBtn")?.addEventListener("click", clearAllChoreLocks);
 
 document
   .getElementById("setAwayUntilBtn")

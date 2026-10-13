@@ -621,3 +621,6 @@ Dashboard and digital logbook share a visual-only In/Out status board for active
 
 
 v5.6.25: Assignment Board links open in the same tab to preserve sessionStorage; unauthenticated navigation preserves a safe return target and login returns to the board.
+
+
+v5.6.30: House chore duties shown on assignment board from seasonal printable XLSX templates; clear-all chore locks confirmation; existing pre-admission/pending admission chore roster support preserved.
