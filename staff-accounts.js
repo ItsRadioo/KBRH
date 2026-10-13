@@ -218,3 +218,14 @@ auth.onAuthStateChanged(user => {
 });
 
 drawPageAccess("createPageAccess");
+
+
+// Permission bulk selection affects checkboxes only; saving remains unchanged.
+document.querySelectorAll("[data-access-action][data-access-target]").forEach(button => {
+  button.addEventListener("click", () => {
+    const grid = document.getElementById(button.dataset.accessTarget);
+    if (!grid) return;
+    const checked = button.dataset.accessAction === "all";
+    grid.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = checked; });
+  });
+});
