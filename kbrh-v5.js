@@ -102,7 +102,7 @@
     strip.innerHTML = `
       <article class="v5-kpi"><span class="v5-kpi-label">Phase 2</span><strong class="v5-kpi-value" data-kpi="phase2">0</strong><span class="v5-kpi-detail">Current Phase 2 clients</span></article>
       <article class="v5-kpi"><span class="v5-kpi-label">Archived</span><strong class="v5-kpi-value" data-kpi="archived">0</strong><span class="v5-kpi-detail">Historical roster records</span></article>
-      <article class="v5-kpi"><span class="v5-kpi-label">Beds Available</span><strong class="v5-kpi-value" data-kpi="beds">18</strong><span class="v5-kpi-detail">Phase 1 capacity</span></article>
+      <article class="v5-kpi"><span class="v5-kpi-label">Available Rooms</span><strong class="v5-kpi-value" id="availableRoomNumbers" style="font-size:1.35rem">—</strong><span class="v5-kpi-detail">Rooms with an open bed</span></article>
       <article class="v5-kpi"><span class="v5-kpi-label">Next for Single Room</span><strong class="v5-kpi-value" id="nextSingleRoomResident" style="font-size:1.35rem">None Waiting</strong></article>
     `;
     summary.insertAdjacentElement("afterend",strip);
@@ -113,7 +113,6 @@
       const p1 = Number.parseInt(p1Text,10) || 0;
       strip.querySelector('[data-kpi="phase2"]').textContent = String(p2);
       strip.querySelector('[data-kpi="archived"]').textContent = String(archived);
-      strip.querySelector('[data-kpi="beds"]').textContent = String(Math.max(0,18-p1));
     };
     update();
     ["phase2RosterBody","archivedRosterBody","phase1ResidentCount"].map(id=>document.getElementById(id)).filter(Boolean).forEach(node=>new MutationObserver(update).observe(node,{childList:true,subtree:true,characterData:true}));
