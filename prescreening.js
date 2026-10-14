@@ -564,6 +564,7 @@ async function movePrescreenApplicantToRoster(){
   collectCurrentStep();
   const applicant=(prescreenState?.waitlist||[]).find(a=>a.id===currentApplicantId&&!a.archived);
   if(!applicant){alert("This applicant is no longer on the active waitlist.");return;}
+  if(applicant.status==="Pending Application"){alert("Pending Application hold: admission is blocked.");return;}
   pendingPrescreenMoveApplicantId=applicant.id;
   $("prescreenMoveRosterName").textContent=applicantName(applicant);
   $("prescreenMoveEntryDate").value=new Date().toISOString().slice(0,10);
@@ -573,6 +574,7 @@ function closePrescreenMoveRoster(){pendingPrescreenMoveApplicantId=null;$("pres
 async function confirmPrescreenMoveRoster(){
   const applicantIndex=(prescreenState?.waitlist||[]).findIndex(a=>a.id===pendingPrescreenMoveApplicantId&&!a.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closePrescreenMoveRoster();return;}
+  if(prescreenState.waitlist[applicantIndex].status==="Pending Application"){alert("Pending Application hold: admission is blocked.");return;}
   const applicant=prescreenState.waitlist[applicantIndex];const name=applicantName(applicant);const entryDate=$("prescreenMoveEntryDate").value;
   if(!entryDate){alert("Select the admission / entry date.");return;}
   if(!(await authorizePrescreenRepeatOverride(applicant,"admit to active roster")))return;

@@ -291,11 +291,26 @@ function getActiveWaitlist() {
   // All ordinary active/late applicants, including newly added applicants,
   // outrank restricted residents. No-call applicants remain below the hold.
   const regular = [...calledAboveNoCall, ...uncalled.map(entry => entry.item)];
-  return [...regular.filter(item => !isRecentResidentHold(item)),
+  return restoreFrozenPositions([...regular.filter(item => !isRecentResidentHold(item)),
     ...regular.filter(isRecentResidentHold), ...noCall.filter(isRecentResidentHold),
-    ...noCall.filter(item => !isRecentResidentHold(item))];
+    ...noCall.filter(item => !isRecentResidentHold(item))]);
 }
 
+function isPendingApplication(item){return item?.status === "Pending Application";}
+function pendingApplicationGuard(item, action){if(!isPendingApplication(item))return false;alert("Pending Application: position frozen. Cannot " + action + " until the flag is removed.");return true;}
+function restoreFrozenPositions(ordered){
+ const held=ordered.filter(isPendingApplication).sort((a,b)=>(Number(a.pendingApplicationPosition)||99999)-(Number(b.pendingApplicationPosition)||99999));
+ const result=ordered.filter(x=>!isPendingApplication(x));
+ held.forEach(x=>{const n=Number(x.pendingApplicationPosition);result.splice(Number.isInteger(n)&&n>0?Math.min(n-1,result.length):result.length,0,x);});
+ return result;
+}
+function pendingFrozenSnapshot(){return getActiveWaitlist().filter(isPendingApplication).map(x=>({id:x.id,position:x.pendingApplicationPosition}));}
+function maintainFrozenSlots(before){
+ const ordered=getActiveWaitlist();
+ const frozen=new Map(before.map(x=>[x.id,x.position]));
+ ordered.forEach(x=>{if(frozen.has(x.id))x.pendingApplicationPosition=frozen.get(x.id);});
+ return ordered;
+}
 function getArchivedWaitlist() {
   return Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && item.archived)
@@ -305,6 +320,7 @@ function getArchivedWaitlist() {
 function resequenceActiveWaitlist(activeList = getActiveWaitlist()) {
   activeList.forEach((item, index) => {
     item.waitlistPosition = index + 1;
+    if(isPendingApplication(item) && !item.pendingApplicationPosition)item.pendingApplicationPosition=index+1;
   });
   return activeList;
 }
@@ -416,7 +432,7 @@ function enforceCallPriorityOrder() {
   });
 
   // Never-called applicants deliberately sit immediately above No Call.
-  const ordered = [...calledIn, ...late, ...uncalled, ...recent, ...noCall];
+  const ordered = restoreFrozenPositions([...calledIn, ...late, ...uncalled, ...recent, ...noCall]);
   const after = ordered.map(item => item.id).join("|");
   rebuildWaitlist(ordered, archived);
 
@@ -434,6 +450,8 @@ function moveApplicantToEndOfPriorityGroup(applicantId) {
 
   if (currentIndex === -1) return;
 
+  const frozenIndices=active.map((x,i)=>isPendingApplication(x)?i:-1).filter(i=>i>=0);
+  if(frozenIndices.some(i=>i===requestedPosition-1 || (currentIndex<i && requestedPosition-1>=i) || (currentIndex>i && requestedPosition-1<=i))){alert("Cannot move across a frozen Pending Application position.");return;}
   const [applicant] = active.splice(currentIndex, 1);
   const rank = priorityRank(applicant);
 
@@ -537,6 +555,15 @@ function saveInlineEdit(applicantId) {
   applicant.contact = formatPhoneNumber(getInputValue(`editContact-${applicantId}`));
   const previousStatus = applicant.status || "N/A";
   const newStatus = getInputValue(`editStatus-${applicantId}`) || "N/A";
+  if(newStatus === "Pending Application" && previousStatus !== "Pending Application"){
+    applicant.pendingApplicationPosition=getActiveWaitlist().findIndex(x=>x.id===applicantId)+1;
+    appendPersonActivity(applicant,"Eligibility","Pending Application hold applied",`Frozen at position ${applicant.pendingApplicationPosition}`);
+  }
+  if(previousStatus === "Pending Application" && newStatus !== "Pending Application"){
+    appendPersonActivity(applicant,"Eligibility","Pending Application hold removed",`Released position ${applicant.pendingApplicationPosition}`);
+    applicant.pendingApplicationPosition=null;
+  }
+  if(newStatus === "Offer Given" && pendingApplicationGuard(applicant,"give an offer"))return;
   if (newStatus === "Offer Given" && isRecentResidentHold(applicant)) {
     alert("This applicant is not eligible for an offer. Verify the discharge date and the 90-day restriction first."); return;
   }
@@ -583,12 +610,14 @@ function saveInlineEdit(applicantId) {
 }
 
 async function moveToRoster(applicantId) {
+  if(pendingApplicationGuard(waitlistState.waitlist.find(x=>x.id===applicantId),"admit"))return;
   openMoveToRosterModal(applicantId);
 }
 
 function openMoveToRosterModal(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);
   if(!applicant)return;
+  if(pendingApplicationGuard(applicant,"admit"))return;
   pendingMoveToRosterApplicantId=applicantId;
   document.getElementById("moveRosterApplicantName").textContent=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
   const dateInput=document.getElementById("moveRosterEntryDate");
@@ -606,6 +635,7 @@ function closeMoveToRosterModal(){
 async function confirmMoveToRoster(){
   const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
+  if(pendingApplicationGuard(waitlistState.waitlist[applicantIndex],"admit"))return;
   const entryDate=document.getElementById("moveRosterEntryDate")?.value||"";
   if(!confirmRecentAdmission(waitlistState.waitlist[applicantIndex]))return;
   if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return;}
@@ -668,7 +698,7 @@ function openApplicantActionsModal(applicantId) {
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
   const giveOfferButton = document.querySelector('#applicantActionsModal [data-applicant-action="giveOffer"]');
-  if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated" || isRecentResidentHold(applicant);
+  if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated" || isRecentResidentHold(applicant) || isPendingApplication(applicant);
 
   const undoButton = document.getElementById("undoLastCallInActionBtn");
   if (undoButton) {
@@ -700,6 +730,7 @@ function openPositionModal(applicantId) {
   if (currentIndex === -1) return;
 
   const applicant = active[currentIndex];
+  if(pendingApplicationGuard(applicant,"change position"))return;
   positionApplicantId = applicantId;
 
   document.getElementById("positionApplicantName").textContent =
@@ -731,6 +762,7 @@ function savePositionChange() {
   if (currentIndex === -1) return;
 
   const targetApplicant = active[currentIndex];
+  if(pendingApplicationGuard(targetApplicant,"change position"))return;
   if (!hasCallInRecord(targetApplicant)) {
     alert("Applicants without a call-in record are ordered automatically by Application Date. Record a call-in first before manually changing their position.");
     return;
@@ -779,6 +811,7 @@ async function authorizeRepeatAdmissionOverride(applicant, actionLabel){
 
 async function giveOfferQuick(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
+  if(pendingApplicationGuard(applicant,"give an offer"))return;
   if (!confirmRecentAdmission(applicant)) return;
   if(applicant.status==="Incarcerated"){ alert("Update the applicant status before giving an offer."); return; }
   if(!(await authorizeRepeatAdmissionOverride(applicant,"give an offer"))) return;
@@ -787,8 +820,9 @@ async function giveOfferQuick(applicantId){
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
   await saveWaitlist(); renderWaitlist();
 }
-async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(pendingApplicationGuard(applicant,"start pre-screening"))return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
+  if(isPendingApplication(item))return `<button type="button" disabled class="secondary">Pending Application — On Hold</button>`;
   if(item?.status === "Recent Resident" && !recentEligibilityDate(item)) return `<button type="button" class="secondary" disabled title="Verify discharge date">Verify discharge date</button>`;
   if(isRecentResidentHold(item)) return `<button type="button" class="secondary" disabled title="90-day readmission restriction">${formatRecentEligibility(item) ? `Eligible on ${formatRecentEligibility(item)}` : "Verify discharge date"}</button>`;
   if(item.status==="Offer Given") return `<button type="button" class="primary-next-action" onclick="startPrescreenQuick('${item.id}')">Start Pre-Screening</button>`;
@@ -882,6 +916,7 @@ function resetCallInModalStep() {
 }
 
 function openCallInModal(applicantId) {
+  if(pendingApplicationGuard(waitlistState.waitlist.find(x=>x.id===applicantId),"update call-in"))return;
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
@@ -904,6 +939,7 @@ function closeCallInModal() {
 function saveCallInStatus(selected, recordedAt = null) {
   const applicant = waitlistState.waitlist.find(item => item.id === callInApplicantId);
   if (!applicant || !selected) return;
+  if(pendingApplicationGuard(applicant,"update call-in"))return;
 
   const eventDate = recordedAt instanceof Date && !Number.isNaN(recordedAt.getTime())
     ? recordedAt
@@ -1050,6 +1086,7 @@ function renderNotesModal(applicant) {
 
 function undoLastCallIn(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
+  if(pendingApplicationGuard(applicant,"change call-in history"))return;
   if (!applicant || !Array.isArray(applicant.callInHistory) || !applicant.callInHistory.length) return;
 
   const lastRecord = applicant.callInHistory[0];
@@ -1237,6 +1274,7 @@ function archivedRosterMatchWithinTwoYears(item) {
 
 function getWaitlistStatusClass(item) {
   const noCallCount = getConsecutiveNoCallCount(item);
+  if(isPendingApplication(item))return "waitlist-pending-application-row";
   if (isRecentResidentHold(item)) return "waitlist-returning-resident-row";
   if (archivedRosterMatchWithinTwoYears(item)) return "waitlist-returning-resident-row";
   return item.status === "Offer Given"
@@ -1249,6 +1287,7 @@ function getWaitlistStatusClass(item) {
 }
 
 function applicantDisplayStatus(item) {
+  if(isPendingApplication(item))return "Pending Application — Position Frozen";
   if(isRecentResidentHold(item)) return formatRecentEligibility(item) ? `Recent Resident — Eligible ${formatRecentEligibility(item)}` : "Recent Resident — Verify discharge date";
   if(item?.status === "Recent Resident") return "Recent Resident — Verify discharge date";
   const noCallCount = getConsecutiveNoCallCount(item);
@@ -1385,6 +1424,7 @@ function renderActiveWaitlist() {
                 <select id="editStatus-${item.id}">
                   <option value="N/A" ${(item.status || "N/A") === "N/A" ? "selected" : ""}>N/A</option>
                   <option value="Incarcerated" ${item.status === "Incarcerated" ? "selected" : ""}>Incarcerated</option>
+                  <option value="Pending Application" ${item.status === "Pending Application" ? "selected" : ""}>Pending Application</option>
                   <option value="Recent Resident" ${item.status === "Recent Resident" ? "selected" : ""}>Recent Resident</option>
                   <option value="Offer Given" ${item.status === "Offer Given" ? "selected" : ""}>Offer Given</option>
                 </select>
@@ -1414,7 +1454,7 @@ function renderActiveWaitlist() {
             <td>${escapeHtml(item.city)}</td>
             <td>${escapeHtml(item.dateApplied)}</td>
             <td>
-              <button type="button" class="call-in-update-btn" onclick="openCallInModal('${item.id}')">Update Call-In</button>
+              <button type="button" class="call-in-update-btn" ${isPendingApplication(item) ? 'disabled title="Pending Application hold"' : ""} onclick="openCallInModal('${item.id}')">Update Call-In</button>
             </td>
             <td class="last-call-cell">${escapeHtml(lastCall)}</td>
             <td>

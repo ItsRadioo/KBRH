@@ -1358,3 +1358,62 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("confirmDischargeBtn")?.addEventListener("click", confirmDischarge);
   document.getElementById("dischargeModal")?.addEventListener("mousedown", e => { if (e.target.id === "dischargeModal") closeDischargeModal(); });
 });
+
+// Room inventory: room 5 does not exist. All other beds have stable IDs.
+const KBRH_ROOM_BEDS = Object.freeze([1,2,3,4,6,7,8,9,10,11,12,13,14].flatMap(room =>
+  (new Set([3,4,6,9,10,11,13,14]).has(room) ? [1] : [1,2]).map(bed => `${room}-${bed}`)));
+function kbrhCurrentBedOccupants(){
+  const result = new Map();
+  (rosterState.roster || []).filter(c=>c && !c.archived && (c.phase || 'phase1') === 'phase1').forEach(c=>{
+    const bed = String(c.roomNumber || '').trim();
+    if(KBRH_ROOM_BEDS.includes(bed)){
+      if(!result.has(bed))result.set(bed,[]);
+      result.get(bed).push(c);
+    }
+  });
+  return result;
+}
+function renderRoomAvailability(){
+  const occupied=kbrhCurrentBedOccupants();
+  const grid=document.getElementById('roomAvailabilityGrid');
+  if(!grid)return;
+  const rooms=[1,2,3,4,6,7,8,9,10,11,12,13,14];
+  grid.replaceChildren();
+  rooms.forEach(room=>{
+    const card=document.createElement('section');card.className='room-availability-room';
+    const heading=document.createElement('h3');heading.textContent=`Room ${room}`;card.append(heading);
+    KBRH_ROOM_BEDS.filter(id=>id.startsWith(`${room}-`)).forEach(bed=>{
+      const residents=occupied.get(bed)||[];
+      const btn=document.createElement('button');btn.type='button';
+      btn.className=`room-bed ${residents.length?'occupied':'available'}`;
+      btn.textContent=`${bed} — ${residents.length ? residents.map(c=>`${c.firstName||''} ${c.lastName||''}`.trim()).join(', ') + (residents.length>1?' (CONFLICT)':'') : 'Available'}`;
+      if(residents.length){btn.disabled=true;}else{btn.addEventListener('click',()=>assignAvailableBed(bed));}
+      card.append(btn);
+    });grid.append(card);
+  });
+  const count=KBRH_ROOM_BEDS.filter(b=>!occupied.has(b)).length;
+  document.getElementById('roomAvailabilitySummary').textContent=`${count} available / 18 total beds · 13 rooms`;
+}
+async function assignAvailableBed(bed){
+  if(kbrhCurrentBedOccupants().has(bed)){renderRoomAvailability();return;}
+  const residents=(rosterState.roster||[]).filter(c=>c && !c.archived && (c.phase||'phase1')==='phase1');
+  const candidates=residents.filter(c=>!KBRH_ROOM_BEDS.includes(String(c.roomNumber||'').trim()));
+  if(!candidates.length){alert('No unassigned Phase 1 residents. Edit a resident to transfer them to this bed.');return;}
+  const options=candidates.map((c,i)=>`${i+1}. ${c.firstName||''} ${c.lastName||''}`.trim()).join('\n');
+  const answer=prompt(`Assign bed ${bed} to which unassigned resident? Enter a number:\n${options}`);
+  if(answer===null)return;
+  const index=Number(answer)-1;
+  if(!Number.isInteger(index)||!candidates[index]){alert('Invalid resident selection.');return;}
+  if(kbrhCurrentBedOccupants().has(bed)){alert('This bed is already occupied.');renderRoomAvailability();return;}
+  const resident=candidates[index], old=resident.roomNumber;
+  resident.roomNumber=bed;
+  if(!await saveRoster()){resident.roomNumber=old;return;}
+  renderRoster();renderRoomAvailability();
+}
+function closeRoomAvailability(){document.getElementById('roomAvailabilityModal')?.classList.add('hidden');}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('openRoomAvailabilityBtn')?.addEventListener('click',()=>{renderRoomAvailability();document.getElementById('roomAvailabilityModal')?.classList.remove('hidden');});
+  ['closeRoomAvailabilityBtn','roomAvailabilityCloseFooter'].forEach(id=>document.getElementById(id)?.addEventListener('click',closeRoomAvailability));
+  document.getElementById('roomAvailabilityModal')?.addEventListener('click',e=>{if(e.target.id==='roomAvailabilityModal')closeRoomAvailability();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeRoomAvailability();});
+});

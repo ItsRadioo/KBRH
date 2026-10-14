@@ -28,6 +28,7 @@
 <h2>Client Management</h2>
 <p class="hint">Add a new resident or search and manage the current roster.</p>
 </div>
+<button class="secondary" id="openRoomAvailabilityBtn" type="button">Room Availability</button>
 <button class="primary-action-btn" id="openAddClientModalBtn" type="button">+ Add Client</button>
 </div>
 </section>
@@ -255,6 +256,24 @@
 </form>
 </div>
 </div>
+<div class="modal-backdrop hidden" id="roomAvailabilityModal" role="presentation">
+<div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="roomAvailabilityTitle">
+<div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button type="button" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" aria-label="Close room availability">×</button></div>
+<div id="roomAvailabilityGrid" class="room-availability-grid"></div>
+<p class="hint">Select an available bed to assign it to a current resident. Occupancy reflects the current roster; rooms marked reserved or out of service are not automatically assigned.</p>
+<div class="button-row modal-actions"><button type="button" class="secondary" id="roomAvailabilityCloseFooter">Close</button></div>
+</div></div>
+<style>
+.room-availability-dialog{max-width:900px!important;width:min(94vw,900px);max-height:90vh;overflow:auto}
+.room-availability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.room-availability-room{border:1px solid var(--border-color,#d1d5db);border-radius:10px;padding:12px;min-width:0}
+.room-availability-room h3{margin:0 0 8px;font-size:1rem}
+.room-bed{display:block;width:100%;margin:5px 0;padding:9px;text-align:left;border-radius:7px;border:1px solid #aaa;background:#f1f5f9;color:#111;white-space:normal}
+.room-bed.available{background:#dcfce7;border-color:#86efac;cursor:pointer}.room-bed.occupied{background:#fee2e2;border-color:#fca5a5;cursor:default}
+.room-bed.reserved{background:#fef3c7;border-color:#fcd34d;cursor:default}
+@media(max-width:740px){.room-availability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.room-availability-grid{grid-template-columns:1fr}}
+</style>
 <script src="roster.js?v=5.6.2"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js?v=5.6.9"></script>

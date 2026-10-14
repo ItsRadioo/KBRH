@@ -2438,3 +2438,5 @@ table.roster-table,
 .waitlist-follow-up-row td{background:#fff0f0!important}.waitlist-follow-up-row td:first-child{box-shadow:inset 4px 0 0 #b40000}
 @media(max-width:720px){.settings-grid{grid-template-columns:1fr}.person-activity-item{display:grid}.person-activity-item small{white-space:normal}}
 [data-admin-only][hidden]{display:none!important}
+
+.waitlist-pending-application-row{background:#fff2d4!important;border-left:4px solid #b7791f;}
