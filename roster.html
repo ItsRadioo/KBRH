@@ -256,6 +256,23 @@
 </form>
 </div>
 </div>
+<div class="modal-backdrop hidden" id="residentBedPickerModal">
+  <div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="residentBedPickerTitle">
+    <div class="modal-title-row">
+      <div><h2 id="residentBedPickerTitle">Choose an Available Bed</h2><p class="hint" id="residentBedPickerSummary">18 beds across 13 rooms</p></div>
+      <button type="button" class="secondary modal-close-button" id="closeResidentBedPickerBtn" aria-label="Close bed selection">×</button>
+    </div>
+    <div class="room-availability-grid" id="residentBedPickerGrid"></div>
+    <p class="hint">Occupied beds cannot be selected. Selecting a bed updates the edit form; use Save Changes to confirm the assignment.</p>
+    <div class="button-row modal-actions"><button type="button" class="secondary" id="cancelResidentBedPickerBtn">Back to Edit Resident</button></div>
+  </div>
+</div>
+<style>
+.bed-picker-input{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bed-picker-input input{flex:1;min-width:120px}
+.bed-picker-input button{white-space:nowrap}
+#residentBedPickerModal{z-index:1100}
+</style>
 <div class="modal-backdrop hidden" id="roomAvailabilityModal" role="presentation">
 <div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="roomAvailabilityTitle">
 <div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button type="button" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" aria-label="Close room availability">×</button></div>

@@ -374,7 +374,15 @@ function openEditResidentModal(clientId) {
   document.getElementById("editResidentModalSubtitle").textContent = fullName || "Update this resident's information.";
 
   let html = residentModalSection("Resident Information");
-  html += residentModalField("Room #", "modalEditRoomNumber", client.roomNumber);
+  html += `
+    <div class="kbrh-modal-field">
+      <label for="modalEditRoomNumber">Assigned Bed</label>
+      <div class="bed-picker-input">
+        <input id="modalEditRoomNumber" type="text" readonly value="${escapeAttribute(client.roomNumber || "")}" placeholder="No bed assigned" />
+        <button type="button" class="secondary" id="chooseResidentBedBtn">Choose Bed</button>
+        <button type="button" class="secondary" id="clearResidentBedBtn">Clear</button>
+      </div>
+    </div>`;
   html += residentModalField("Client ID", "modalEditClientId", client.clientId);
   html += residentModalField("First Name", "modalEditFirstName", client.firstName);
   html += residentModalField("Last Name", "modalEditLastName", client.lastName);
@@ -402,6 +410,10 @@ function openEditResidentModal(clientId) {
     </label>
   `;
   fields.innerHTML = html;
+  document.getElementById("chooseResidentBedBtn")?.addEventListener("click", openResidentBedPicker);
+  document.getElementById("clearResidentBedBtn")?.addEventListener("click", () => {
+    document.getElementById("modalEditRoomNumber").value = "";
+  });
 
   modal.classList.remove("hidden");
   document.body.classList.add("kbrh-modal-open");
@@ -427,7 +439,15 @@ function saveEditResidentModal(event) {
     return;
   }
 
-  client.roomNumber = value("modalEditRoomNumber");
+  const requestedBed = value("modalEditRoomNumber");
+  if (requestedBed && !KBRH_ROOM_BEDS.includes(requestedBed)) {
+    alert("Select a valid bed using Choose Bed."); return;
+  }
+  const occupant = (kbrhCurrentBedOccupants().get(requestedBed) || []).find(c => c.id !== client.id);
+  if (occupant) {
+    alert(`Bed ${requestedBed} is already occupied. Choose another bed.`); return;
+  }
+  client.roomNumber = requestedBed;
   client.clientId = value("modalEditClientId");
   client.firstName = firstName;
   client.lastName = lastName;
@@ -1410,6 +1430,45 @@ async function assignAvailableBed(bed){
   if(!await saveRoster()){resident.roomNumber=old;return;}
   renderRoster();renderRoomAvailability();
 }
+function openResidentBedPicker(){
+  const modal=document.getElementById("residentBedPickerModal");
+  const grid=document.getElementById("residentBedPickerGrid");
+  if(!modal || !grid || !editingClientId)return;
+  const occupied=kbrhCurrentBedOccupants();
+  const current=document.getElementById("modalEditRoomNumber")?.value || "";
+  grid.replaceChildren();
+  [1,2,3,4,6,7,8,9,10,11,12,13,14].forEach(room=>{
+    const card=document.createElement("section");
+    card.className="room-availability-room";
+    const h=document.createElement("h3");h.textContent=`Room ${room}`;card.append(h);
+    KBRH_ROOM_BEDS.filter(b=>b.startsWith(`${room}-`)).forEach(bed=>{
+      const others=(occupied.get(bed)||[]).filter(c=>c.id!==editingClientId);
+      const button=document.createElement("button");button.type="button";
+      button.className=`room-bed ${others.length?"occupied":"available"}`;
+      button.textContent=`${bed} — ${others.length ? "Occupied: "+others.map(c=>`${c.firstName||""} ${c.lastName||""}`.trim()).join(", ") : bed===current ? "Current selection" : "Available"}`;
+      button.disabled=others.length>0;
+      if(!others.length)button.addEventListener("click",()=>{
+        document.getElementById("modalEditRoomNumber").value=bed;
+        closeResidentBedPicker();
+      });
+      card.append(button);
+    });
+    grid.append(card);
+  });
+  document.getElementById("residentBedPickerSummary").textContent=`${KBRH_ROOM_BEDS.filter(b=>!(occupied.get(b)||[]).some(c=>c.id!==editingClientId)).length} selectable beds · 18 total`;
+  modal.classList.remove("hidden");
+}
+function closeResidentBedPicker(){
+  document.getElementById("residentBedPickerModal")?.classList.add("hidden");
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  ["closeResidentBedPickerBtn","cancelResidentBedPickerBtn"].forEach(id=>
+    document.getElementById(id)?.addEventListener("click",closeResidentBedPicker));
+  document.getElementById("residentBedPickerModal")?.addEventListener("click",e=>{
+    if(e.target.id==="residentBedPickerModal")closeResidentBedPicker();
+  });
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeResidentBedPicker();});
+});
 function closeRoomAvailability(){document.getElementById('roomAvailabilityModal')?.classList.add('hidden');}
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('openRoomAvailabilityBtn')?.addEventListener('click',()=>{renderRoomAvailability();document.getElementById('roomAvailabilityModal')?.classList.remove('hidden');});
