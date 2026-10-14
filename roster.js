@@ -864,6 +864,7 @@ function matchesRosterSearch(client) {
 function renderRoster() {
   updateEditAllButtons();
   updatePhase1ResidentCount();
+  updateRoomTrackers();
   renderPhase1Roster();
   renderPhase2Roster();
   renderArchivedRoster();
@@ -1404,6 +1405,63 @@ function kbrhCurrentBedOccupants(){
   });
   return result;
 }
+function kbrhPhaseOneResidents(){
+  return (rosterState.roster || []).filter(c => c && c !== 'temp' && !c.archived && (c.phase || 'phase1') === 'phase1');
+}
+function kbrhDoubleRoomResidents(){
+  return kbrhPhaseOneResidents().filter(c => {
+    const bed=kbrhNormalizeBedId(c.roomNumber);
+    return KBRH_ROOM_BEDS.includes(bed) && !KBRH_SINGLE_ROOMS.has(Number(bed));
+  });
+}
+function kbrhNextSingleRoomResident(){
+  // Roster priority follows the Phase 1 roster's entry-date ordering, not the current search filter.
+  return kbrhDoubleRoomResidents().sort((a,b) =>
+    String(a.entryDate || '9999-12-31').localeCompare(String(b.entryDate || '9999-12-31')) ||
+    (rosterState.roster.indexOf(a)-rosterState.roster.indexOf(b)))[0] || null;
+}
+function updateRoomTrackers(){
+  const occupied=kbrhCurrentBedOccupants();
+  const openRooms=KBRH_ROOM_NUMBERS.filter(room=>
+    KBRH_ROOM_BEDS.some(bed=>kbrhBedIsInRoom(bed,room) && !occupied.has(bed)));
+  const rooms=document.getElementById('availableRoomNumbers');
+  if(rooms)rooms.textContent=openRooms.length ? openRooms.join(', ') : 'None';
+  const next=document.getElementById('nextSingleRoomResident');
+  if(next){
+    const resident=kbrhNextSingleRoomResident();
+    next.textContent=resident ? [resident.firstName,resident.lastName].filter(Boolean).join(' ') : 'None Waiting';
+  }
+}
+function kbrhOpenSingleRoomAssignment(bed){
+  if(kbrhCurrentBedOccupants().has(bed)){renderRoomAvailability();return;}
+  const modal=document.getElementById('singleRoomAssignModal');
+  const list=document.getElementById('singleRoomAssignList');
+  if(!modal || !list)return;
+  document.getElementById('singleRoomAssignTitle').textContent=`Assign Room ${bed}`;
+  list.replaceChildren();
+  const candidates=kbrhPhaseOneResidents().filter(c=>{
+    const current=kbrhNormalizeBedId(c.roomNumber);
+    return !KBRH_SINGLE_ROOMS.has(Number(current)) && (!KBRH_ROOM_BEDS.includes(current) || current.includes('-'));
+  }).sort((a,b)=>String(a.entryDate||'9999-12-31').localeCompare(String(b.entryDate||'9999-12-31')) || rosterState.roster.indexOf(a)-rosterState.roster.indexOf(b));
+  if(!candidates.length){
+    const message=document.createElement('p');message.textContent='No eligible residents. Residents already in single rooms cannot be selected.';list.append(message);
+  }
+  candidates.forEach(resident=>{
+    const button=document.createElement('button');button.type='button';button.className='room-bed available';
+    button.textContent=[resident.firstName,resident.lastName].filter(Boolean).join(' ') || 'Unnamed Resident';
+    button.addEventListener('click',async()=>{
+      if(kbrhCurrentBedOccupants().has(bed)){alert('Room is no longer available.');renderRoomAvailability();return;}
+      const previous=kbrhNormalizeBedId(resident.roomNumber);
+      if(KBRH_SINGLE_ROOMS.has(Number(previous))){alert('Resident is already in a single room.');return;}
+      resident.roomNumber=bed;
+      button.disabled=true;
+      if(!await saveRoster()){resident.roomNumber=previous;button.disabled=false;return;}
+      modal.classList.add('hidden');renderRoster();renderRoomAvailability();
+    });
+    list.append(button);
+  });
+  modal.classList.remove('hidden');
+}
 function renderRoomAvailability(){
   const occupied=kbrhCurrentBedOccupants();
   const grid=document.getElementById('roomAvailabilityGrid');
@@ -1418,7 +1476,7 @@ function renderRoomAvailability(){
       const btn=document.createElement('button');btn.type='button';
       btn.className=`room-bed ${residents.length?'occupied':'available'}`;
       btn.textContent=`${bed} — ${residents.length ? residents.map(c=>`${c.firstName||''} ${c.lastName||''}`.trim()).join(', ') + (residents.length>1?' (CONFLICT)':'') : 'Available'}`;
-      if(residents.length){btn.disabled=true;}else{btn.addEventListener('click',()=>assignAvailableBed(bed));}
+      if(residents.length){btn.disabled=true;}else{btn.addEventListener('click',()=>KBRH_SINGLE_ROOMS.has(Number(bed)) ? kbrhOpenSingleRoomAssignment(bed) : assignAvailableBed(bed));}
       card.append(btn);
     });grid.append(card);
   });
@@ -1486,4 +1544,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   ['closeRoomAvailabilityBtn','roomAvailabilityCloseFooter'].forEach(id=>document.getElementById(id)?.addEventListener('click',closeRoomAvailability));
   document.getElementById('roomAvailabilityModal')?.addEventListener('click',e=>{if(e.target.id==='roomAvailabilityModal')closeRoomAvailability();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeRoomAvailability();});
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('closeSingleRoomAssignBtn')?.addEventListener('click',()=>document.getElementById('singleRoomAssignModal')?.classList.add('hidden'));
+  document.getElementById('singleRoomAssignModal')?.addEventListener('click',e=>{if(e.target.id==='singleRoomAssignModal')e.currentTarget.classList.add('hidden');});
 });

@@ -38,6 +38,8 @@
 <p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
 <p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
 </article>
+<article class="roster-stat-card"><p class="roster-stat-label">Available Rooms</p><p class="roster-stat-value" id="availableRoomNumbers" style="font-size:1.35rem">—</p></article>
+<article class="roster-stat-card"><p class="roster-stat-label">Next for Single Room</p><p class="roster-stat-value" id="nextSingleRoomResident" style="font-size:1.35rem">None Waiting</p></article>
 </section>
 <section class="card wide">
 <h2>Roster Controls</h2>
@@ -273,6 +275,13 @@
 .bed-picker-input button{white-space:nowrap}
 #residentBedPickerModal{z-index:10020!important}
 </style>
+<div class="modal-backdrop hidden" id="singleRoomAssignModal" role="presentation">
+<div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="singleRoomAssignTitle">
+<div class="modal-title-row"><h2 id="singleRoomAssignTitle">Assign Single Room</h2><button type="button" class="secondary" id="closeSingleRoomAssignBtn">Close</button></div>
+<p class="hint">Choose a resident currently in a double room or without a bed assignment. Existing single-room occupants are excluded.</p>
+<div id="singleRoomAssignList" class="single-room-candidates"></div>
+</div></div>
+<style>#singleRoomAssignModal{z-index:10030!important}.single-room-candidates{max-height:60vh;overflow:auto;display:grid;gap:7px}</style>
 <div class="modal-backdrop hidden" id="roomAvailabilityModal" role="presentation">
 <div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="roomAvailabilityTitle">
 <div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button type="button" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" aria-label="Close room availability">×</button></div>
