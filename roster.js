@@ -378,7 +378,7 @@ function openEditResidentModal(clientId) {
     <div class="kbrh-modal-field">
       <label for="modalEditRoomNumber">Assigned Bed</label>
       <div class="bed-picker-input">
-        <input id="modalEditRoomNumber" type="text" readonly value="${escapeAttribute(client.roomNumber || "")}" placeholder="No bed assigned" />
+        <input id="modalEditRoomNumber" type="text" readonly value="${escapeAttribute(kbrhNormalizeBedId(client.roomNumber))}" placeholder="No bed assigned" />
         <button type="button" class="secondary" id="chooseResidentBedBtn">Choose Bed</button>
         <button type="button" class="secondary" id="clearResidentBedBtn">Clear</button>
       </div>
@@ -439,7 +439,7 @@ function saveEditResidentModal(event) {
     return;
   }
 
-  const requestedBed = value("modalEditRoomNumber");
+  const requestedBed = kbrhNormalizeBedId(value("modalEditRoomNumber"));
   if (requestedBed && !KBRH_ROOM_BEDS.includes(requestedBed)) {
     alert("Select a valid bed using Choose Bed."); return;
   }
@@ -966,7 +966,7 @@ function renderCompactRosterRow(client) {
 
   return `
     <tr>
-      <td class="compact-room-cell">${escapeHtml(client.roomNumber || "—")}</td>
+      <td class="compact-room-cell">${escapeHtml(kbrhNormalizeBedId(client.roomNumber) || "—")}</td>
       <td class="compact-name-cell"><strong>${escapeHtml(fullName)}</strong><span>Client ID: ${escapeHtml(client.clientId || "—")}</span></td>
       <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
       <td>${getCompletionBadge(client)}</td>
@@ -1011,7 +1011,7 @@ function openResidentInfoModal(clientId) {
   document.getElementById("residentInfoModalSubtitle").textContent = fullName;
 
   let html = `<section class="resident-info-section"><h3>Resident</h3><div class="resident-info-grid">`;
-  html += residentInfoItem("Room #", client.roomNumber);
+  html += residentInfoItem("Room #", kbrhNormalizeBedId(client.roomNumber));
   html += residentInfoItem("Client ID", client.clientId);
   html += residentInfoItem("First Name", client.firstName);
   html += residentInfoItem("Last Name", client.lastName);
@@ -1075,7 +1075,7 @@ function renderActiveRosterRow(client, phase) {
     if (phase === "phase1") {
       return `
         <tr class="editing-row">
-          <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+          <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(kbrhNormalizeBedId(client.roomNumber))}" /></td>
           <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
           <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
           <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
@@ -1107,7 +1107,7 @@ function renderActiveRosterRow(client, phase) {
 
     return `
       <tr class="editing-row">
-        <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(client.roomNumber)}" /></td>
+        <td><input id="editRoomNumber-${client.id}" value="${escapeAttribute(kbrhNormalizeBedId(client.roomNumber))}" /></td>
         <td><input id="editFirstName-${client.id}" value="${escapeAttribute(client.firstName)}" /></td>
         <td><input id="editLastName-${client.id}" value="${escapeAttribute(client.lastName)}" /></td>
         <td><input id="editClientId-${client.id}" value="${escapeAttribute(client.clientId)}" /></td>
@@ -1135,7 +1135,7 @@ function renderActiveRosterRow(client, phase) {
   if (phase === "phase1") {
     return `
       <tr>
-        <td>${escapeHtml(client.roomNumber)}</td>
+        <td>${escapeHtml(kbrhNormalizeBedId(client.roomNumber))}</td>
         <td>${escapeHtml(client.firstName)}</td>
         <td>${escapeHtml(client.lastName)}</td>
         <td>${escapeHtml(client.clientId)}</td>
@@ -1160,7 +1160,7 @@ function renderActiveRosterRow(client, phase) {
 
   return `
     <tr>
-      <td>${escapeHtml(client.roomNumber)}</td>
+      <td>${escapeHtml(kbrhNormalizeBedId(client.roomNumber))}</td>
       <td>${escapeHtml(client.firstName)}</td>
       <td>${escapeHtml(client.lastName)}</td>
       <td>${escapeHtml(client.clientId)}</td>
@@ -1190,7 +1190,7 @@ function renderArchivedRoster() {
 
         return `
           <tr>
-            <td>${escapeHtml(client.roomNumber)}</td>
+            <td>${escapeHtml(kbrhNormalizeBedId(client.roomNumber))}</td>
             <td>${escapeHtml(client.firstName)}</td>
             <td>${escapeHtml(client.lastName)}</td>
             <td>${escapeHtml(client.clientId)}</td>
@@ -1260,7 +1260,7 @@ auth.onAuthStateChanged(user => {
       : [];
 
     rosterState.roster.forEach(client => {
-      client.roomNumber = client.roomNumber || "";
+      client.roomNumber = kbrhNormalizeBedId(client.roomNumber);
       client.phase = client.phase || "phase1";
       client.notes = Array.isArray(client.notes) ? client.notes : [];
       client.phase2AdmissionDate = client.phase2AdmissionDate || "";
@@ -1380,12 +1380,23 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Room inventory: room 5 does not exist. All other beds have stable IDs.
-const KBRH_ROOM_BEDS = Object.freeze([1,2,3,4,6,7,8,9,10,11,12,13,14].flatMap(room =>
-  (new Set([3,4,6,9,10,11,13,14]).has(room) ? [1] : [1,2]).map(bed => `${room}-${bed}`)));
+const KBRH_SINGLE_ROOMS = new Set([3,4,6,9,10,11,13,14]);
+const KBRH_ROOM_NUMBERS = Object.freeze([1,2,3,4,6,7,8,9,10,11,12,13,14]);
+const KBRH_ROOM_BEDS = Object.freeze(KBRH_ROOM_NUMBERS.flatMap(room =>
+  KBRH_SINGLE_ROOMS.has(room) ? [String(room)] : [`${room}-1`, `${room}-2`]));
+// Accept legacy single-room identifiers (e.g. 6-1) without losing occupancy.
+function kbrhNormalizeBedId(value) {
+  const id = String(value ?? '').trim();
+  const match = id.match(/^(3|4|6|9|10|11|13|14)-1$/);
+  return match ? match[1] : id;
+}
+function kbrhBedIsInRoom(bed, room) {
+  return bed === String(room) || bed.startsWith(`${room}-`);
+}
 function kbrhCurrentBedOccupants(){
   const result = new Map();
   (rosterState.roster || []).filter(c=>c && !c.archived && (c.phase || 'phase1') === 'phase1').forEach(c=>{
-    const bed = String(c.roomNumber || '').trim();
+    const bed = kbrhNormalizeBedId(c.roomNumber);
     if(KBRH_ROOM_BEDS.includes(bed)){
       if(!result.has(bed))result.set(bed,[]);
       result.get(bed).push(c);
@@ -1402,7 +1413,7 @@ function renderRoomAvailability(){
   rooms.forEach(room=>{
     const card=document.createElement('section');card.className='room-availability-room';
     const heading=document.createElement('h3');heading.textContent=`Room ${room}`;card.append(heading);
-    KBRH_ROOM_BEDS.filter(id=>id.startsWith(`${room}-`)).forEach(bed=>{
+    KBRH_ROOM_BEDS.filter(id=>kbrhBedIsInRoom(id,room)).forEach(bed=>{
       const residents=occupied.get(bed)||[];
       const btn=document.createElement('button');btn.type='button';
       btn.className=`room-bed ${residents.length?'occupied':'available'}`;
@@ -1417,7 +1428,7 @@ function renderRoomAvailability(){
 async function assignAvailableBed(bed){
   if(kbrhCurrentBedOccupants().has(bed)){renderRoomAvailability();return;}
   const residents=(rosterState.roster||[]).filter(c=>c && !c.archived && (c.phase||'phase1')==='phase1');
-  const candidates=residents.filter(c=>!KBRH_ROOM_BEDS.includes(String(c.roomNumber||'').trim()));
+  const candidates=residents.filter(c=>!KBRH_ROOM_BEDS.includes(kbrhNormalizeBedId(c.roomNumber)));
   if(!candidates.length){alert('No unassigned Phase 1 residents. Edit a resident to transfer them to this bed.');return;}
   const options=candidates.map((c,i)=>`${i+1}. ${c.firstName||''} ${c.lastName||''}`.trim()).join('\n');
   const answer=prompt(`Assign bed ${bed} to which unassigned resident? Enter a number:\n${options}`);
@@ -1435,13 +1446,13 @@ function openResidentBedPicker(){
   const grid=document.getElementById("residentBedPickerGrid");
   if(!modal || !grid || !editingClientId)return;
   const occupied=kbrhCurrentBedOccupants();
-  const current=document.getElementById("modalEditRoomNumber")?.value || "";
+  const current=kbrhNormalizeBedId(document.getElementById("modalEditRoomNumber")?.value || "");
   grid.replaceChildren();
   [1,2,3,4,6,7,8,9,10,11,12,13,14].forEach(room=>{
     const card=document.createElement("section");
     card.className="room-availability-room";
     const h=document.createElement("h3");h.textContent=`Room ${room}`;card.append(h);
-    KBRH_ROOM_BEDS.filter(b=>b.startsWith(`${room}-`)).forEach(bed=>{
+    KBRH_ROOM_BEDS.filter(b=>kbrhBedIsInRoom(b,room)).forEach(bed=>{
       const others=(occupied.get(bed)||[]).filter(c=>c.id!==editingClientId);
       const button=document.createElement("button");button.type="button";
       button.className=`room-bed ${others.length?"occupied":"available"}`;
