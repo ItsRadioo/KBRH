@@ -75,10 +75,12 @@ function addClient() {
     return;
   }
 
-  rosterState.roster.push(client);
-  clearClientForm();
-  renderRoster();
-  saveRoster();
+  KBRHUrine.open(client, async screen=>{
+    client.urineScreens=[screen];
+    rosterState.roster.push(client);
+    if(!await saveRoster()){rosterState.roster=rosterState.roster.filter(x=>x.id!==client.id);throw Error("Save failed");}
+    clearClientForm();renderRoster();
+  },true);
 }
 
 function clearClientForm() {
@@ -474,6 +476,16 @@ function saveEditResidentModal(event) {
 }
 
 function handleRosterAction(clientId, action) {
+  if(action==="urine"){
+    const client=rosterState.roster.find(c=>c.id===clientId);
+    if(!client)return;
+    KBRHUrine.open(client,async screen=>{
+      client.urineScreens=[...(client.urineScreens||[]),screen];
+      if(!await saveRoster()){client.urineScreens.pop();throw Error("Save failed");}
+      renderRoster();
+    },false);
+    return;
+  }
   if (!action) return;
 
   if (action === "edit") openEditResidentModal(clientId);
@@ -502,10 +514,10 @@ function openRosterActionsModal(clientId) {
 
     actionList.innerHTML = isArchived
       ? `
-        <button type="button" data-roster-action="restore">Restore</button>
+        <button type="button" data-roster-action="restore">Restore</button>\n        <button type="button" data-roster-action="urine">Urine Screens / History</button>
       `
       : `
-        <button type="button" data-roster-action="edit">Edit</button>
+        <button type="button" data-roster-action="edit">Edit</button>\n        <button type="button" data-roster-action="urine">Urine Screens / History</button>
         <button type="button" data-roster-action="${phase === "phase1" ? "phase2" : "phase1"}">Move to ${phase === "phase1" ? "Phase 2" : "Phase 1"}</button>
         <button type="button" data-roster-action="waitlist">Move back to Waitlist</button>
         <button type="button" data-roster-action="archive">Archive / Discharge</button>

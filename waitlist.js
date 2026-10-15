@@ -632,7 +632,13 @@ function closeMoveToRosterModal(){
   document.body.classList.remove("kbrh-modal-open");
 }
 
-async function confirmMoveToRoster(){
+async function confirmMoveToRoster(screenRecord){
+  if(!screenRecord){
+    const applicant=waitlistState.waitlist.find(x=>x.id===pendingMoveToRosterApplicantId);
+    if(!applicant)return;
+    KBRHUrine.open(applicant,async record=>{await confirmMoveToRoster(record);},true);
+    return;
+  }
   const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
   if(pendingApplicationGuard(waitlistState.waitlist[applicantIndex],"admit"))return;
@@ -655,7 +661,7 @@ async function confirmMoveToRoster(){
     id:crypto.randomUUID(),roomNumber:"",clientId:"",firstName:applicant.firstName||"",lastName:applicant.lastName||"",dob:applicant.dob||"",
     phone:formatPhoneNumber(applicant.contact||""),address:applicant.address||"",city:applicant.city||"",contact:applicant.emergencyContact||"",contactPhone:applicant.emergencyContactPhone||"",
     entryDate,expectedDischargeDate:"",originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",waitlistSourceId:applicant.id,phase:"phase1",phase2AdmissionDate:"",
-    archived:false,archivedAt:"",archiveReason:"",notes:[transferNote,...normalizeWaitlistNotes(applicant.notes)],activityHistory:normalizeActivityHistory(applicant.activityHistory)
+    urineScreens:[screenRecord],archived:false,archivedAt:"",archiveReason:"",notes:[transferNote,...normalizeWaitlistNotes(applicant.notes)],activityHistory:normalizeActivityHistory(applicant.activityHistory)
   };
   const transfer={id:crypto.randomUUID(),applicantId:applicant.id,residentId:newResident.id,applicantName:name,transferredAt:new Date().toISOString(),transferredBy:identity.name||identity.email||"Staff User",undone:false,undoneAt:"",applicantSnapshot:structuredClone(applicant)};
   waitlistState.waitlist.splice(applicantIndex,1);
