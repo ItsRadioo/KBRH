@@ -478,8 +478,21 @@ function saveEditResidentModal(event) {
   saveRoster();
 }
 
+// Restrict access to the urine-screen history interface to the three designated accounts.
+const KBRH_URINE_HISTORY_EMAILS = new Set([
+  "admin@kbrh.local", "executivedirector@kbrh.local", "intakecoordinator@kbrh.local"
+]);
+function kbrhCanAccessUrineHistory() {
+  const email = String(auth?.currentUser?.email || "").trim().toLowerCase();
+  return KBRH_URINE_HISTORY_EMAILS.has(email);
+}
+
 function handleRosterAction(clientId, action) {
-  if(action==="urine"){
+  if(action==="urine") {
+    if (!kbrhCanAccessUrineHistory()) {
+      alert("Authorized personnel only.");
+      return;
+    }
     const client=rosterState.roster.find(c=>c.id===clientId);
     if(!client)return;
     KBRHUrine.open(client,async screen=>{
@@ -527,6 +540,16 @@ function openRosterActionsModal(clientId) {
         <button type="button" data-roster-action="waitlist">Move back to Waitlist</button>
         <button type="button" data-roster-action="archive">Archive / Discharge</button>
       `;
+
+    actionList.querySelectorAll('[data-roster-action="urine"]').forEach(button => {
+      if (!kbrhCanAccessUrineHistory()) {
+        button.disabled = true;
+        button.title = "Authorized personnel only.";
+        button.setAttribute("aria-label", "Urine Screens / History — Authorized personnel only");
+        button.style.opacity = "0.45";
+        button.style.cursor = "not-allowed";
+      }
+    });
 
     actionList.querySelectorAll("[data-roster-action]").forEach(button => {
       button.addEventListener("click", () => {
@@ -985,12 +1008,12 @@ function renderResidentCards(){
  const id=escapeHtml(String(c.id||''));
  const discharge=getDischargeDate(c);
  return `<article class="krc-card">
- <header class="krc-head">
+ <div class="krc-head">
    <div class="krc-identity">
      <div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div>
    </div>
    <div class="krc-flags">${kbrhTHCTags(c)}</div>
- </header>
+ </div>
  <div class="krc-bottom"><div class="krc-info">
  <div><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
  <div><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>

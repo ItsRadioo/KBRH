@@ -54,3 +54,17 @@
 @media (max-width:680px) {
  .page-roster .phase1-roster-section #phase1ResidentCards.kbrh-resident-cards {grid-template-columns:minmax(0,1fr)!important;}
 }
+
+/* Integrated card identity: no independent strip, border, or inherited site header styling. */
+.page-roster #phase1ResidentCards .krc-card .krc-head {
+  background:transparent!important; background-image:none!important;
+  border:0!important; border-bottom:0!important; box-shadow:none!important;
+  border-radius:0!important; padding:0!important; margin:0 0 10px!important;
+  min-height:0!important; width:auto!important; position:static!important;
+  color:inherit!important;
+}
+.page-roster #phase1ResidentCards .krc-card .krc-identity {
+  padding:0!important; margin:0!important; background:transparent!important;
+  border:0!important; box-shadow:none!important;
+}
+.page-roster #phase1ResidentCards .krc-card .krc-bottom {padding-top:0!important;}
