@@ -976,18 +976,27 @@ function kbrhTHCTags(client){
 }
 function renderResidentCards(){
  const target=document.getElementById('phase1ResidentCards');if(!target)return;
+ // Position is global to the active Phase 1 roster, not the current search result.
+ const all=Array.isArray(rosterState.roster)?rosterState.roster.filter(c=>c&&c!=="temp"&&!c.archived&&(c.phase||"phase1")==="phase1"):[];
+ all.sort((a,b)=>String(a.entryDate||"9999-12-31").localeCompare(String(b.entryDate||"9999-12-31"))||String(a.id||"").localeCompare(String(b.id||"")));
+ const positions=new Map(all.map((c,i)=>[c.id,i+1]));
  const clients=getPhaseClients('phase1');
  target.innerHTML=clients.length?clients.map(c=>{
  const id=escapeHtml(String(c.id||''));
  const discharge=getDischargeDate(c);
  return `<article class="krc-card">
- <header class="krc-head"><div class="krc-identity"><div class="krc-name">${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div>${kbrhCardOPOC(c)}</div><div class="krc-flags">${kbrhTHCTags(c)}</div></header>
+ <header class="krc-head">
+   <div class="krc-identity">
+     <div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div>
+   </div>
+   <div class="krc-flags">${kbrhTHCTags(c)}</div>
+ </header>
  <div class="krc-bottom"><div class="krc-info">
  <div><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
  <div><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>
  <div><small>EMERGENCY CONTACT</small><strong>${escapeHtml(c.contact||'—')}</strong><span>${escapeHtml(c.contactPhone||'')}</span></div>
  <div><small>DISCHARGE</small><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
- </div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div>
+ </div><div class="krc-controls"><div class="krc-opoc">${kbrhCardOPOC(c)}</div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div></div>
  </article>`;
  }).join(''):'<p class="empty">No Phase 1 residents.</p>';
 }

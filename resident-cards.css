@@ -11,3 +11,30 @@
 @media(max-width:350px){.krc-name{font-size:.96rem}.krc-info strong{font-size:.75rem}.krc-tag{font-size:.61rem}.krc-buttons{width:65px}}
 
 /* The card view omits address and city; original values remain in resident details and editing. */
+
+
+/* Resident card refinement: no inherited dark roster header, flexible information and actions */
+.kbrh-resident-cards .krc-card .krc-head{
+ background:#fff!important;color:#172033!important;
+ padding:0 0 9px!important;margin:0!important;
+ border:0!important;border-bottom:1px solid #e9edf3!important;
+ border-radius:0!important;min-height:0!important;
+}
+.kbrh-resident-cards .krc-card .krc-name,
+.kbrh-resident-cards .krc-card .krc-id{color:#172033!important}
+.kbrh-resident-cards .krc-card .krc-id{color:#667085!important}
+.krc-position{font-size:.9em;font-weight:800;color:#50637c;white-space:nowrap}
+.krc-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:0 0 auto;min-width:0}
+.krc-opoc{max-width:92px;min-width:0}
+.krc-opoc .krc-tag{white-space:normal;text-align:center;overflow-wrap:break-word}
+.krc-bottom{align-items:center;gap:clamp(5px,.65vw,10px)}
+.krc-info{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:clamp(4px,.65vw,10px)}
+.krc-buttons{width:clamp(65px,5.5vw,78px)}
+@media(max-width:450px){
+ .krc-controls{gap:4px}
+ .krc-opoc{max-width:68px}
+ .krc-buttons{width:65px}
+ .krc-info{column-gap:4px}
+ .krc-info small{font-size:.59rem}
+ .krc-info strong{font-size:.74rem}
+}
