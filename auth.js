@@ -267,7 +267,7 @@ function initializeKbrhNotifications(user=auth.currentUser){
   },e=>console.warn("Notification subscription failed",e));
 }
 function showRequiredKbrhAcknowledgement(rows){
-  const pending=rows.filter(n=>n.requiresAcknowledgement!==false&&n.source==="digital-logbook"&&!n.acknowledgedAt);
+  const pending=rows.filter(n=>n.requiresAcknowledgement!==false&&(n.source==="digital-logbook"||n.source==="thc-retest")&&!n.acknowledgedAt);
   let overlay=document.getElementById("kbrhRequiredAckOverlay");
   if(!pending.length){
     if(overlay)overlay.remove();

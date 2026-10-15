@@ -77,6 +77,7 @@ function addClient() {
 
   KBRHUrine.open(client, async screen=>{
     client.urineScreens=[screen];
+    kbrhApplyTHCProtocol(client,screen);
     rosterState.roster.push(client);
     if(!await saveRoster()){rosterState.roster=rosterState.roster.filter(x=>x.id!==client.id);throw Error("Save failed");}
     clearClientForm();renderRoster();
@@ -223,6 +224,8 @@ function getMissingAdmissionFields(client) {
 
 function getCompletionBadge(client) {
   const missing = getMissingAdmissionFields(client);
+  const thc=kbrhActiveTHCScreen(client);
+  if(thc&&!thc.completed)return `<span class="status warning-status">THC Protocol</span>`;
 
   if (!missing.length) {
     return `<span class="status active">Complete</span>`;
@@ -481,6 +484,8 @@ function handleRosterAction(clientId, action) {
     if(!client)return;
     KBRHUrine.open(client,async screen=>{
       client.urineScreens=[...(client.urineScreens||[]),screen];
+      if(screen.results?.THC==="Positive")kbrhApplyTHCProtocol(client,screen);
+      else if(kbrhActiveTHCScreen(client)?.completed && client.admissionStatus==="THC Protocol")client.admissionStatus="Complete";
       if(!await saveRoster()){client.urineScreens.pop();throw Error("Save failed");}
       renderRoster();
     },false);
@@ -875,9 +880,11 @@ function matchesRosterSearch(client) {
 
 function renderRoster() {
   updateEditAllButtons();
+  document.body.classList.toggle("kbrh-editing-roster",Boolean(editingAll || editingClientId));
   updatePhase1ResidentCount();
   updateRoomTrackers();
   renderPhase1Roster();
+  renderResidentCards();
   renderPhase2Roster();
   renderArchivedRoster();
 }
@@ -934,6 +941,55 @@ function getArchivedClients() {
         .filter(client => client && client !== "temp" && client.archived && matchesRosterSearch(client))
         .sort((a, b) => String(b.archivedAt || "").localeCompare(String(a.archivedAt || "")))
     : [];
+}
+
+
+// Phase 1 compact resident cards; original roster table remains available during Edit All.
+function kbrhApplyTHCProtocol(client,screen){
+ if(screen?.results?.THC!=="Positive")return;
+ client.admissionStatus="THC Protocol";
+ client.notes=Array.isArray(client.notes)?client.notes:[];
+ client.notes.unshift({id:crypto.randomUUID(),author:"KBRH Intake",text:`THC Protocol — Retest due ${screen.thcRetestDue}. Admission screening positive for THC on ${screen.date}. Follow-up screening required in 45 days.`,createdAt:new Date().toISOString()});
+}
+function kbrhActiveTHCScreen(client){
+ const records=Array.isArray(client.urineScreens)?client.urineScreens:[];
+ const ordered=records.slice().sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+ const positive=ordered.filter(r=>r.results?.THC==="Positive" && r.thcRetestDue);
+ if(!positive.length)return null;
+ const last=positive[positive.length-1];
+ const completed=ordered.some(r=>r!==last && r.date>=last.date && r.type!=="Admission" && r.results?.THC!==undefined && r.createdAt>last.createdAt);
+ return {record:last,completed};
+}
+function kbrhCardOPOC(client){
+ if(client.opocCompleted)return '<span class="krc-tag krc-good">OPOC Complete</span>';
+ if(client.entryDate && getDaysSinceAdmission(client)>=40)return '<span class="krc-tag krc-warn">OPOC Due</span>';
+ return '';
+}
+function kbrhTHCTags(client){
+ const screen=kbrhActiveTHCScreen(client);
+ if(!screen)return '';
+ if(screen.completed)return '<span class="krc-tag krc-good">THC Retest Complete</span>';
+ const date=screen.record.thcRetestDue;
+ const today=new Date().toLocaleDateString('en-CA');
+ const status=today<date?'Retest: '+formatDate(date):today===date?'THC Retest Due':'THC Retest Overdue';
+ return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag '+(today>=date?'krc-danger':'krc-muted')+'">'+escapeHtml(status)+'</span>';
+}
+function renderResidentCards(){
+ const target=document.getElementById('phase1ResidentCards');if(!target)return;
+ const clients=getPhaseClients('phase1');
+ target.innerHTML=clients.length?clients.map(c=>{
+ const id=escapeHtml(String(c.id||''));
+ const discharge=getDischargeDate(c);
+ return `<article class="krc-card">
+ <header class="krc-head"><div class="krc-identity"><div class="krc-name">${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div>${kbrhCardOPOC(c)}</div><div class="krc-flags">${kbrhTHCTags(c)}</div></header>
+ <div class="krc-bottom"><div class="krc-info">
+ <div><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
+ <div><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>
+ <div><small>EMERGENCY CONTACT</small><strong>${escapeHtml(c.contact||'—')}</strong><span>${escapeHtml(c.contactPhone||'')}</span></div>
+ <div><small>DISCHARGE</small><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
+ </div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div>
+ </article>`;
+ }).join(''):'<p class="empty">No Phase 1 residents.</p>';
 }
 
 function renderPhase1Roster() {

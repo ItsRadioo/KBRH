@@ -1,0 +1,9 @@
+KBRH Resident Cards + THC Retest Notifications
+
+1. Upload the flat website files to the same hosting destination as the existing KBRH site, replacing the matching files.
+2. Deploy the updated Cloud Functions index.js from the Firebase functions source directory. It adds notifyTHCRetests, scheduled for 08:00 America/Toronto daily. This requires the Firebase project to support scheduled functions (Cloud Scheduler / Blaze billing).
+3. Verify the Cloud Function is deployed and its service account can read kbrh/choreTracker and kbrh/staffProfiles and create kbrhNotifications.
+4. Staff positions in kbrh/staffProfiles must contain 'Attendant' or 'Intake Coordinator' for automatic alerts.
+5. Verify on a staging project with test residents, screening history, and accounts before deploying to production. This package has not been tested against live Firebase.
+6. The existing notification UI in auth.js displays an acknowledgement-required popup for THC retest notifications. Acknowledgement does not mark a retest complete.
+7. Historic residents without urineScreens are not automatically put on THC Protocol.
