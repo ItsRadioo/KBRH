@@ -261,6 +261,14 @@ function normalizeAppState(state) {
         entryDate: client.entryDate || "",
         expectedDischargeDate: client.expectedDischargeDate || "",
         opocCompleted: client.opocCompleted || false,
+        // Keep urine screening history intact across every roster save/load.
+        // Previously normalizeAppState discarded these fields, causing saved
+        // screens and the THC Protocol card flag to disappear immediately.
+        urineScreens: Array.isArray(client.urineScreens)
+          ? client.urineScreens.map(screen => ({ ...screen, results: { ...(screen.results || {}) } }))
+          : [],
+        admissionStatus: client.admissionStatus || "",
+        thcRetestDue: client.thcRetestDue || "",
         phase: client.phase || "phase1",
         phase2AdmissionDate: client.phase2AdmissionDate || "",
         archived: client.archived || false,
