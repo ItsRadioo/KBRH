@@ -222,6 +222,7 @@ async function requireLogin() {
         if (KBRH_PAGE_LIST.includes(target) && !isKbrhAdmin(user) && Array.isArray(profile?.pageAccess) && !profile.pageAccess.includes(target)) link.remove();
       });
       initializeKbrhNotifications(user);
+      void showTHCRetestLoginReminder(user, profile);
     }
   });
 }
@@ -229,6 +230,7 @@ async function requireLogin() {
 async function logout() {
   sessionStorage.removeItem(KBRH_SESSION_KEY);
   kbrhStaffProfile = null;
+  sessionStorage.removeItem("kbrh.thcReminderShown");
   try { await auth.signOut(); } finally { window.location.replace("login.html"); }
 }
 
@@ -352,4 +354,40 @@ async function enableKbrhBrowserNotifications(){
     if(!(await Notification.requestPermission()==="granted"))return;
     await loadFirebaseMessagingSdk();const registration=await navigator.serviceWorker.register("firebase-messaging-sw.js");const token=await firebase.messaging().getToken({vapidKey,serviceWorkerRegistration:registration});if(!token)throw new Error("No push token returned.");const user=auth.currentUser;await db.collection("kbrhPushTokens").doc(user.uid).set({uid:user.uid,email:user.email||"",tokens:firebase.firestore.FieldValue.arrayUnion(token),updatedAt:new Date().toISOString()},{merge:true});alert("Browser alerts are enabled on this device.");
   }catch(error){console.error(error);alert("Browser alerts could not be enabled. In-app notifications will continue to work.");}
+}
+
+// One acknowledgement-required reminder per login session; acknowledging does
+// not complete a retest. A recorded follow-up stops future reminders.
+function thcLocalDay(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const o=Object.fromEntries(p.map(x=>[x.type,x.value]));return `${o.year}-${o.month}-${o.day}`;}
+function thcAddDays(s,n){const x=String(s||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(x))return null;const d=new Date(x+'T12:00:00Z');if(isNaN(d))return null;d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function thcDueResidents(roster){const today=thcLocalDay();return (Array.isArray(roster)?roster:[]).flatMap(c=>{
+ if(!c||c.archived||c.dischargedAt)return [];
+ const screens=(Array.isArray(c.urineScreens)?c.urineScreens:[]).slice().sort((a,b)=>String(a.date||a.createdAt||'').localeCompare(String(b.date||b.createdAt||''))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+ const positive=v=>['positive','pos','true','1','+'].includes(String(v??'').toLowerCase().trim());
+ const i=screens.findLastIndex(r=>positive(r?.results?.THC));if(i<0)return [];
+ const screen=screens[i],due=String(screen.thcRetestDue||'').slice(0,10)||thcAddDays(screen.date,45);
+ if(!due||today<thcAddDays(due,-1))return [];
+ if(screens.slice(i+1).some(r=>String(r.type||'').toLowerCase()==='follow-up'&&r.results?.THC!==undefined))return [];
+ return [{name:[c.firstName,c.lastName].filter(Boolean).join(' ')||'Resident',id:c.clientId||'—',due,overdue:today>due}];
+});}
+async function showTHCRetestLoginReminder(user,profile){
+ const role=String(profile?.position||'')+' '+String(profile?.role||'');
+ if(profile?.active===false||!/attendant|intake\s*coordinator/i.test(role))return;
+ const key='kbrh.thcReminderShown';if(sessionStorage.getItem(key)===user.uid)return;
+ sessionStorage.setItem(key,user.uid);
+ try{
+  const snap=await db.collection('kbrh').doc('choreTracker').get();
+  if(auth.currentUser?.uid!==user.uid)return;
+  const pending=thcDueResidents(snap.data()?.roster);if(!pending.length)return;
+  const overlay=document.createElement('div');overlay.id='kbrhTHCRetestLoginOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#081422b8;display:flex;align-items:center;justify-content:center;padding:16px';
+  const panel=document.createElement('section');panel.setAttribute('role','alertdialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','thcLoginTitle');
+  panel.style.cssText='background:white;color:#142b40;border-radius:12px;padding:24px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 18px 50px #0005';
+  const title=document.createElement('h2');title.id='thcLoginTitle';title.textContent='THC follow-up screening reminder';panel.append(title);
+  const desc=document.createElement('p');desc.textContent='The following residents need a THC follow-up screening. This reminder returns on every login until a follow-up is recorded.';panel.append(desc);
+  const list=document.createElement('ul');pending.forEach(x=>{const li=document.createElement('li');li.textContent=`${x.name} (Client #${x.id}) — ${x.overdue?'OVERDUE':'Due'}: ${x.due}`;li.style.marginBottom='8px';list.append(li)});panel.append(list);
+  const label=document.createElement('label');label.style.cssText='display:flex;gap:10px;align-items:center;margin:16px 0';
+  const check=document.createElement('input');check.type='checkbox';label.append(check,document.createTextNode('I have reviewed these reminders.'));panel.append(label);
+  const button=document.createElement('button');button.type='button';button.textContent='Acknowledge and continue';button.disabled=true;check.onchange=()=>button.disabled=!check.checked;button.onclick=()=>overlay.remove();panel.append(button);overlay.append(panel);document.body.append(overlay);
+ }catch(err){sessionStorage.removeItem(key);console.warn('THC login reminder could not load',err)}
 }
