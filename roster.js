@@ -976,12 +976,14 @@ function kbrhApplyTHCProtocol(client,screen){
 }
 function kbrhActiveTHCScreen(client){
  const records=Array.isArray(client.urineScreens)?client.urineScreens:[];
- const ordered=records.slice().sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
- const positive=ordered.filter(r=>r.results?.THC==="Positive" && r.thcRetestDue);
- if(!positive.length)return null;
- const last=positive[positive.length-1];
- const completed=ordered.some(r=>r!==last && r.date>=last.date && r.type!=="Admission" && r.results?.THC!==undefined && r.createdAt>last.createdAt);
- return {record:last,completed};
+ const ordered=records.slice().sort((a,b)=>String(a.date||a.createdAt||"").localeCompare(String(b.date||b.createdAt||""))||String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+ const positives=ordered.filter(r=>String(r.results?.THC||"").toLowerCase()==="positive");
+ if(!positives.length)return null;
+ const last=positives[positives.length-1];
+ const due=last.thcRetestDue||(()=>{const d=new Date(String(last.date||"").slice(0,10)+"T12:00:00");if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+45);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");})();
+ const lastIndex=ordered.indexOf(last);
+ const completed=ordered.slice(lastIndex+1).some(r=>r.type!=="Admission"&&r.results?.THC!==undefined&&String(r.results.THC).toLowerCase()!=="positive");
+ return {record:{...last,thcRetestDue:due},completed};
 }
 function kbrhCardOPOC(client){
  if(client.opocCompleted)return '<span class="krc-tag krc-good">OPOC Complete</span>';
@@ -993,8 +995,8 @@ function kbrhTHCTags(client){
  if(!screen)return '';
  if(screen.completed)return '<span class="krc-tag krc-good">THC Retest Complete</span>';
  const date=screen.record.thcRetestDue;
- const today=new Date().toLocaleDateString('en-CA');
- const status=today<date?'Retest: '+formatDate(date):today===date?'THC Retest Due':'THC Retest Overdue';
+ const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+ const status=!date?'Retest date unavailable':today<date?'Retest: '+formatDate(date):today===date?'THC Retest Due':'THC Retest Overdue';
  return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag '+(today>=date?'krc-danger':'krc-muted')+'">'+escapeHtml(status)+'</span>';
 }
 function renderResidentCards(){
