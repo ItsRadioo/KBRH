@@ -274,7 +274,7 @@ function normalizeAppState(state) {
         archived: client.archived || false,
         archivedAt: client.archivedAt || "",
         dischargedAt: client.dischargedAt || client.archivedAt || "",
-        retentionUntil: client.retentionUntil || (client.archivedAt ? (()=>{const d=new Date(client.archivedAt);if(Number.isNaN(d.getTime()))return "";d.setFullYear(d.getFullYear()+2);return d.toISOString();})() : ""),
+        retentionUntil: (() => { const raw = client.retentionUntil; const valid = raw && !Number.isNaN(new Date(raw).getTime()); if (valid) return raw; const base = client.dischargedAt || client.archivedAt; if (!base) return ""; const d = new Date(base); if (Number.isNaN(d.getTime())) return ""; d.setFullYear(d.getFullYear() + 2); return d.toISOString(); })(),
         archiveReason: client.archiveReason || "",
         dischargeOutcomeCode: client.dischargeOutcomeCode || "",
         dischargeOutcomeLabel: client.dischargeOutcomeLabel || "",

@@ -234,15 +234,43 @@ function getCompletionBadge(client) {
   return `<span class="status warning-status">Missing: ${escapeHtml(missing.join(", "))}</span>`;
 }
 
-function formatDate(value) {
-  if (!value) return "";
+function kbrhParseDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
+  if (typeof value === "object" && typeof value.toDate === "function") {
+    const date = value.toDate();
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+  if (typeof value === "object" && typeof value.seconds === "number") {
+    const date = new Date(value.seconds * 1000);
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? new Date(`${raw}T12:00:00`)
+    : new Date(raw);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
 
-  const date = new Date(value + "T00:00:00");
+function formatDate(value) {
+  const date = kbrhParseDate(value);
+  if (!date) return "—";
   return date.toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit"
+    year: "numeric", month: "short", day: "2-digit"
   });
+}
+
+function kbrhRetentionUntil(client) {
+  const saved = kbrhParseDate(client.retentionUntil);
+  if (saved) return saved;
+  const discharge = kbrhParseDate(client.dischargedAt) ||
+    kbrhParseDate(client.archivedAt) ||
+    kbrhParseDate(getDischargeDate(client));
+  if (!discharge) return null;
+  const expiry = new Date(discharge.getTime());
+  expiry.setFullYear(expiry.getFullYear() + 2);
+  return expiry;
 }
 
 function formatDateTime(value) {
@@ -1310,7 +1338,7 @@ function renderArchivedRoster() {
             <td>${escapeHtml(formatDate(client.entryDate))}</td>
             <td>${escapeHtml(formatDate(getDischargeDate(client)))}</td>
             <td>${escapeHtml(formatDateTime(client.archivedAt))}</td>
-            <td>${escapeHtml(formatDate(client.retentionUntil))}</td>
+            <td>${escapeHtml(formatDate(kbrhRetentionUntil(client)))}</td>
             <td>${escapeHtml(client.archiveReason)}</td>
             <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
             <td>
