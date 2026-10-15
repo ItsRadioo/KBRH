@@ -977,12 +977,21 @@ function kbrhApplyTHCProtocol(client,screen){
 function kbrhActiveTHCScreen(client){
  const records=Array.isArray(client.urineScreens)?client.urineScreens:[];
  const ordered=records.slice().sort((a,b)=>String(a.date||a.createdAt||"").localeCompare(String(b.date||b.createdAt||""))||String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
- const positives=ordered.filter(r=>String(r.results?.THC||"").toLowerCase()==="positive");
- if(!positives.length)return null;
+ const isPositive=r=>{const v=r?.results?.THC??r?.THC??r?.thc;return v===true||v===1||["positive","pos","+","true","checked"].includes(String(v??"").trim().toLowerCase());};
+ const positives=ordered.filter(isPositive);
+ // Historical records can retain the THC Protocol status even if a previous save
+ // omitted the urineScreens array. Never fabricate a positive laboratory result.
+ if(!positives.length){
+  if(String(client.admissionStatus||"").trim().toLowerCase()!=="thc protocol")return null;
+  const note=(Array.isArray(client.notes)?client.notes:[]).find(n=>/THC Protocol/i.test(typeof n==="string"?n:n?.text||""));
+  const txt=typeof note==="string"?note:note?.text||"";
+  const match=txt.match(/Retest due\s+(\d{4}-\d{2}-\d{2})/i);
+  return {record:{thcRetestDue:client.thcRetestDue||match?.[1]||null},completed:false,legacy:true};
+ }
  const last=positives[positives.length-1];
  const due=last.thcRetestDue||(()=>{const d=new Date(String(last.date||"").slice(0,10)+"T12:00:00");if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+45);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");})();
  const lastIndex=ordered.indexOf(last);
- const completed=ordered.slice(lastIndex+1).some(r=>r.type!=="Admission"&&r.results?.THC!==undefined&&String(r.results.THC).toLowerCase()!=="positive");
+ const completed=ordered.slice(lastIndex+1).some(r=>r.type!=="Admission"&&r.results?.THC!==undefined&&!isPositive(r));
  return {record:{...last,thcRetestDue:due},completed};
 }
 function kbrhCardOPOC(client){
@@ -993,11 +1002,11 @@ function kbrhCardOPOC(client){
 function kbrhTHCTags(client){
  const screen=kbrhActiveTHCScreen(client);
  if(!screen)return '';
- if(screen.completed)return '<span class="krc-tag krc-good">THC Retest Complete</span>';
+ if(screen.completed)return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag krc-good">THC Retest Complete</span>';
  const date=screen.record.thcRetestDue;
  const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
  const status=!date?'Retest date unavailable':today<date?'Retest: '+formatDate(date):today===date?'THC Retest Due':'THC Retest Overdue';
- return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag '+(today>=date?'krc-danger':'krc-muted')+'">'+escapeHtml(status)+'</span>';
+ return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag '+(date&&today>=date?'krc-danger':'krc-muted')+'">'+escapeHtml(status)+'</span>';
 }
 function renderResidentCards(){
  const target=document.getElementById('phase1ResidentCards');if(!target)return;
