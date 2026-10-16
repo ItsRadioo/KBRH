@@ -6,17 +6,32 @@ const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sun
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
 function activeResidents(){
-  return (chartState?.roster||[])
-    .filter(r => r && !r.archived && (r.phase || "phase1") === "phase1")
-    .sort((a,b)=>{
-      // Match the Phase 1 roster display order exactly: earliest entry/admission date first.
-      const aDate = a.entryDate || "9999-12-31";
-      const bDate = b.entryDate || "9999-12-31";
-      return aDate.localeCompare(bDate);
+  const roster = (chartState?.roster || [])
+    .filter(r => r && !r.archived && (r.phase || "phase1") === "phase1");
+  const admittedApplicantIds = new Set(roster.map(r => String(r.waitlistSourceId || "")).filter(Boolean));
+  const waitlist = chartState?.waitlist || [];
+  const pending = (chartState?.pendingAdmissions || [])
+    .filter(pa => pa && pa.status === "Pending Admission" && !admittedApplicantIds.has(String(pa.applicantId || "")))
+    .map(pa => {
+      const applicant = waitlist.find(a => String(a.id) === String(pa.applicantId)) || {};
+      return {
+        id: "pending:" + String(pa.id),
+        firstName: applicant.firstName || "",
+        lastName: applicant.lastName || "",
+        pendingDisplayName: pa.applicantName || "",
+        pendingAdmission: true,
+        entryDate: pa.expectedIntakeDate || "9999-12-31"
+      };
     });
+  // Active Phase 1 residents first (oldest admission first), then pending admissions.
+  const byDate = (a,b) => String(a.entryDate || "9999-12-31").localeCompare(String(b.entryDate || "9999-12-31"));
+  return [...roster.sort(byDate), ...pending.sort(byDate)];
 }
 
-function residentName(r){return [r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed Resident";}
+function residentName(r){
+  const name = r.pendingDisplayName || [r.firstName,r.lastName].filter(Boolean).join(" ") || "Unnamed Resident";
+  return r.pendingAdmission ? name + " (Pending Admission)" : name;
+}
 
 function ensureChartData(){
   chartState.chartData=chartState.chartData||{};
@@ -52,7 +67,7 @@ function laundryTable(){
     const d=chartState.chartData.laundry[r.id]||{};
     return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td></tr>`;
   }).join('');
-  return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident</th><th class="small-check-column">✓</th></tr></thead><tbody>${rows||'<tr><td colspan="2" class="empty-state">No active Phase 1 residents on the roster.</td></tr>'}</tbody></table>`;
+  return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident</th><th class="small-check-column">✓</th></tr></thead><tbody>${rows||'<tr><td colspan="2" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>'}</tbody></table>`;
 }
 
 function dayLabel(day){return day.slice(0,3);}
@@ -77,7 +92,7 @@ function weeklyTable(kind){
     ? `<div class="paper-chart-heading"><h2>Electronic Devices</h2><p>Mark two X's for multiple devices</p></div>`
     : `<div class="paper-chart-heading"><h2>Closed AA/NA Meetings Attended</h2><label class="meetings-week-label">Week Starting <input aria-label="Meetings week start date" data-kind="meetings-start-date" type="date" value="${esc(chartState.chartData.meetingsStartDate||'')}"></label></div>`;
   const headers=DAYS.map((d,i)=>kind==='electronics'?`<th>${dayLabel(d)}<span class="day-subhead">in</span></th>`:`<th>${dayLabel(d)}${meetingDate(i)?`<span class="day-subhead">${esc(shortPdfDate(meetingDate(i)))}</span>`:''}</th>`).join('');
-  return `${heading}<table class="resident-chart weekly-chart ${kind}-chart"><thead><tr><th>Resident</th>${headers}</tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty-state">No active Phase 1 residents on the roster.</td></tr>`}</tbody></table>`;
+  return `${heading}<table class="resident-chart weekly-chart ${kind}-chart"><thead><tr><th>Resident</th>${headers}</tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>`}</tbody></table>`;
 }
 function updateExportButton(){
   const btn=document.getElementById('printChartBtn');
@@ -89,7 +104,7 @@ function renderChart(){
   if(!chartState)return;ensureChartData();
   const title=document.getElementById('chartTitle'),hint=document.getElementById('chartHint'),box=document.getElementById('chartContainer');
   if(currentChart==='laundry'){title.textContent='Laundry Checklist';hint.textContent='Select the start date. The end date is automatically set six days later.';box.innerHTML=laundryTable();}
-  else if(currentChart==='electronics'){title.textContent='Electronic Devices Markoff';hint.textContent='Weekly electronic-device markoff for active Phase 1 residents. Export to Excel to adjust column widths or row heights before printing.';box.innerHTML=weeklyTable('electronics');}
+  else if(currentChart==='electronics'){title.textContent='Electronic Devices Markoff';hint.textContent='Weekly electronic-device markoff for Phase 1 residents and pending admissions. Export to Excel to adjust column widths or row heights before printing.';box.innerHTML=weeklyTable('electronics');}
   else{title.textContent='Meetings Chart';hint.textContent='Record meeting information for active Phase 1 residents throughout the week. Export to Excel to adjust the sheet before printing.';box.innerHTML=weeklyTable('meetings');}
   updateExportButton();
 }
