@@ -315,6 +315,7 @@
       [
         inputField("kwaFirst", "First Name", "", "text", true),
         inputField("kwaLast", "Last Name", "", "text", true),
+        inputField("kwaDob", "Date of Birth", "", "date", true),
         inputField("kwaContact", "Contact / Phone Number"),
         selectField("kwaStatus", "Status", "N/A", ["N/A", "Incarcerated", "Recent Resident", "Offer Given"], true),
         recentResidentFields("kwa"),
@@ -351,6 +352,7 @@
       id: crypto.randomUUID(),
       firstName: valueOf("kwaFirst"),
       lastName: valueOf("kwaLast"),
+      dob: valueOf("kwaDob"),
       contact: typeof formatPhoneNumber === "function"
         ? formatPhoneNumber(valueOf("kwaContact"))
         : valueOf("kwaContact"),
@@ -366,6 +368,10 @@
       callInHistory: []
     };
 
+    if(!applicant.dob){alert("Date of birth is required.");return;}
+    const dnr=KBRHDNR.match(waitlistState,applicant);
+    if(dnr){applicant.dnrFlagId=dnr.id;alert(KBRHDNR.warning(dnr)+"\n\nApplicant can be waitlisted but cannot proceed without ED approval.");}
+    if(dnr && applicant.status==="Offer Given")applicant.status="N/A";
     waitlistState.waitlist.push(applicant);
     closeModal();
     renderWaitlist();
@@ -394,6 +400,7 @@
       [
         inputField("kwFirst", "First Name", applicant.firstName, "text", true),
         inputField("kwLast", "Last Name", applicant.lastName, "text", true),
+        inputField("kwDob", "Date of Birth", applicant.dob||"", "date", true),
         inputField("kwContact", "Contact", applicant.contact),
         selectField("kwStatus", "Status", applicant.status || "N/A", ["N/A", "Incarcerated", "Recent Resident", "Offer Given"], true),
         recentResidentFields("kw", applicant),
@@ -416,6 +423,9 @@
     Object.assign(applicant, recent);
     applicant.firstName = valueOf("kwFirst");
     applicant.lastName = valueOf("kwLast");
+    applicant.dob = valueOf("kwDob");
+    if(!applicant.dob){alert("Date of birth is required.");return;}
+    if(valueOf("kwStatus")==="Offer Given" && KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
     applicant.contact = valueOf("kwContact");
     applicant.status = recent.recentResident ? "Recent Resident" : (valueOf("kwStatus") || "N/A");
     applicant.city = valueOf("kwCity");

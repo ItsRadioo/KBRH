@@ -480,6 +480,7 @@ function addWaitlistApplicant() {
   const applicant = {
     id: crypto.randomUUID(),
     lastName: getInputValue("lastName"),
+    dob: getInputValue("dob"),
     firstName: getInputValue("firstName"),
     contact: formatPhoneNumber(getInputValue("contact")),
     status: getInputValue("status") || "N/A",
@@ -501,6 +502,7 @@ function addWaitlistApplicant() {
     activityHistory: []
   };
 
+  if (!applicant.dob) { alert("Date of birth is required for the Do Not Readmit check."); return; }
   if (!applicant.lastName || !applicant.firstName) {
     alert("Enter at least a first and last name.");
     return;
@@ -520,6 +522,8 @@ function addWaitlistApplicant() {
   if (returningResident) {
     appendPersonActivity(applicant,"Alert","At least 2 previous KBRH admissions found within the past 2 years","Applicant requires review under the repeat-admission treatment rule.");
   }
+  const dnrMatch=KBRHDNR.match(waitlistState,applicant);
+  if(dnrMatch){applicant.dnrFlagId=dnrMatch.id;alert(KBRHDNR.warning(dnrMatch)+"\n\nApplicant may be waitlisted, but admission requires ED approval.");}
   waitlistState.waitlist.push(applicant);
   clearWaitlistForm();
   renderWaitlist();
@@ -618,6 +622,7 @@ function openMoveToRosterModal(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);
   if(!applicant)return;
   if(pendingApplicationGuard(applicant,"admit"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"admit"))return;
   pendingMoveToRosterApplicantId=applicantId;
   document.getElementById("moveRosterApplicantName").textContent=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
   const dateInput=document.getElementById("moveRosterEntryDate");
@@ -642,6 +647,7 @@ async function confirmMoveToRoster(screenRecord){
   const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
   if(pendingApplicationGuard(waitlistState.waitlist[applicantIndex],"admit"))return;
+  if(KBRHDNR.guard(waitlistState,waitlistState.waitlist[applicantIndex],"admit"))return;
   const entryDate=document.getElementById("moveRosterEntryDate")?.value||"";
   if(!confirmRecentAdmission(waitlistState.waitlist[applicantIndex]))return;
   if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return;}
@@ -817,7 +823,12 @@ async function authorizeRepeatAdmissionOverride(applicant, actionLabel){
 
 async function giveOfferQuick(applicantId){
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived); if(!applicant)return;
-  if(pendingApplicationGuard(applicant,"give an offer"))return;
+  if(pendingApplicationGuard(applicant,"give an offer"))return;if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
+  if(KBRHDNR.guard(waitlistState,applicant,"give an offer"))return;
   if (!confirmRecentAdmission(applicant)) return;
   if(applicant.status==="Incarcerated"){ alert("Update the applicant status before giving an offer."); return; }
   if(!(await authorizeRepeatAdmissionOverride(applicant,"give an offer"))) return;
@@ -826,7 +837,7 @@ async function giveOfferQuick(applicantId){
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
   await saveWaitlist(); renderWaitlist();
 }
-async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(pendingApplicationGuard(applicant,"start pre-screening"))return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(pendingApplicationGuard(applicant,"start pre-screening"))return;if(KBRHDNR.guard(waitlistState,applicant,"start pre-screening"))return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
   if(isPendingApplication(item))return `<button type="button" disabled class="secondary">Pending Application — On Hold</button>`;
   if(item?.status === "Recent Resident" && !recentEligibilityDate(item)) return `<button type="button" class="secondary" disabled title="Verify discharge date">Verify discharge date</button>`;
@@ -1232,6 +1243,9 @@ function renderRecentTransfers(){
 }
 
 function renderWaitlist() {
+  const dnrBanner=document.getElementById("dnrWaitlistWarning");
+  if(dnrBanner){const matches=(waitlistState.waitlist||[]).filter(a=>!a.archived&&KBRHDNR.match(waitlistState,a));dnrBanner.hidden=!matches.length;dnrBanner.textContent=matches.length?`⚠ DO NOT READMIT — ${matches.length} applicant(s) require Executive Director review. See Do Not Readmit page.`:"";}
+
   renderUpcomingIntakes();
   renderRecentTransfers();
   document.body.classList.toggle("waitlist-editing-active", Boolean(editingApplicantId));

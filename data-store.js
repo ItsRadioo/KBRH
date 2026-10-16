@@ -83,6 +83,7 @@ function defaultAppState() {
     history: [],
     mealSchedule: defaultMealSchedule(),
     waitlist: [],
+    doNotReadmit: [],
     roster: [],
     counselingNotes: [],
     verbalWarnings: [],
@@ -216,12 +217,14 @@ function normalizeAppState(state) {
   merged.history = Array.isArray(merged.history) ? merged.history : [];
   merged.mealSchedule = normalizeMealSchedule(merged.mealSchedule);
 
+  merged.doNotReadmit = Array.isArray(merged.doNotReadmit) ? merged.doNotReadmit : [];
   merged.waitlist = Array.isArray(merged.waitlist)
     ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
         id: item.id || crypto.randomUUID(),
         lastName: kbrhUpperName(item.lastName || ""),
         firstName: kbrhUpperName(item.firstName || ""),
         dob: item.dob || "",
+        dnrApproval: item.dnrApproval || null,
         contact: kbrhDisplayPhone(item.contact),
         status: item.status || "",
         city: item.city || "",

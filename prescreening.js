@@ -372,6 +372,7 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
       }
 
       if(localRecord.status==="Completed" && ["approved","scheduled-intake","detox"].includes(localRecord.outcome)){
+        if(KBRHDNR.guard(latest,applicant,"move to Pending Admissions"))throw new Error("ED approval required for DNR match");
         latest.pendingAdmissions=Array.isArray(latest.pendingAdmissions)?latest.pendingAdmissions:[];
         const x=localRecord.answers||{};
         applicant.admissionStage="Pending Admission";
@@ -572,6 +573,7 @@ async function movePrescreenApplicantToRoster(){
 }
 function closePrescreenMoveRoster(){pendingPrescreenMoveApplicantId=null;$("prescreenMoveRosterModal").classList.add("hidden");}
 async function confirmPrescreenMoveRoster(){
+  if(KBRHDNR.guard(prescreenState,(prescreenState.waitlist||[]).find(a=>a.id===pendingPrescreenMoveApplicantId),"admit"))return;
   const applicantIndex=(prescreenState?.waitlist||[]).findIndex(a=>a.id===pendingPrescreenMoveApplicantId&&!a.archived);
   if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closePrescreenMoveRoster();return;}
   if(prescreenState.waitlist[applicantIndex].status==="Pending Application"){alert("Pending Application hold: admission is blocked.");return;}

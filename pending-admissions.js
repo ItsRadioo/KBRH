@@ -8,7 +8,7 @@ function render(){const rows=pendingRows();document.getElementById('pendingCount
 function openPendingModal(id){const pa=pendingRows().find(x=>x.id===id);if(!pa)return;editingPendingId=id;document.getElementById('pendingModalName').textContent=pa.applicantName;document.getElementById('pendingDate').value=pa.expectedIntakeDate||'';document.getElementById('pendingTime').value=pa.expectedIntakeTime||'';document.getElementById('pendingNotes').value=pa.notes||'';document.getElementById('pendingModal').classList.remove('hidden');document.body.classList.add('kbrh-modal-open');}
 function closePendingModal(){editingPendingId=null;document.getElementById('pendingModal').classList.add('hidden');document.body.classList.remove('kbrh-modal-open');}
 async function savePendingDetails(){const pa=(pendingState.pendingAdmissions||[]).find(x=>x.id===editingPendingId);if(!pa)return;pa.expectedIntakeDate=document.getElementById('pendingDate').value;pa.expectedIntakeTime=document.getElementById('pendingTime').value;pa.notes=document.getElementById('pendingNotes').value.trim();pa.updatedAt=new Date().toISOString();await saveAppState(pendingState);closePendingModal();render();}
-async function admitPending(id,screenRecord){const pa=pendingRows().find(x=>x.id===id);if(!pa)return;const a=applicantFor(pa);if(!screenRecord){
+async function admitPending(id,screenRecord){const pa=pendingRows().find(x=>x.id===id);if(!pa)return;const a=applicantFor(pa);if(KBRHDNR.guard(pendingState,a,"admit to the program"))return;if(!screenRecord){
   if(!window.KBRHUrine){alert('Urine screening form is unavailable. Admission has been blocked. Refresh and try again.');return;}
   KBRHUrine.open(a,async record=>{await admitPending(id,record);},true);
   return;
