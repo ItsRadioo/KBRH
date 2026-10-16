@@ -1046,19 +1046,22 @@ function renderResidentCards(){
  target.innerHTML=clients.length?clients.map(c=>{
  const id=escapeHtml(String(c.id||''));
  const discharge=getDischargeDate(c);
- return `<article class="krc-card">
- <div class="krc-head">
-   <div class="krc-identity">
-     <div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div>
-   </div>
+ const remaining=calculateDaysRemainingForClient(c);
+ const remainingNumber=Number.parseInt(remaining,10);
+ const remainingClass=!discharge?'krc-days-none':remaining==='Today'||remaining==='Due / Past'?'krc-days-urgent':Number.isFinite(remainingNumber)&&remainingNumber<=7?'krc-days-soon':'krc-days-ok';
+ return `<article class="krc-card krc-approved">
+  <div class="krc-topline">
+   <div class="krc-identity"><div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div></div>
    <div class="krc-flags">${kbrhTHCTags(c)}</div>
- </div>
- <div class="krc-bottom"><div class="krc-info">
- <div><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
- <div><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>
- <div><small>EMERGENCY CONTACT</small><strong>${escapeHtml(c.contact||'—')}</strong><span>${escapeHtml(c.contactPhone||'')}</span></div>
- <div><small>DISCHARGE</small><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
- </div><div class="krc-controls"><div class="krc-opoc">${kbrhCardOPOC(c)}</div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div></div>
+  </div>
+  <div class="krc-approved-content">
+   <div class="krc-field krc-room"><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
+   <div class="krc-field krc-days ${remainingClass}"><small>DAYS REMAINING</small><strong>${escapeHtml(remaining||'—')}</strong></div>
+   <div class="krc-field krc-phone"><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>
+   <div class="krc-field krc-contact"><small>EMERGENCY CONTACT</small><strong>${escapeHtml(c.contact||'—')}</strong><span>${escapeHtml(c.contactPhone||'')}</span></div>
+   <div class="krc-field krc-discharge"><small>DISCHARGE</small><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
+   <div class="krc-controls"><div class="krc-opoc">${kbrhCardOPOC(c)}</div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div>
+  </div>
  </article>`;
  }).join(''):'<p class="empty">No Phase 1 residents.</p>';
 }

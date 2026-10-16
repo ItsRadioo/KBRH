@@ -94,3 +94,29 @@
  background:none!important; border:0!important; box-shadow:none!important;
 }
 .page-roster #phase1ResidentCards .krc-card .krc-flags:empty {display:none!important}
+
+/* Approved resident-card reference: integrated identity, 3 data fields on top,
+   emergency contact + discharge beneath, actions on right. */
+.page-roster #phase1ResidentCards .krc-approved{display:block!important;padding:14px!important;overflow:hidden}
+.page-roster #phase1ResidentCards .krc-approved .krc-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:0 0 13px;background:transparent;border:0;box-shadow:none}
+.page-roster #phase1ResidentCards .krc-approved .krc-identity{flex:1;min-width:0;margin:0!important}
+.page-roster #phase1ResidentCards .krc-approved .krc-flags{position:static!important;flex-shrink:0;margin:0!important;align-items:flex-end!important;max-width:48%}
+.page-roster #phase1ResidentCards .krc-approved .krc-approved-content{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.12fr) auto;grid-template-areas:'room days phone controls' 'contact contact discharge controls';column-gap:clamp(7px,1vw,16px);row-gap:15px;align-items:start;min-width:0}
+.page-roster #phase1ResidentCards .krc-approved .krc-room{grid-area:room}
+.page-roster #phase1ResidentCards .krc-approved .krc-days{grid-area:days}
+.page-roster #phase1ResidentCards .krc-approved .krc-phone{grid-area:phone}
+.page-roster #phase1ResidentCards .krc-approved .krc-contact{grid-area:contact}
+.page-roster #phase1ResidentCards .krc-approved .krc-discharge{grid-area:discharge}
+.page-roster #phase1ResidentCards .krc-approved .krc-controls{grid-area:controls;display:flex;flex-direction:column;align-items:stretch;gap:5px;justify-self:end}
+.page-roster #phase1ResidentCards .krc-approved .krc-opoc{max-width:90px;text-align:center}
+.page-roster #phase1ResidentCards .krc-approved .krc-field{min-width:0}
+.page-roster #phase1ResidentCards .krc-approved .krc-field small{display:block;color:#65758b;font-size:.63rem;font-weight:700;line-height:1.25;margin:0 0 4px}
+.page-roster #phase1ResidentCards .krc-approved .krc-field strong{display:block;color:#14243c;font-size:.83rem;line-height:1.35;overflow-wrap:anywhere}
+.page-roster #phase1ResidentCards .krc-approved .krc-field span{display:block;color:#667085;font-size:.73rem;overflow-wrap:anywhere}
+.page-roster #phase1ResidentCards .krc-approved .krc-days-ok strong{color:#07813b}
+.page-roster #phase1ResidentCards .krc-approved .krc-days-soon strong{color:#a65a00}
+.page-roster #phase1ResidentCards .krc-approved .krc-days-urgent strong{color:#b42318}
+.page-roster #phase1ResidentCards .krc-approved .krc-buttons{width:clamp(63px,5.6vw,80px)}
+.page-roster #phase1ResidentCards .krc-approved .krc-buttons button{width:100%}
+@media(max-width:680px){.page-roster #phase1ResidentCards .krc-approved .krc-approved-content{column-gap:9px}}
+@media(max-width:400px){.page-roster #phase1ResidentCards .krc-approved .krc-approved-content{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr) auto;column-gap:5px}.page-roster #phase1ResidentCards .krc-approved .krc-buttons{width:61px}.page-roster #phase1ResidentCards .krc-approved .krc-field small{font-size:.57rem}}
