@@ -1,0 +1,7 @@
+/* KBRH floating staff messenger */
+#kbrh-chat-launch{position:fixed;right:22px;bottom:22px;z-index:9900;width:56px;height:56px;border-radius:50%;border:0;background:#245a85;color:white;font-size:25px;box-shadow:0 5px 22px #0004;cursor:pointer}
+#kbrh-chat-launch .kbrh-chat-unread{position:absolute;right:-4px;top:-6px;background:#b42318;color:#fff;font:bold 12px system-ui;border-radius:15px;padding:3px 6px}
+#kbrh-chat-pop{position:fixed;bottom:88px;right:22px;z-index:9901;width:min(410px,calc(100vw - 20px));height:min(590px,calc(100dvh - 115px));background:white;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 8px 40px #0005;display:none;overflow:hidden;flex-direction:column}
+#kbrh-chat-pop.open{display:flex}#kbrh-chat-pop.minimized{height:48px}#kbrh-chat-pop.minimized iframe{display:none}
+#kbrh-chat-pop-header{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#173c5c;color:white;font:600 14px system-ui}#kbrh-chat-pop-header span{flex:1}#kbrh-chat-pop-header button{background:transparent;color:white;border:0;font-size:20px;cursor:pointer;padding:0 5px}#kbrh-chat-pop iframe{width:100%;height:100%;border:0;flex:1}
+@media(max-width:600px){#kbrh-chat-pop{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0;max-height:none}#kbrh-chat-launch{right:15px;bottom:15px}}
