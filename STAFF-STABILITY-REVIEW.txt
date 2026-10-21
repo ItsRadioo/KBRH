@@ -1,0 +1,15 @@
+KBRH Staff Stability & File Consolidation — independent test build
+
+Changes:
+- Staff profile lookup has an 8-second upper wait bound; a failed/missing lookup can retry on later navigation.
+- Display name resolves name, fullName, or firstName + lastName; falls back to Firebase displayName/email.
+- Auth initialization catches unexpected errors; notification/retest startup is noncritical.
+- Chat unread listeners no longer recreate all per-conversation listeners for metadata-only updates.
+- Consolidated chat-badge.js into chat-floating.js and removed the redundant request.
+- Updated cache-busting script versions.
+
+IMPORTANT: This is NOT a verified live Firebase fix. A staff profile still cannot load if Firestore access is blocked, the profile does not exist, or the Firebase project is incorrect. Check browser console and Firestore permissions if the symptom continues.
+
+Independent test: deploy to a separate staging Firebase project and test with 2+ non-admin accounts. Verify names, roster/dashboard loads, chat and notifications, and page navigation. Do not put resident data in a public test deployment.
+
+No Firestore security rules were loosened. Other unrelated scripts remain separate for safe maintenance.

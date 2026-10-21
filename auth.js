@@ -45,21 +45,26 @@ async function ensureSessionPersistence() {
 }
 
 function fallbackStaffName(user = auth.currentUser) {
-  if (!user) return "Staff User";
+  if (!user) return "Not signed in";
   if (user.displayName && user.displayName.trim()) return user.displayName.trim();
-  const local = String(user.email || "Staff User").split("@")[0].replace(/[._-]+/g, " ");
+  const local = String(user.email || "Unknown staff").split("@")[0].replace(/[._-]+/g, " ");
   return local.replace(/\b\w/g, c => c.toUpperCase());
 }
 
 async function loadCurrentStaffProfile(force = false) {
   const user = auth.currentUser;
   if (!user) return null;
-  if (!force && kbrhStaffProfile && kbrhStaffProfile.uid === user.uid) return kbrhStaffProfile;
-  if (!force && kbrhStaffProfilePromise) return kbrhStaffProfilePromise;
+  if (!force && kbrhStaffProfile && kbrhStaffProfile.uid === user.uid && !kbrhStaffProfile.lookupFailed && !kbrhStaffProfile.missing) return kbrhStaffProfile;
+  if (kbrhStaffProfilePromise) return kbrhStaffProfilePromise;
 
   kbrhStaffProfilePromise = (async () => {
     try {
-      const snapshot = await db.collection("kbrh").doc("staffProfiles").get();
+      // Bound the profile request so an offline/blocked Firestore read cannot stall login forever.
+      // Firestore may still finish later; subsequent pages can retry the profile lookup.
+      const snapshot = await Promise.race([
+        db.collection("kbrh").doc("staffProfiles").get(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Staff profile lookup timed out")), 8000))
+      ]);
       const root = snapshot.exists ? (snapshot.data() || {}) : {};
 
       // Preferred layout:
@@ -113,7 +118,7 @@ async function loadCurrentStaffProfile(force = false) {
         kbrhStaffProfile = {
           uid: user.uid,
           email: String(data.email || user.email || "").trim(),
-          name: String(data.name || "").trim(),
+          name: String(data.name || data.fullName || [data.firstName, data.lastName].filter(Boolean).join(" ") || "").trim(),
           role: String(data.role || "Staff").trim(),
           position: String(data.position || data.role || "").trim(),
           active: data.active !== false,
@@ -173,6 +178,7 @@ function currentStaffPosition() {
 async function requireLogin() {
   await ensureSessionPersistence();
   auth.onAuthStateChanged(async user => {
+    try {
     const page = window.location.pathname.split("/").pop() || "index.html";
     if (!user) {
       if (page !== "login.html") window.location.replace("login.html?next=" + encodeURIComponent(window.location.pathname.split("/").pop() + window.location.search));
@@ -188,6 +194,7 @@ async function requireLogin() {
       return;
     }
 
+    if (kbrhStaffProfile && kbrhStaffProfile.uid !== user.uid) kbrhStaffProfile = null;
     applyAdminVisibility(user);
     if(isKbrhAccountManager(user) && !document.querySelector('a[href="staff-accounts.html"]')){const nav=document.querySelector(".app-nav");if(nav){const a=document.createElement("a");a.className="app-nav-link";a.href="staff-accounts.html";a.textContent="Staff Accounts";nav.appendChild(a);}}
     const profile = await loadCurrentStaffProfile();
@@ -221,9 +228,12 @@ async function requireLogin() {
         const target = (link.getAttribute('href') || '').split('?')[0];
         if (KBRH_PAGE_LIST.includes(target) && !isKbrhAdmin(user) && Array.isArray(profile?.pageAccess) && !profile.pageAccess.includes(target)) link.remove();
       });
-      initializeKbrhNotifications(user);
-      void showTHCRetestLoginReminder(user, profile);
+      try { initializeKbrhNotifications(user); } catch (e) { console.warn("Notifications unavailable", e); }
+      // Noncritical notification/retest setup must not prevent core page data loading.
+      try { void Promise.resolve(showTHCRetestLoginReminder(user, profile)).catch(e => console.warn("THC reminder unavailable", e)); }
+      catch (e) { console.warn("THC reminder unavailable", e); }
     }
+    } catch (error) { console.error("KBRH session initialization failed:", error); }
   });
 }
 

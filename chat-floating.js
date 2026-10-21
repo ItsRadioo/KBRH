@@ -1,3 +1,14 @@
+/* KBRH chat navigation badge + floating chat; consolidated to reduce script requests. */
+/* KBRH staff chat: lightweight cross-page unread indicator. */
+(()=>{'use strict';
+if(typeof auth==='undefined'||typeof db==='undefined')return;
+let stopRooms=null,stopReads=[];const times=new Map();let rooms=[];let subscribedRoomIds="";
+function show(){let count=0;for(const r of rooms){const last=r.lastMessageAt?.toMillis?.()||0;if(r.lastSenderUid!==auth.currentUser?.uid&&last>(times.get(r.id)||0))count++;}
+document.querySelectorAll('a[href="chat.html"]').forEach(a=>{let b=a.querySelector('.chat-nav-count');if(!count){b?.remove();return;}if(!b){b=document.createElement('span');b.className='chat-nav-count';b.setAttribute('aria-label','Unread conversations');a.append(' ',b);}b.textContent=String(count);});}
+function reset(){stopRooms?.();stopRooms=null;stopReads.forEach(f=>f());stopReads=[];times.clear();rooms=[];subscribedRoomIds="";show();}
+auth.onAuthStateChanged(user=>{reset();if(!user)return;stopRooms=db.collection('kbrhChatConversations').where('memberUids','array-contains',user.uid).onSnapshot(s=>{rooms=s.docs.map(d=>({id:d.id,...d.data()}));const nextIds=rooms.map(r=>r.id).sort().join("|");if(nextIds===subscribedRoomIds){show();return;}subscribedRoomIds=nextIds;stopReads.forEach(f=>f());stopReads=[];for(const r of rooms){stopReads.push(db.collection('kbrhChatConversations').doc(r.id).collection('reads').doc(user.uid).onSnapshot(d=>{times.set(r.id,d.exists?(d.data().readAt?.toMillis?.()||0):0);show();},()=>{}));}show();},e=>console.warn('Chat badge unavailable:',e.message));});
+})();
+
 /* Floating KBRH chat, reuses the existing authenticated chat.html. */
 (()=>{'use strict';if(window.__kbrhFloatingChat||location.pathname.split('/').pop()==='chat.html')return;window.__kbrhFloatingChat=true;
 function init(){if(document.getElementById('kbrh-chat-launch'))return;
@@ -9,6 +20,6 @@ launch.onclick=()=>panel.classList.contains('open')&&!panel.classList.contains('
 panel.querySelector('#kbrh-chat-min').onclick=()=>{panel.classList.toggle('minimized');launch.setAttribute('aria-expanded',String(!panel.classList.contains('minimized')))};
 panel.querySelector('#kbrh-chat-close').onclick=()=>{panel.classList.remove('open');launch.setAttribute('aria-expanded','false')};
 document.body.append(launch,panel);
-function updateCount(){const nodes=document.querySelectorAll('.chat-nav-count');let count=0;nodes.forEach(n=>{count=Math.max(count,Number(n.textContent)||0)});let badge=launch.querySelector('.kbrh-chat-unread');if(count){if(!badge){badge=document.createElement('span');badge.className='kbrh-chat-unread';launch.appendChild(badge)}badge.textContent=count>99?'99+':String(count)}else badge?.remove()}
+function updateCount(){const nodes=document.querySelectorAll('.chat-nav-count');let count=0;nodes.forEach(n=>{count=Math.max(count,Number(n.textContent)||0)});let badge=launch.querySelector('.kbrh-chat-unread');if(count){if(!badge){badge=document.createElement('span');badge.className='kbrh-chat-unread';launch.appendChild(badge)}{const next=count>99?'99+':String(count);if(badge.textContent!==next)badge.textContent=next}}else badge?.remove()}
 new MutationObserver(updateCount).observe(document.body,{subtree:true,childList:true,characterData:true});updateCount();}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();})();
