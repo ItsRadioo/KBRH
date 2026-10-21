@@ -1,0 +1,1 @@
+Fix: chat launcher is left of existing notification bell. Notification bell unchanged. Chat popup offset to avoid overlapping notification panel when closed. Test desktop and mobile. No live Firebase testing performed.
