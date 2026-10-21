@@ -1,0 +1,12 @@
+KBRH PROGRAM SUCCESS RATE — CLEAN REVIEW PACKAGE
+
+Source: KBRH-Program-Success-Rate-FLAT.zip
+Removed: embedded KBRH-Professional-v5.5.26-FULL-WIDTH-DYNAMIC-TABLES.zip and stray 62-byte download file.
+No other application files were modified. This is a repackaging, not a malware remediation or security certification.
+
+IMPORTANT: Scan with your security software before extracting. Do not bypass antivirus alerts.
+For independent testing, use a separate Firebase test project: existing Firebase configuration and deployment workflow refer to a production project.
+The GitHub workflow is retained as supplied; do not push to production main until reviewed.
+The ZIP integrity test only checks for archive corruption, not malware.
+
+SHA-256 manifest is in FILE-SHA256-MANIFEST.txt.

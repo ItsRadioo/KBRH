@@ -21,7 +21,7 @@
       const archived=roster.filter(r=>r.archived);
       const completed=archived.filter(r=>outcomeCode(r)==="completed").length;
       const involuntary=archived.filter(r=>outcomeCode(r)==="involuntary").length;
-      const outcomeDen=completed+involuntary;
+      const outcomeDen=archived.filter(r=>outcomeCode(r)!=="returned-waitlist"&&!String(r.archiveReason||"").toLowerCase().includes("moved back to waitlist")).length;
       const success=outcomeDen?`${(completed/outcomeDen*100).toFixed(1)}%`:"—";
       const ack=await pendingAcknowledgements();
       document.getElementById("dashKpis").innerHTML=[
@@ -29,7 +29,7 @@
         card("Phase 2",p2.length,"Current Phase 2 residents"),
         card("Waitlist",wait.length,"Active applicants"),
         card("Pending Admission",pending.length,"Approved / expected"),
-        card("Success Rate",success,outcomeDen?`${completed} completed vs ${involuntary} involuntary discharge${involuntary===1?"":"s"}`:"No classified outcomes yet","success"),
+        card("Program Success Rate",success,outcomeDen?`${completed} completed out of ${outcomeDen} program exits`:"No classified outcomes yet","success"),
         card("Acknowledgements",ack==null?"—":ack,ack===0?"No priority notes waiting":"Important / Urgent notes waiting",ack>0?"urgent":"")
       ].join("");
       const threshold=Number(s.operationalSettings?.noCallThreshold)||2;

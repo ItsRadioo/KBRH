@@ -1,0 +1,8 @@
+KBRH Program Success Rate update
+
+Formula: Completed program exits / all actual program exits in the reporting date range.
+Includes voluntary, involuntary, medical, transfer, legal, other and unclassified archived discharges in denominator.
+Excludes active residents and administrative returns to waitlist.
+Applies to Outcome Reports KPI, monthly report, CSV export and Dashboard KPI.
+Historical records with unknown outcome count as exits but not completions. Review historical classifications for accuracy.
+No live Firebase test performed.
