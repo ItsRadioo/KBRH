@@ -8,3 +8,7 @@
 
 /* Keep the existing notifications button on the far right; chat sits to its left. */
 @media(min-width:601px) and (max-width:740px){#kbrh-chat-pop{right:10px}}
+
+/* Keep minimized chat docked to bottom beside message/notification controls. */
+#kbrh-chat-pop.minimized{bottom:18px;right:155px;width:min(410px,calc(100vw - 170px));height:48px}
+@media(max-width:600px){#kbrh-chat-pop.minimized{bottom:18px;right:148px;width:calc(100vw - 160px);height:48px;border-radius:12px}}
