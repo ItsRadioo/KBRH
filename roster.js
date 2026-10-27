@@ -524,11 +524,47 @@ function handleRosterAction(clientId, action) {
     const client=rosterState.roster.find(c=>c.id===clientId);
     if(!client)return;
     KBRHUrine.open(client,async screen=>{
-      client.urineScreens=[...(client.urineScreens||[]),screen];
+      // Persist the specific resident's screen directly to Firestore, then verify
+      // the new record is present on the server before closing the dialog.
+      // This avoids an entire-state save overwriting screens from another session.
+      const previousScreens=Array.isArray(client.urineScreens)?client.urineScreens.slice():[];
+      const previousStatus=client.admissionStatus;
+      client.urineScreens=[...previousScreens,screen];
       if(screen.results?.THC==="Positive")kbrhApplyTHCProtocol(client,screen);
-      else if(kbrhActiveTHCScreen(client)?.completed && client.admissionStatus==="THC Protocol")client.admissionStatus="Complete";
-      if(!await saveRoster()){client.urineScreens.pop();throw Error("Save failed");}
-      renderRoster();
+      const docRef=db.collection("kbrh").doc("choreTracker");
+      try {
+        await db.runTransaction(async transaction=>{
+          const snap=await transaction.get(docRef);
+          if(!snap.exists)throw Error("Resident database is missing");
+          const roster=Array.isArray(snap.data()?.roster)?snap.data().roster.slice():[];
+          const index=roster.findIndex(r=>r&&r.id===clientId);
+          if(index<0)throw Error("Resident no longer exists in the roster");
+          const current=roster[index];
+          const screens=Array.isArray(current.urineScreens)?current.urineScreens.slice():[];
+          if(!screens.some(r=>r.id===screen.id))screens.push(screen);
+          const updated={...current,urineScreens:screens};
+          if(screen.results?.THC==="Positive"){
+            updated.admissionStatus="THC Protocol";
+            updated.thcRetestDue=screen.thcRetestDue||updated.thcRetestDue;
+          }
+          roster[index]=updated;
+          transaction.update(docRef,{roster,updatedAt:new Date().toISOString()});
+        });
+        const verified=await docRef.get({source:"server"});
+        const persisted=verified.data()?.roster?.find(r=>r?.id===clientId);
+        if(!persisted?.urineScreens?.some(r=>r.id===screen.id))throw Error("Follow-up screening could not be verified on the server");
+        rosterState=normalizeAppState(verified.data());
+        KBRH_LAST_STATE=normalizeAppState(verified.data());
+        renderRoster();
+        if(typeof writeAuditEntry==="function"){
+          Promise.resolve().then(()=>writeAuditEntry(["Urine screening saved for resident "+clientId],{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""})).catch(e=>console.warn("Screen saved; audit logging failed",e));
+        }
+      } catch(error){
+        client.urineScreens=previousScreens;
+        client.admissionStatus=previousStatus;
+        console.error("Urine screening persistence error",error);
+        throw error;
+      }
     },false);
     return;
   }
@@ -1030,11 +1066,11 @@ function kbrhCardOPOC(client){
 function kbrhTHCTags(client){
  const screen=kbrhActiveTHCScreen(client);
  if(!screen)return '';
- if(screen.completed)return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag krc-good">THC Retest Complete</span>';
  const date=screen.record.thcRetestDue;
  const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
- const status=!date?'Retest date unavailable':today<date?'Retest: '+formatDate(date):today===date?'THC Retest Due':'THC Retest Overdue';
- return '<span class="krc-tag krc-warn">THC Protocol</span><span class="krc-tag '+(date&&today>=date?'krc-danger':'krc-muted')+'">'+escapeHtml(status)+'</span>';
+ const status=screen.completed?'Retest completed':!date?'Retest date unavailable':today<date?'Retest: '+formatDate(date):today===date?'Retest due today':'Retest overdue';
+ // A completed follow-up is not, by itself, authorization to remove protocol status.
+ return '<span class="krc-thc-alert" role="status"><span class="krc-thc-title"><span class="krc-thc-leaf" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 1l2.2 5.4 2.5-2-0.2 4 4.4-1.1-2.6 4 3.7 2.5-5.8 1.1 1.4 3.6-4.4-2.3-.3 6.8h-1.8l-.3-6.8-4.4 2.3 1.4-3.6L2 13.8l3.7-2.5-2.6-4 4.4 1.1-.2-4 2.5 2L12 1z"/></svg></span> THC PROTOCOL</span><span class="krc-thc-date">'+escapeHtml(status)+'</span></span>';
 }
 function renderResidentCards(){
  const target=document.getElementById('phase1ResidentCards');if(!target)return;
