@@ -1631,3 +1631,11 @@ body.kbrh-ack-lock{overflow:hidden}
 .page-waitlist .waitlist-tools-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:12px 0}
 .page-waitlist .waitlist-tools-row button{margin:0;white-space:nowrap}
 @media(max-width:560px){.page-waitlist .waitlist-tools-row{justify-content:stretch}.page-waitlist .waitlist-tools-row button{flex:1 1 auto}}
+
+/* Roster summary: Phase 1, Phase 2, available rooms and single-room queue in one row. */
+body.kbrh-v5 .roster-summary {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch;width:100%;margin-bottom:18px;}
+body.kbrh-v5 .roster-summary > .roster-stat-card {box-sizing:border-box;width:100%!important;min-width:0!important;max-width:none!important;flex:auto!important;min-height:118px;margin:0;}
+body.kbrh-v5 .roster-summary > .v5-roster-secondary-kpis {grid-column:span 3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0;}
+body.kbrh-v5 .roster-summary .v5-kpi {box-sizing:border-box;min-width:0;height:100%;overflow-wrap:anywhere;}
+@media(max-width:1050px){body.kbrh-v5 .roster-summary{grid-template-columns:repeat(2,minmax(0,1fr));}body.kbrh-v5 .roster-summary>.v5-roster-secondary-kpis{grid-column:span 2;grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:620px){body.kbrh-v5 .roster-summary{grid-template-columns:1fr;}body.kbrh-v5 .roster-summary>.v5-roster-secondary-kpis{grid-column:1;grid-template-columns:1fr;}}

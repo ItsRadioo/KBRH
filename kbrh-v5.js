@@ -101,21 +101,18 @@
     strip.className = "v5-kpi-strip v5-roster-secondary-kpis";
     strip.innerHTML = `
       <article class="v5-kpi"><span class="v5-kpi-label">Phase 2</span><strong class="v5-kpi-value" data-kpi="phase2">0</strong><span class="v5-kpi-detail">Current Phase 2 clients</span></article>
-      <article class="v5-kpi"><span class="v5-kpi-label">Archived</span><strong class="v5-kpi-value" data-kpi="archived">0</strong><span class="v5-kpi-detail">Historical roster records</span></article>
       <article class="v5-kpi"><span class="v5-kpi-label">Available Rooms</span><strong class="v5-kpi-value" id="availableRoomNumbers" style="font-size:1.35rem">—</strong><span class="v5-kpi-detail">Rooms with an open bed</span></article>
       <article class="v5-kpi"><span class="v5-kpi-label">Next for Single Room</span><strong class="v5-kpi-value" id="nextSingleRoomResident" style="font-size:1.35rem">None Waiting</strong></article>
     `;
-    summary.insertAdjacentElement("afterend",strip);
+    summary.appendChild(strip);
     const update = () => {
       const p2 = [...document.querySelectorAll("#phase2RosterBody tr")].filter(r => !r.querySelector("td[colspan]")).length;
-      const archived = [...document.querySelectorAll("#archivedRosterBody tr")].filter(r => !r.querySelector("td[colspan]")).length;
       const p1Text = document.getElementById("phase1ResidentCount")?.textContent || "0";
       const p1 = Number.parseInt(p1Text,10) || 0;
       strip.querySelector('[data-kpi="phase2"]').textContent = String(p2);
-      strip.querySelector('[data-kpi="archived"]').textContent = String(archived);
     };
     update();
-    ["phase2RosterBody","archivedRosterBody","phase1ResidentCount"].map(id=>document.getElementById(id)).filter(Boolean).forEach(node=>new MutationObserver(update).observe(node,{childList:true,subtree:true,characterData:true}));
+    ["phase2RosterBody"].map(id=>document.getElementById(id)).filter(Boolean).forEach(node=>new MutationObserver(update).observe(node,{childList:true,subtree:true,characterData:true}));
   }
 
   function modernizeTables() {
