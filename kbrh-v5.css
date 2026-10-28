@@ -1624,3 +1624,10 @@ body.kbrh-ack-lock{overflow:hidden}
     pointer-events:auto!important;
   }
 }
+
+/* Waitlist page compact action bar */
+.page-waitlist .waitlist-table-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.page-waitlist .waitlist-table-heading h2{margin:0}
+.page-waitlist .waitlist-tools-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:12px 0}
+.page-waitlist .waitlist-tools-row button{margin:0;white-space:nowrap}
+@media(max-width:560px){.page-waitlist .waitlist-tools-row{justify-content:stretch}.page-waitlist .waitlist-tools-row button{flex:1 1 auto}}

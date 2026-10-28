@@ -1246,8 +1246,6 @@ function renderWaitlist() {
   const dnrBanner=document.getElementById("dnrWaitlistWarning");
   if(dnrBanner){const matches=(waitlistState.waitlist||[]).filter(a=>!a.archived&&KBRHDNR.match(waitlistState,a));dnrBanner.hidden=!matches.length;dnrBanner.textContent=matches.length?`⚠ DO NOT READMIT — ${matches.length} applicant(s) require Executive Director review. See Do Not Readmit page.`:"";}
 
-  renderUpcomingIntakes();
-  renderRecentTransfers();
   document.body.classList.toggle("waitlist-editing-active", Boolean(editingApplicantId));
   renderCallInCounters();
   renderActiveWaitlist();

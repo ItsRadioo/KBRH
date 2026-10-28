@@ -179,7 +179,7 @@
   "use strict";
   const NAV_GROUPS = [
     ["Residents", ["roster.html","waitlist.html","prescreening.html","pending-admissions.html","reports.html"]],
-    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","bus-pass.html","tool-signout.html"]],
+    ["Daily Operations", ["house-chores.html","meal-chores.html","chore-checks.html","charts.html","operations.html"]],
     ["Documentation", ["incident-report.html","verbalwarning.html","writeups.html","counseling-notes.html"]],
     ["Staff", ["staff-list.html","audit-log.html","staff-accounts.html","staff-profile.html","settings.html"]]
   ];
@@ -231,7 +231,11 @@
 })();
 
 (function(){
-  function enhanceTables(){document.querySelectorAll('.table-wrap').forEach((wrap,i)=>{if(wrap.dataset.collapsibleReady)return; const table=wrap.querySelector('table'); if(!table)return; const rows=table.querySelectorAll('tbody tr').length; if(rows<4 && !wrap.closest('.wide'))return; wrap.dataset.collapsibleReady='1'; const page=(location.pathname.split('/').pop()||'index'); const key=`kbrh.table.${page}.${i}`; const bar=document.createElement('div');bar.className='kbrh-collapse-bar';const btn=document.createElement('button');btn.type='button';btn.className='kbrh-collapse-btn'; const apply=()=>{let c=false;try{c=localStorage.getItem(key)==='collapsed'}catch(_){} wrap.classList.toggle('kbrh-table-collapsed',c);btn.textContent=c?'Expand table':'Collapse table';btn.setAttribute('aria-expanded',String(!c));}; btn.onclick=()=>{const c=!wrap.classList.contains('kbrh-table-collapsed');try{localStorage.setItem(key,c?'collapsed':'expanded')}catch(_){}apply();}; bar.appendChild(btn);wrap.parentNode.insertBefore(bar,wrap);apply();});}
+  function enhanceTables(){document.querySelectorAll('.table-wrap').forEach((wrap,i)=>{if(wrap.dataset.collapsibleReady)return; const table=wrap.querySelector('table'); if(!table)return; const rows=table.querySelectorAll('tbody tr').length; if(rows<4 && !wrap.closest('.wide'))return; wrap.dataset.collapsibleReady='1'; const page=(location.pathname.split('/').pop()||'index'); const key=`kbrh.table.${page}.${i}`; const bar=document.createElement('div');bar.className='kbrh-collapse-bar';const btn=document.createElement('button');btn.type='button';btn.className='kbrh-collapse-btn'; const apply=()=>{let c=false;try{c=localStorage.getItem(key)==='collapsed'}catch(_){} wrap.classList.toggle('kbrh-table-collapsed',c);btn.textContent=c?'Expand table':'Collapse table';btn.setAttribute('aria-expanded',String(!c));}; btn.onclick=()=>{const c=!wrap.classList.contains('kbrh-table-collapsed');try{localStorage.setItem(key,c?'collapsed':'expanded')}catch(_){}apply();}; bar.appendChild(btn);
+ const waitlistTools=document.body.classList.contains('page-waitlist') &&
+   wrap.classList.contains('waitlist-table-full-wrap') ? document.querySelector('.waitlist-tools-row') : null;
+ if(waitlistTools){waitlistTools.appendChild(btn);}else{wrap.parentNode.insertBefore(bar,wrap);}
+ apply();});}
   document.addEventListener('DOMContentLoaded',()=>{enhanceTables();setTimeout(enhanceTables,800);});
 })();
 

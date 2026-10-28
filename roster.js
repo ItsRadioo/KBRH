@@ -523,48 +523,36 @@ function handleRosterAction(clientId, action) {
     }
     const client=rosterState.roster.find(c=>c.id===clientId);
     if(!client)return;
+    // Append-only screening documents prevent unrelated roster saves overwriting history.
+    // Historical embedded screens remain available via KBRHUrine.loadHistory.
     KBRHUrine.open(client,async screen=>{
-      // Persist the specific resident's screen directly to Firestore, then verify
-      // the new record is present on the server before closing the dialog.
-      // This avoids an entire-state save overwriting screens from another session.
-      const previousScreens=Array.isArray(client.urineScreens)?client.urineScreens.slice():[];
-      const previousStatus=client.admissionStatus;
-      client.urineScreens=[...previousScreens,screen];
-      if(screen.results?.THC==="Positive")kbrhApplyTHCProtocol(client,screen);
-      const docRef=db.collection("kbrh").doc("choreTracker");
-      try {
-        await db.runTransaction(async transaction=>{
-          const snap=await transaction.get(docRef);
-          if(!snap.exists)throw Error("Resident database is missing");
-          const roster=Array.isArray(snap.data()?.roster)?snap.data().roster.slice():[];
-          const index=roster.findIndex(r=>r&&r.id===clientId);
-          if(index<0)throw Error("Resident no longer exists in the roster");
-          const current=roster[index];
-          const screens=Array.isArray(current.urineScreens)?current.urineScreens.slice():[];
-          if(!screens.some(r=>r.id===screen.id))screens.push(screen);
-          const updated={...current,urineScreens:screens};
-          if(screen.results?.THC==="Positive"){
-            updated.admissionStatus="THC Protocol";
-            updated.thcRetestDue=screen.thcRetestDue||updated.thcRetestDue;
-          }
-          roster[index]=updated;
-          transaction.update(docRef,{roster,updatedAt:new Date().toISOString()});
-        });
-        const verified=await docRef.get({source:"server"});
-        const persisted=verified.data()?.roster?.find(r=>r?.id===clientId);
-        if(!persisted?.urineScreens?.some(r=>r.id===screen.id))throw Error("Follow-up screening could not be verified on the server");
-        rosterState=normalizeAppState(verified.data());
-        KBRH_LAST_STATE=normalizeAppState(verified.data());
-        renderRoster();
-        if(typeof writeAuditEntry==="function"){
-          Promise.resolve().then(()=>writeAuditEntry(["Urine screening saved for resident "+clientId],{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""})).catch(e=>console.warn("Screen saved; audit logging failed",e));
+      const recordRef=db.collection("kbrhUrineScreens").doc(clientId).collection("records").doc(screen.id);
+      await recordRef.set({...screen,residentId:clientId,recordedByUid:auth.currentUser?.uid||""});
+      // Verify the exact record on the server, not the mutable shared roster.
+      const verified=await recordRef.get({source:"server"});
+      if(!verified.exists || verified.data()?.id!==screen.id)throw Error("Screening record was not confirmed on server");
+      client.urineScreens=[...(client.urineScreens||[]).filter(r=>r.id!==screen.id),screen];
+      if(screen.results?.THC==="Positive"){
+        kbrhApplyTHCProtocol(client,screen);
+        // Status update is separate from the saved clinical record. Do not falsely
+        // report that the screen failed if the optional roster status update fails.
+        try{
+          const docRef=db.collection("kbrh").doc("choreTracker");
+          await db.runTransaction(async tx=>{
+            const snap=await tx.get(docRef);
+            const roster=Array.isArray(snap.data()?.roster)?snap.data().roster.slice():[];
+            const idx=roster.findIndex(r=>r?.id===clientId);
+            if(idx<0)throw Error("Resident not found in current roster");
+            roster[idx]={...roster[idx],admissionStatus:"THC Protocol",thcRetestDue:screen.thcRetestDue||roster[idx].thcRetestDue};
+            tx.update(docRef,{roster,updatedAt:new Date().toISOString()});
+          });
+        }catch(statusError){
+          console.error("Screen saved, but THC protocol status update failed",statusError);
+          alert("Screening saved successfully, but THC protocol status could not be updated. Notify an administrator.");
         }
-      } catch(error){
-        client.urineScreens=previousScreens;
-        client.admissionStatus=previousStatus;
-        console.error("Urine screening persistence error",error);
-        throw error;
       }
+      renderRoster();
+      if(typeof writeAuditEntry==="function")Promise.resolve().then(()=>writeAuditEntry(["Urine screening saved for resident "+clientId],{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""})).catch(console.warn);
     },false);
     return;
   }

@@ -1,5 +1,5 @@
 const KBRH_SESSION_KEY = "kbrh.activeStaffSession";
-const KBRH_PAGE_LIST = ["assignment-board.html", "audit-log.html", "bus-pass.html", "charts.html", "chat.html", "chore-checks.html", "counseling-notes.html", "digital-logbook.html", "house-chores.html", "incident-report.html", "index.html", "meal-chores.html", "pending-admissions.html", "prescreening.html", "reports.html", "roster.html", "settings.html", "staff-accounts.html", "staff-list.html", "staff-profile.html", "tool-signout.html", "verbalwarning.html", "waitlist.html", "weekend-menu-builder.html", "writeups.html"];
+const KBRH_PAGE_LIST = ["assignment-board.html", "audit-log.html", "bus-pass.html", "charts.html", "chat.html", "chore-checks.html", "counseling-notes.html", "digital-logbook.html", "house-chores.html", "incident-report.html", "index.html", "meal-chores.html", "pending-admissions.html", "prescreening.html", "reports.html", "roster.html", "settings.html", "staff-accounts.html", "staff-list.html", "staff-profile.html", "tool-signout.html", "operations.html", "verbalwarning.html", "waitlist.html", "weekend-menu-builder.html", "writeups.html"];
 let kbrhStaffProfile = null;
 let kbrhStaffProfilePromise = null;
 

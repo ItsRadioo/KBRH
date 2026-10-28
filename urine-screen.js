@@ -6,6 +6,14 @@ let callback=null, resident=null;
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function due(date){let d=new Date(String(date).slice(0,10)+"T12:00:00");if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+45);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
 function records(c){return Array.isArray(c?.urineScreens)?c.urineScreens:[];}
+async function loadHistory(c){
+ const legacy=records(c), merged=new Map(legacy.filter(r=>r?.id).map(r=>[r.id,r]));
+ if(!c?.id || !window.db)return legacy;
+ const snap=await db.collection("kbrhUrineScreens").doc(c.id).collection("records").get();
+ snap.docs.forEach(doc=>{const r=doc.data();if(r?.id)merged.set(r.id,r);});
+ return [...merged.values()].sort((a,b)=>String(a.createdAt||a.date||"").localeCompare(String(b.createdAt||b.date||"")));
+}
+function historyHtml(items){return items.length?`<details><summary>Previous screening records (${items.length})</summary>${items.slice().reverse().map(r=>`<div class="us-record"><strong>${esc(r.date)} · ${esc(r.type)}</strong><div>${TESTS.map(t=>`${t}: ${esc(r.results?.[t]||"—")}`).join(" · ")}</div>${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}${r.override?`<div>Override by ${esc(r.author)}: ${esc(r.overrideReason)}</div>`:""}<div>${esc(r.notes)}</div></div>`).join("")}</details>`:"No previous screening records.";}
 function open(c,onSave,mandatory){
  resident=c;callback=onSave;
  let el=document.getElementById("urineScreenOverlay");
@@ -24,7 +32,12 @@ function open(c,onSave,mandatory){
  document.getElementById("us-person").textContent=[c?.firstName,c?.lastName].filter(Boolean).join(" ");
  document.getElementById("us-date").value=new Date().toLocaleDateString("en-CA");
  document.getElementById("us-type").value=mandatory?"Admission":"Follow-up";
- document.getElementById("us-history").innerHTML=records(c).length?`<details><summary>Previous screening records (${records(c).length})</summary>${records(c).slice().reverse().map(r=>`<div class="us-record"><strong>${esc(r.date)} · ${esc(r.type)}</strong><div>${TESTS.map(t=>`${t}: ${esc(r.results?.[t]||"—")}`).join(" · ")}</div>${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}${r.override?`<div>Override by ${esc(r.author)}: ${esc(r.overrideReason)}</div>`:""}<div>${esc(r.notes)}</div></div>`).join("")}</details>`:"";
+ const historyNode=document.getElementById("us-history");
+ historyNode.textContent="Loading screening history…";
+ loadHistory(c).then(items=>{if(resident===c)historyNode.innerHTML=historyHtml(items);}).catch(error=>{
+  console.error("Urine screening history could not be loaded",error);
+  historyNode.textContent="Screening history could not be loaded. Please check permissions and try again. Do not assume the record has no history.";
+ });
  function update(){
   let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.checked?"Positive":"Negative"]));
   let bad=BLOCKED.filter(t=>results[t]==="Positive");
@@ -36,6 +49,7 @@ function open(c,onSave,mandatory){
  el.querySelector("#us-cancel").onclick=()=>{el.hidden=true;};
  el.querySelector("#us-form").onsubmit=async e=>{
   e.preventDefault();
+  if(el.dataset.saving==="1")return;
   let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.checked?"Positive":"Negative"]));
   let bad=BLOCKED.filter(t=>results[t]==="Positive"), override=el.querySelector("#us-override").checked;
   let reason=el.querySelector("#us-reason").value.trim();
@@ -43,12 +57,12 @@ function open(c,onSave,mandatory){
   if(bad.length&&(!reason||reason.length<5)){alert("Enter an override reason.");return;}
   let author=typeof currentStaffName==="function"?currentStaffName():(window.auth?.currentUser?.email||"Staff");
   let record={id:crypto.randomUUID(),date:el.querySelector("#us-date").value,type:el.querySelector("#us-type").value,results,notes:el.querySelector("#us-notes").value.trim(),override:!!bad.length&&override,overrideReason:bad.length?reason:"",author,createdAt:new Date().toISOString(),thcRetestDue:results.THC==="Positive"?due(el.querySelector("#us-date").value):null};
-  const button=el.querySelector('[type="submit"]');button.disabled=true;
-  try{await callback(record);el.hidden=true;}catch(err){console.error(err);alert("Screening or admission could not be saved. Please retry.");}finally{button.disabled=false;}
+  const button=el.querySelector('[type="submit"]');button.disabled=true;el.dataset.saving='1';
+  try{await callback(record);el.hidden=true;}catch(err){const incidentId="US-"+Date.now().toString(36).toUpperCase();console.error("KBRH urine screening save failed",incidentId,err);const code=String(err?.code||"unknown");const detail=String(err?.message||"No further details available").slice(0,350);alert("Screening was not confirmed saved. Do not close this form.\nReference: "+incidentId+"\nError: "+code+"\nDetails: "+detail+"\nPlease report this message to the administrator.");}finally{button.disabled=false;el.dataset.saving="0";}
  };
  update();el.hidden=false;
 }
-window.KBRHUrine={open,records,TESTS};
+window.KBRHUrine={open,records,loadHistory,TESTS};
 document.addEventListener("DOMContentLoaded",()=>{
  let overlay=document.createElement("div");overlay.id="urineScreenOverlay";overlay.hidden=true;document.body.append(overlay);
  let style=document.createElement("style");style.textContent=`#urineScreenOverlay:not([hidden]){position:fixed;inset:0;background:#000a;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:14px}.us-dialog{background:white;color:#222;max-height:92vh;overflow:auto;width:min(800px,100%);padding:24px;border-radius:12px;box-shadow:0 10px 50px #0007}.us-dialog label{display:block;margin:10px 0}.us-dialog input,.us-dialog select,.us-dialog textarea{display:block;width:100%;padding:8px;box-sizing:border-box}.us-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px}.us-dialog .us-test-check{display:flex!important;align-items:center!important;flex-direction:row!important;gap:9px;padding:12px;border:1px solid #ddd;border-radius:8px;margin:0;cursor:pointer}.us-dialog .us-test-check input[type="checkbox"]{appearance:auto!important;-webkit-appearance:checkbox!important;display:inline-block!important;position:static!important;opacity:1!important;visibility:visible!important;width:20px!important;min-width:20px!important;max-width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px!important;margin:0!important;padding:0!important;accent-color:#b45309;transform:none!important}.us-dialog .us-test-check .us-test-name{font-weight:700;min-width:0}.us-dialog .us-test-check small{font-size:11px;white-space:normal;text-align:right}.us-test-check small{margin-left:auto;color:#666}.us-test-check:has(input:checked){border-color:#b45309;background:#fff7ed}.us-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:15px}.us-record{border-bottom:1px solid #ddd;padding:9px}.us-hint{color:#666}#us-eligibility{font-weight:bold;padding:10px;background:#f3f3f3}`;

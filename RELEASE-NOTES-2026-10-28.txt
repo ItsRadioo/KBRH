@@ -1,0 +1,6 @@
+KBRH Operational Handover TEST
+- Added read-only admin system-health page
+- Prevented duplicate urine-screen submit clicks and added diagnostic reference
+- Added operations, recovery and handover instructions
+- No Firestore rules or data schema changes
+- No automatic backups or account management claims

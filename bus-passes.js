@@ -25,11 +25,11 @@ function openBusPassModal() {
 
 function closeBusPassModal() { document.getElementById("busPassModal").classList.add("hidden"); }
 
-function residentName(client) { return `${client.firstName || ""} ${client.lastName || ""}`.trim(); }
+function busPassResidentName(client) { return `${client.firstName || ""} ${client.lastName || ""}`.trim(); }
 
 function populateResidentDatalist(state) {
   const list = document.getElementById("busPassResidentOptions");
-  const residents = (state.roster || []).filter(r => !r.archived).map(residentName).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  const residents = (state.roster || []).filter(r => !r.archived).map(busPassResidentName).filter(Boolean).sort((a,b)=>a.localeCompare(b));
   list.innerHTML = residents.map(name => `<option value="${bpEscape(name)}"></option>`).join("");
 }
 
@@ -88,7 +88,7 @@ async function submitBusPass(event) {
   status.textContent = "Saving…";
   try {
     const identity = await getCurrentStaffIdentity();
-    const rosterMatch = (busPassState.roster || []).find(r => residentName(r).toLowerCase() === recipientName.toLowerCase());
+    const rosterMatch = (busPassState.roster || []).find(r => busPassResidentName(r).toLowerCase() === recipientName.toLowerCase());
     const record = {
       id: crypto.randomUUID(),
       dateIssued: document.getElementById("busPassDate").value,

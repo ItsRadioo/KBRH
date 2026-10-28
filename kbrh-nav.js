@@ -11,7 +11,7 @@
     ["charts.html", "Charts"],
     ["prescreening.html", "Pre-Screening"],
     ["counseling-notes.html", "Counseling Notes"],
-    ["bus-passes.html", "Bus Passes"],
+    ["operations.html?mode=bus", "Equipment & Transportation"],
     ["staff-list.html", "Staff List"],
     ["audit-log.html", "Audit Log"],
     ["staff-profile.html", "My Profile"],

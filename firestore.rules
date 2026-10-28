@@ -17,6 +17,18 @@ service cloud.firestore {
       allow read, write: if request.auth != null && docId != 'staffProfiles' && docId != 'settings';
     }
 
+    // Append-only urine-screen records. Existing legacy roster history is read in the UI.
+    match /kbrhUrineScreens/{residentId}/records/{screenId} {
+      function screeningStaff() { return request.auth != null && request.auth.token.email in [
+        'admin@kbrh.local', 'executivedirector@kbrh.local', 'intakecoordinator@kbrh.local'
+      ]; }
+      allow get, list: if screeningStaff();
+      allow create: if screeningStaff() && request.resource.data.id == screenId &&
+        request.resource.data.residentId == residentId &&
+        request.resource.data.recordedByUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // Internal staff chat: conversation membership and message access enforced server-side.
     match /kbrhChatConversations/{conversationId} {
       function member() { return request.auth != null && (conversationId == 'staff-wide' || request.auth.uid in resource.data.memberUids); }
