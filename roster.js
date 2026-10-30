@@ -1098,8 +1098,8 @@ function renderResidentCards(){
  const remainingClass=!discharge?'krc-days-none':remaining==='Today'||remaining==='Due / Past'?'krc-days-urgent':Number.isFinite(remainingNumber)&&remainingNumber<=7?'krc-days-soon':'krc-days-ok';
  return `<article class="krc-card krc-approved">
   <div class="krc-topline">
-   <div class="krc-identity"><div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div></div>
-   <div class="krc-flags">${kbrhTHCTags(c)}${c.phase2Candidate ? `<span class="krc-candidate-flag" title="Flagged for Phase 2 consideration">PHASE 2 CANDIDATE</span>` : ""}</div>
+   <div class="krc-identity"><div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span>${c.phase2Candidate ? ` <span class="krc-candidate-flag" title="Flagged for Phase 2 consideration">PHASE 2 CANDIDATE</span>` : ""}</div></div>
+   <div class="krc-flags">${kbrhTHCTags(c)}</div>
   </div>
   <div class="krc-approved-content">
    <div class="krc-field krc-room"><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>

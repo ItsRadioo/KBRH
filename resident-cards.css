@@ -126,3 +126,6 @@
 .krc-thc-title{display:flex;align-items:center;justify-content:center;gap:5px;font-size:.76rem;white-space:nowrap}
 .krc-thc-title svg{flex:none}
 .krc-thc-date{font-size:.66rem;font-weight:600;white-space:normal}
+
+/* Candidate badge sits inline with resident name and client ID. */
+.krc-name .krc-candidate-flag{display:inline-flex;vertical-align:middle;margin-left:8px;white-space:nowrap;font-size:.67rem;line-height:1.3}
