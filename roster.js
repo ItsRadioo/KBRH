@@ -354,6 +354,8 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
   }
 
   if ((client.phase || "phase1") === "phase1") {
+    const candidateInput = document.getElementById(`editPhase2Candidate-${clientId}`);
+    if (candidateInput) client.phase2Candidate = candidateInput.checked;
     client.address = kbrhDisplayAddress(getInputValue(`editAddress-${clientId}`));
     client.city = getInputValue(`editCity-${clientId}`);
     client.contact = getInputValue(`editContact-${clientId}`);
@@ -442,6 +444,7 @@ function openEditResidentModal(clientId) {
       <span>OPOC completed</span>
     </label>
   `;
+  if (phase === "phase1") html += `<label class="kbrh-modal-check"><input id="modalPhase2Candidate" type="checkbox" ${client.phase2Candidate ? "checked" : ""} /><span>Phase 2 Candidate — flagged by staff for consideration</span></label>`;
   fields.innerHTML = html;
   document.getElementById("chooseResidentBedBtn")?.addEventListener("click", openResidentBedPicker);
   document.getElementById("clearResidentBedBtn")?.addEventListener("click", () => {
@@ -473,10 +476,10 @@ function saveEditResidentModal(event) {
   }
 
   const requestedBed = kbrhNormalizeBedId(value("modalEditRoomNumber"));
-  if (requestedBed && !KBRH_ROOM_BEDS.includes(requestedBed)) {
+  if (requestedBed && !((client.phase === "phase2") ? KBRH_PHASE2_BEDS : KBRH_ROOM_BEDS).includes(requestedBed)) {
     alert("Select a valid bed using Choose Bed."); return;
   }
-  const occupant = (kbrhCurrentBedOccupants().get(requestedBed) || []).find(c => c.id !== client.id);
+  const occupant = client.phase === "phase2" ? kbrhPhase2Occupants(client.id).get(requestedBed) : (kbrhCurrentBedOccupants().get(requestedBed) || []).find(c => c.id !== client.id);
   if (occupant) {
     alert(`Bed ${requestedBed} is already occupied. Choose another bed.`); return;
   }
@@ -488,6 +491,7 @@ function saveEditResidentModal(event) {
   client.phone = formatPhoneNumber(value("modalEditPhone"));
   client.expectedDischargeDate = value("modalEditDischargeDate");
   client.opocCompleted = Boolean(document.getElementById("modalEditOpoc")?.checked);
+  if ((client.phase || "phase1") === "phase1") client.phase2Candidate = Boolean(document.getElementById("modalPhase2Candidate")?.checked);
 
   if ((client.phase || "phase1") === "phase1") {
     client.address = value("modalEditAddress");
@@ -506,13 +510,24 @@ function saveEditResidentModal(event) {
   saveRoster();
 }
 
-// Restrict access to the urine-screen history interface to the three designated accounts.
-const KBRH_URINE_HISTORY_EMAILS = new Set([
-  "admin@kbrh.local", "executivedirector@kbrh.local", "intakecoordinator@kbrh.local"
-]);
-function kbrhCanAccessUrineHistory() {
-  const email = String(auth?.currentUser?.email || "").trim().toLowerCase();
-  return KBRH_URINE_HISTORY_EMAILS.has(email);
+// All authenticated staff can access screening history; Firestore enforces this server-side.
+function kbrhCanAccessUrineHistory() { return Boolean(auth?.currentUser); }
+
+const KBRH_PHASE2_BEDS = Object.freeze(['1','2','3','4','5','6','7','8']);
+function kbrhPhase2Occupants(excludeId) {
+  return new Map((rosterState.roster || [])
+    .filter(c=>c && !c.archived && c.phase==='phase2' && c.id!==excludeId && KBRH_PHASE2_BEDS.includes(String(c.roomNumber||'')))
+    .map(c=>[String(c.roomNumber),c]));
+}
+function kbrhPickPhase2Bed(excludeId,current) {
+  const occupied=kbrhPhase2Occupants(excludeId);
+  const options=KBRH_PHASE2_BEDS.filter(b=>!occupied.has(b));
+  if(!options.length){alert('All eight Phase 2 beds are occupied.');return null;}
+  const selected=prompt('Select a Phase 2 bed (1–8). Available: '+options.join(', '),options.includes(String(current))?String(current):options[0]);
+  if(selected===null)return null;
+  const bed=String(selected).trim();
+  if(!options.includes(bed)){alert('That Phase 2 bed is unavailable.');return null;}
+  return bed;
 }
 
 function handleRosterAction(clientId, action) {
@@ -702,6 +717,14 @@ function moveToPhase(clientId, phase) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
+  if (phase === 'phase2') {
+    const selected=kbrhPickPhase2Bed(client.id, client.phase==='phase2'?client.roomNumber:'');
+    if(!selected)return;
+    client.roomNumber=selected;
+  } else if (client.phase === 'phase2') {
+    // Phase 1 uses an independent inventory; never carry Phase 2 bed numbers across.
+    client.roomNumber='';
+  }
   client.phase = phase;
   appendPersonActivity(client,"Phase",phase==="phase2"?"Moved to Phase 2":"Moved to Phase 1","");
 
@@ -1076,7 +1099,7 @@ function renderResidentCards(){
  return `<article class="krc-card krc-approved">
   <div class="krc-topline">
    <div class="krc-identity"><div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span></div></div>
-   <div class="krc-flags">${kbrhTHCTags(c)}</div>
+   <div class="krc-flags">${kbrhTHCTags(c)}${c.phase2Candidate ? `<span class="krc-candidate-flag" title="Flagged for Phase 2 consideration">PHASE 2 CANDIDATE</span>` : ""}</div>
   </div>
   <div class="krc-approved-content">
    <div class="krc-field krc-room"><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
@@ -1255,7 +1278,7 @@ function renderActiveRosterRow(client, phase) {
           <td><input id="editEntryDate-${client.id}" type="date" value="${escapeAttribute(client.entryDate)}" /></td>
           <td><input id="editDischargeDate-${client.id}" type="date" value="${escapeAttribute(dischargeDate)}" /></td>
           <td class="${dischargeClass}">${escapeHtml(daysRemaining)}</td>
-          <td><input id="editOpoc-${client.id}" type="checkbox" ${client.opocCompleted ? "checked" : ""} /></td>
+          <td><input id="editOpoc-${client.id}" type="checkbox" ${client.opocCompleted ? "checked" : ""} /><label style="display:block;font-size:11px"><input id="editPhase2Candidate-${client.id}" type="checkbox" ${client.phase2Candidate ? "checked" : ""} /> Phase 2 candidate</label></td>
           <td>${getCompletionBadge(client)}</td>
           <td><a href="#" onclick="openNotes('${client.id}'); return false;">Notes (${noteCount})</a></td>
           <td>
@@ -1669,6 +1692,22 @@ function openResidentBedPicker(){
   const modal=document.getElementById("residentBedPickerModal");
   const grid=document.getElementById("residentBedPickerGrid");
   if(!modal || !grid || !editingClientId)return;
+  const editingResident=rosterState.roster.find(c=>c.id===editingClientId);
+  if(editingResident?.phase==='phase2') {
+    const occupied=kbrhPhase2Occupants(editingClientId);
+    const current=String(document.getElementById('modalEditRoomNumber')?.value||'');
+    grid.replaceChildren();
+    KBRH_PHASE2_BEDS.forEach(bed=>{
+      const card=document.createElement('section');card.className='room-availability-room';
+      const button=document.createElement('button');button.type='button';button.className='room-bed '+(occupied.has(bed)?'occupied':'available');
+      button.textContent='Phase 2 Bed '+bed+(occupied.has(bed)?' — Occupied: '+[occupied.get(bed).firstName,occupied.get(bed).lastName].filter(Boolean).join(' '):bed===current?' — Current selection':' — Available');
+      button.disabled=occupied.has(bed);
+      button.addEventListener('click',()=>{document.getElementById('modalEditRoomNumber').value=bed;closeResidentBedPicker();});
+      card.append(button);grid.append(card);
+    });
+    document.getElementById('residentBedPickerSummary').textContent=`${8-occupied.size} selectable beds · 8 Phase 2 beds`;
+    modal.classList.remove('hidden');return;
+  }
   const occupied=kbrhCurrentBedOccupants();
   const current=kbrhNormalizeBedId(document.getElementById("modalEditRoomNumber")?.value || "");
   grid.replaceChildren();

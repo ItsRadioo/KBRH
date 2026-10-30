@@ -19,9 +19,7 @@ service cloud.firestore {
 
     // Append-only urine-screen records. Existing legacy roster history is read in the UI.
     match /kbrhUrineScreens/{residentId}/records/{screenId} {
-      function screeningStaff() { return request.auth != null && request.auth.token.email in [
-        'admin@kbrh.local', 'executivedirector@kbrh.local', 'intakecoordinator@kbrh.local'
-      ]; }
+      function screeningStaff() { return request.auth != null; }
       allow get, list: if screeningStaff();
       allow create: if screeningStaff() && request.resource.data.id == screenId &&
         request.resource.data.residentId == residentId &&
