@@ -4,6 +4,14 @@ let notesClientId = null;
 let editingAll = false;
 let rosterSearchTerm = "";
 let pendingDischargeClientId = null;
+// Preserve staff candidate edits while Firestore snapshots and writes are in flight.
+const kbrhPendingCandidateFlags = new Map();
+function kbrhSetCandidateFlag(client, checked) {
+  const value = Boolean(checked);
+  client.phase2Candidate = value;
+  kbrhPendingCandidateFlags.set(client.id, value);
+}
+
 
 function getInputValue(id) {
   const input = document.getElementById(id);
@@ -30,6 +38,11 @@ function normalizeResidentNamesOnSave(client) {
 
 async function saveRoster() {
   try {
+    // Reapply outstanding candidate changes before submitting the roster.
+    for (const client of (rosterState.roster || [])) {
+      if (client && kbrhPendingCandidateFlags.has(client.id))
+        client.phase2Candidate = kbrhPendingCandidateFlags.get(client.id);
+    }
     await saveAppState(rosterState);
     return true;
   } catch (error) {
@@ -109,7 +122,7 @@ function calculateExitDate(entryDate) {
 }
 
 function getDischargeDate(client) {
-  return client.expectedDischargeDate || calculateExitDate(client.entryDate);
+  return client.expectedDischargeDate || calculateExitDate(client.phase === "phase2" ? (client.phase2AdmissionDate || client.phase2EntryDate || client.entryDate) : client.entryDate);
 }
 
 function calculateDaysRemainingForClient(client) {
@@ -355,7 +368,7 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
 
   if ((client.phase || "phase1") === "phase1") {
     const candidateInput = document.getElementById(`editPhase2Candidate-${clientId}`);
-    if (candidateInput) client.phase2Candidate = candidateInput.checked;
+    if (candidateInput) kbrhSetCandidateFlag(client, candidateInput.checked);
     client.address = kbrhDisplayAddress(getInputValue(`editAddress-${clientId}`));
     client.city = getInputValue(`editCity-${clientId}`);
     client.contact = getInputValue(`editContact-${clientId}`);
@@ -491,7 +504,7 @@ function saveEditResidentModal(event) {
   client.phone = formatPhoneNumber(value("modalEditPhone"));
   client.expectedDischargeDate = value("modalEditDischargeDate");
   client.opocCompleted = Boolean(document.getElementById("modalEditOpoc")?.checked);
-  if ((client.phase || "phase1") === "phase1") client.phase2Candidate = Boolean(document.getElementById("modalPhase2Candidate")?.checked);
+  if ((client.phase || "phase1") === "phase1") kbrhSetCandidateFlag(client, document.getElementById("modalPhase2Candidate")?.checked);
 
   if ((client.phase || "phase1") === "phase1") {
     client.address = value("modalEditAddress");
@@ -501,6 +514,7 @@ function saveEditResidentModal(event) {
     client.entryDate = value("modalEditEntryDate");
   } else {
     client.phase2AdmissionDate = value("modalEditPhase2AdmissionDate");
+    client.phase2EntryDate = client.phase2AdmissionDate;
   }
 
   normalizeResidentNamesOnSave(client);
@@ -573,6 +587,7 @@ function handleRosterAction(clientId, action) {
   }
   if (!action) return;
 
+  if (action === "extend6") { grantPhase2Extension(clientId); return; }
   if (action === "edit") openEditResidentModal(clientId);
   if (action === "phase2") moveToPhase(clientId, "phase2");
   if (action === "phase1") moveToPhase(clientId, "phase1");
@@ -604,6 +619,7 @@ function openRosterActionsModal(clientId) {
       : `
         <button type="button" data-roster-action="edit">Edit</button>\n        <button type="button" data-roster-action="urine">Urine Screens / History</button>
         <button type="button" data-roster-action="${phase === "phase1" ? "phase2" : "phase1"}">Move to ${phase === "phase1" ? "Phase 2" : "Phase 1"}</button>
+        ${phase === "phase2" ? '<button type="button" data-roster-action="extend6">Grant 6-Month Extension</button>' : ""}
         <button type="button" data-roster-action="waitlist">Move back to Waitlist</button>
         <button type="button" data-roster-action="archive">Archive / Discharge</button>
       `;
@@ -711,6 +727,23 @@ function moveBackToWaitlist(clientId) {
   updateEditAllButtons();
   renderRoster();
   saveRoster();
+}
+
+async function grantPhase2Extension(clientId) {
+ const client=rosterState.roster.find(x=>x&&x.id===clientId);
+ if(!client||client.archived||client.phase!=="phase2")return;
+ const start=client.expectedDischargeDate||client.phase2AdmissionDate||client.phase2EntryDate;
+ if(!start||!/^\d{4}-\d{2}-\d{2}$/.test(start)){alert("Set the Phase 2 entry date or expected discharge date first.");return;}
+ const [y,m,d]=start.split("-").map(Number),target=m-1+6;
+ const end=new Date(y,target,Math.min(d,new Date(y,target+1,0).getDate()));
+ const next=[end.getFullYear(),String(end.getMonth()+1).padStart(2,"0"),String(end.getDate()).padStart(2,"0")].join("-");
+ if(!confirm(`Grant a six-month extension to ${client.firstName} ${client.lastName}? New discharge date: ${next}`))return;
+ const previous=client.expectedDischargeDate;
+ client.expectedDischargeDate=next;
+ client.phase2Extensions=[...(Array.isArray(client.phase2Extensions)?client.phase2Extensions:[]),{grantedAt:new Date().toISOString(),previousDischargeDate:previous||"",newDischargeDate:next,staffUid:typeof auth!=="undefined"?(auth.currentUser?.uid||""):""}];
+ appendPersonActivity(client,"Phase 2","Six-month extension granted",`New discharge date: ${next}`);
+ renderRoster();
+ if(!(await saveRoster())){client.expectedDischargeDate=previous;client.phase2Extensions.pop();renderRoster();}
 }
 
 function moveToPhase(clientId, phase) {
@@ -1443,6 +1476,16 @@ auth.onAuthStateChanged(user => {
   if (!user) return;
 
   listenToAppState(nextState => {
+    // A delayed snapshot must not visually roll back an unsynchronized staff edit.
+    for (const client of (nextState.roster || [])) {
+      if (!client || !kbrhPendingCandidateFlags.has(client.id)) continue;
+      const desired = kbrhPendingCandidateFlags.get(client.id);
+      if (Boolean(client.phase2Candidate) === desired) {
+        kbrhPendingCandidateFlags.delete(client.id);
+      } else {
+        client.phase2Candidate = desired;
+      }
+    }
     rosterState = nextState;
 
     rosterState.roster = Array.isArray(rosterState.roster)

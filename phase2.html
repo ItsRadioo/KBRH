@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Phase 2 Roster</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="kbrh-ui-upgrade.css" rel="stylesheet"/><link href="kbrh-modern.css" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="auth.js?v=5.6.22"></script>
+<script src="data-store.js?v=5.6.21"></script><script src="dnr.js?v=1"></script>
+<script>requireLogin();</script>
+<link href="kbrh-v5.css?v=5.6.10" rel="stylesheet"/>
+<link href="resident-cards.css?v=20261027b" rel="stylesheet"/>
+<style>.kbrh-roster-nav-dropdown{position:relative;display:inline-block;align-self:center;z-index:110}.kbrh-roster-nav-dropdown summary{cursor:pointer;padding:10px 14px;font-weight:700}.kbrh-roster-nav-dropdown a{display:block;padding:9px 16px;color:#164e63;text-decoration:none;background:white;white-space:nowrap}.kbrh-roster-nav-dropdown a[aria-current=page]{font-weight:800;background:#e0f2fe}body[data-roster-view=phase1] .phase2-roster-section,body[data-roster-view=phase1] .archived-roster-section{display:none!important}body[data-roster-view=phase2] .phase1-roster-section,body[data-roster-view=phase2] .archived-roster-section,body[data-roster-view=phase2] .roster-summary,body[data-roster-view=phase2] .page-action-card{display:none!important}body[data-roster-view=archive] .phase1-roster-section,body[data-roster-view=archive] .phase2-roster-section,body[data-roster-view=archive] .roster-summary,body[data-roster-view=archive] .page-action-card{display:none!important}</style></head>
+<body class="page-roster" data-roster-view="phase2">
+<header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
+<h1>Phase 2 Roster</h1>
+<p>Current clients attending the home.</p>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><details class="kbrh-roster-nav-dropdown"><summary>Roster ▾</summary><a href="roster.html">Phase 1</a><a aria-current="page" href="phase2.html">Phase 2</a><a href="roster-archive.html">Archive</a></details><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="do-not-readmit.html">Do Not Readmit</a><a class="app-nav-link" href="house-chores.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="digital-logbook.html">Log Book</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="chat.html">Staff Chat</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a class="app-nav-link" data-admin-only="" hidden="" href="audit-log.html">Audit Log</a><a class="app-nav-link" data-admin-only="" hidden="" href="settings.html">Settings</a><a class="app-nav-link" href="staff-profile.html">My Profile</a><a class="app-nav-link" href="electronics-turn-in.html">Electronics Turn-In</a></nav></header>
+<main>
+<section class="card wide page-action-card">
+<div class="card-heading-row">
+<div>
+<h2>Client Management</h2>
+<p class="hint">Add a new resident or search and manage the current roster.</p>
+</div>
+<button class="secondary" id="openRoomAvailabilityBtn" type="button">Room Availability</button>
+<button class="primary-action-btn" id="openAddClientModalBtn" type="button">+ Add Client</button>
+</div>
+</section>
+<section aria-label="Phase 1 roster summary" class="roster-summary">
+<article class="roster-stat-card" id="phase1ResidentCard">
+<p class="roster-stat-label">Current Phase 1 Residents</p>
+<p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
+<p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
+</article>
+</section>
+<section class="card wide">
+<h2>Roster Controls</h2>
+<p class="hint">Search by name, room, client ID, phone, or city. Use Edit All to update multiple residents at once.</p>
+<div class="form-row">
+<input id="rosterSearch" oninput="handleRosterSearch(this.value)" placeholder="Search roster..." type="text"/>
+</div>
+<div class="button-row roster-control-buttons">
+<button id="editAllBtn" onclick="startEditAll()" type="button">Edit All Residents</button>
+<button class="success hidden" id="saveAllBtn" onclick="saveAllEdits()" type="button">Save All Changes</button>
+<button class="secondary hidden" id="cancelAllBtn" onclick="cancelEditAll()" type="button">Cancel Edit All</button>
+<button aria-controls="rosterColumnPanel" aria-expanded="false" class="secondary" id="toggleRosterColumnsBtn" type="button">Choose Columns</button>
+</div>
+<div class="roster-column-panel hidden" id="rosterColumnPanel">
+<div class="roster-column-panel-heading">
+<div>
+<strong>Visible Columns</strong>
+<p class="hint">Hide less-used columns to fit more information on screen. Your choices are remembered on this browser.</p>
+</div>
+<button class="secondary" id="showAllRosterColumnsBtn" type="button">Show All</button>
+</div>
+<div class="roster-column-options">
+<label><input checked="" data-roster-column="dob" type="checkbox"/> DOB</label>
+<label><input checked="" data-roster-column="phone" type="checkbox"/> Phone</label>
+<label><input checked="" data-roster-column="address" type="checkbox"/> Address</label>
+<label><input checked="" data-roster-column="city" type="checkbox"/> City</label>
+<label><input checked="" data-roster-column="contact" type="checkbox"/> Contact</label>
+<label><input checked="" data-roster-column="contactPhone" type="checkbox"/> Contact #</label>
+<label><input checked="" data-roster-column="entryDate" type="checkbox"/> Entry Date</label>
+<label><input checked="" data-roster-column="dischargeDate" type="checkbox"/> Discharge Date</label>
+<label><input checked="" data-roster-column="daysRemaining" type="checkbox"/> Days Left</label>
+<label><input checked="" data-roster-column="opoc" type="checkbox"/> OPOC</label>
+<label><input checked="" data-roster-column="admissionStatus" type="checkbox"/> Admission Status</label>
+<label><input checked="" data-roster-column="notes" type="checkbox"/> Notes</label>
+</div>
+</div>
+</section>
+<section class="card wide phase1-roster-section">
+<h2>Phase 1 Clients</h2>
+<div aria-label="Phase 1 resident cards" class="kbrh-resident-cards" id="phase1ResidentCards"></div>
+<div class="table-wrap kbrh-legacy-roster">
+<table class="roster-table roster-table-full">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th>DOB</th>
+<th class="phone-col">Phone</th>
+<th>Address</th>
+<th>City</th>
+<th>Contact</th>
+<th class="phone-col">Contact #</th>
+<th>Entry Date</th>
+<th>Discharge Date</th>
+<th>Days Left</th>
+<th class="opoc-col">OPOC</th>
+<th>Admission Status</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="rosterBody"></tbody>
+</table>
+<table aria-label="Compact Phase 1 client roster" class="roster-table roster-table-compact">
+<thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
+<tbody id="compactRosterBody"></tbody>
+</table>
+</div>
+</section>
+<section class="card wide phase2-roster-section">
+<h2>Phase 2 Clients — Beds 1–8</h2>
+<div class="table-wrap">
+<table class="roster-table roster-table-full">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th>DOB</th>
+<th class="phone-col">Phone</th>
+<th>Phase 2 Entry Date</th>
+<th>Discharge Date</th>
+<th>Days Left</th>
+<th>Admission Status</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="phase2RosterBody"></tbody>
+</table>
+<table aria-label="Compact Phase 2 client roster" class="roster-table roster-table-compact">
+<thead><tr><th>Room</th><th>Resident</th><th>Days Left</th><th>Status</th><th>Information</th><th>Actions</th></tr></thead>
+<tbody id="compactPhase2RosterBody"></tbody>
+</table>
+</div>
+</section>
+<section class="card wide archived-roster-section">
+<h2>Archived Roster Records</h2>
+<div class="table-wrap">
+<table class="roster-table">
+<thead>
+<tr>
+<th>Room #</th>
+<th>First Name</th>
+<th>Last Name</th>
+<th>Client ID</th>
+<th class="phone-col">Phone</th>
+<th>Entry Date</th>
+<th>Discharge Date</th>
+<th>Archived</th>
+<th>Retention Until</th>
+<th>Reason</th>
+<th>Notes</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="archivedRosterBody"></tbody>
+</table>
+</div>
+</section>
+</main>
+<div class="modal-backdrop hidden" id="dischargeModal">
+<div aria-labelledby="dischargeModalTitle" aria-modal="true" class="modal-card" role="dialog" style="max-width:620px">
+<div class="modal-title-row">
+<div><h2 id="dischargeModalTitle">Archive / Discharge Resident</h2><p class="hint" id="dischargeResidentName"></p></div>
+<button aria-label="Close" class="secondary modal-close-button" id="closeDischargeModalBtn" type="button">×</button>
+</div>
+<div class="field-group">
+<label for="dischargeOutcome">Discharge Reason</label>
+<select id="dischargeOutcome">
+<option value="">Select a reason…</option>
+<option value="completed">Program Completed</option>
+<option value="involuntary">Involuntary Discharge / Removed</option>
+<option value="voluntary-goals">Voluntary Departure — Felt They Got Enough From Program</option>
+<option value="voluntary-other">Voluntary Withdrawal / Left Early</option>
+<option value="medical">Medical / Health</option>
+<option value="transfer">Transfer to Another Service</option>
+<option value="legal">Incarcerated / Legal</option>
+<option value="other">Other</option>
+</select>
+</div>
+<div class="field-group">
+<label for="dischargeNotes">Notes <span class="hint">(optional)</span></label>
+<textarea id="dischargeNotes" placeholder="Optional details about the discharge" rows="4"></textarea>
+</div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelDischargeModalBtn" type="button">Cancel</button>
+<button class="danger" id="confirmDischargeBtn" type="button">Archive / Discharge</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="notesModal">
+<div class="modal-card">
+<h2 id="notesModalTitle">Notes</h2>
+<div class="field-group">
+<label for="noteAuthor">Staff Member</label>
+<input autocomplete="off" id="noteAuthor" placeholder="Enter your name" type="text"/>
+</div>
+<textarea class="notes-box" id="newNoteText" placeholder="Add a new note..."></textarea>
+<div class="button-row">
+<button id="addNoteBtn" onclick="addClientNote()" type="button">Add Note</button>
+<button class="secondary" id="closeNotesBtn" onclick="closeNotesModal()" type="button">Close</button>
+</div>
+<ul class="list" id="notesList"></ul>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="rosterActionsModal">
+<div aria-labelledby="rosterActionsModalTitle" aria-modal="true" class="modal-card applicant-actions-modal" role="dialog">
+<div class="modal-title-row">
+<div>
+<h2 id="rosterActionsModalTitle">Client Actions</h2>
+<p class="hint" id="rosterActionsName"></p>
+</div>
+<button aria-label="Close" class="secondary modal-close-button" id="closeRosterActionsModalBtn" type="button">×</button>
+</div>
+<div aria-label="Available client actions" class="applicant-action-list" id="rosterActionList"></div>
+<div class="button-row modal-actions">
+<button class="secondary" id="cancelRosterActionsModalBtn" type="button">Cancel</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="residentInfoModal">
+<div aria-labelledby="residentInfoModalTitle" aria-modal="true" class="modal-card resident-info-modal" role="dialog">
+<div class="modal-title-row resident-info-header">
+<div>
+<h2 id="residentInfoModalTitle">Resident Information</h2>
+<p class="hint" id="residentInfoModalSubtitle"></p>
+</div>
+<button aria-label="Close" class="secondary modal-close-button" id="closeResidentInfoModalBtn" type="button">×</button>
+</div>
+<div class="resident-info-body" id="residentInfoBody"></div>
+<div class="button-row modal-actions resident-info-footer">
+<button class="secondary" id="closeResidentInfoModalFooterBtn" type="button">Close</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="editResidentModal">
+<div aria-labelledby="editResidentModalTitle" aria-modal="true" class="modal-card kbrh-edit-modal resident-edit-modal" role="dialog">
+<div class="kbrh-edit-modal-header">
+<div>
+<h2 id="editResidentModalTitle">Edit Resident</h2>
+<p id="editResidentModalSubtitle">Update this resident's information.</p>
+</div>
+<button aria-label="Close" class="secondary kbrh-modal-close" id="closeEditResidentModalBtn" type="button">×</button>
+</div>
+<form class="kbrh-edit-modal-form" id="editResidentForm">
+<div class="kbrh-edit-modal-body">
+<div class="kbrh-modal-grid" id="editResidentFields"></div>
+</div>
+<div class="kbrh-edit-modal-footer">
+<button class="secondary" id="cancelEditResidentModalBtn" type="button">Cancel</button>
+<button class="success" type="submit">Save Changes</button>
+</div>
+</form>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="residentBedPickerModal">
+<div aria-labelledby="residentBedPickerTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row">
+<div><h2 id="residentBedPickerTitle">Choose an Available Bed</h2><p class="hint" id="residentBedPickerSummary">18 beds across 13 rooms</p></div>
+<button aria-label="Close bed selection" class="secondary modal-close-button" id="closeResidentBedPickerBtn" type="button">×</button>
+</div>
+<div class="room-availability-grid" id="residentBedPickerGrid"></div>
+<p class="hint">Occupied beds cannot be selected. Selecting a bed updates the edit form; use Save Changes to confirm the assignment.</p>
+<div class="button-row modal-actions"><button class="secondary" id="cancelResidentBedPickerBtn" type="button">Back to Edit Resident</button></div>
+</div>
+</div>
+<style>
+.bed-picker-input{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bed-picker-input input{flex:1;min-width:120px}
+.bed-picker-input button{white-space:nowrap}
+#residentBedPickerModal{z-index:10020!important}
+</style>
+<div class="modal-backdrop hidden" id="singleRoomAssignModal" role="presentation">
+<div aria-labelledby="singleRoomAssignTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row"><h2 id="singleRoomAssignTitle">Assign Single Room</h2><button class="secondary" id="closeSingleRoomAssignBtn" type="button">Close</button></div>
+<p class="hint">Choose a resident currently in a double room or without a bed assignment. Existing single-room occupants are excluded.</p>
+<div class="single-room-candidates" id="singleRoomAssignList"></div>
+</div></div>
+<style>#singleRoomAssignModal{z-index:10030!important}.single-room-candidates{max-height:60vh;overflow:auto;display:grid;gap:7px}</style>
+<div class="modal-backdrop hidden" id="roomAvailabilityModal" role="presentation">
+<div aria-labelledby="roomAvailabilityTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button aria-label="Close room availability" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" type="button">×</button></div>
+<div class="room-availability-grid" id="roomAvailabilityGrid"></div>
+<p class="hint">Select an available bed to assign it to a current resident. Occupancy reflects the current roster; rooms marked reserved or out of service are not automatically assigned.</p>
+<div class="button-row modal-actions"><button class="secondary" id="roomAvailabilityCloseFooter" type="button">Close</button></div>
+</div></div>
+<style>
+.room-availability-dialog{max-width:900px!important;width:min(94vw,900px);max-height:90vh;overflow:auto}
+.room-availability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.room-availability-room{border:1px solid var(--border-color,#d1d5db);border-radius:10px;padding:12px;min-width:0}
+.room-availability-room h3{margin:0 0 8px;font-size:1rem}
+.room-bed{display:block;width:100%;margin:5px 0;padding:9px;text-align:left;border-radius:7px;border:1px solid #aaa;background:#f1f5f9;color:#111;white-space:normal}
+.room-bed.available{background:#dcfce7;border-color:#86efac;cursor:pointer}.room-bed.occupied{background:#fee2e2;border-color:#fca5a5;cursor:default}
+.room-bed.reserved{background:#fef3c7;border-color:#fcd34d;cursor:default}
+@media(max-width:740px){.room-availability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.room-availability-grid{grid-template-columns:1fr}}
+</style>
+<style>.krc-candidate-flag{display:inline-flex;align-items:center;border-radius:7px;background:#e0f2fe;color:#075985;border:1px solid #7dd3fc;padding:5px 8px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}.krc-flags{flex-wrap:wrap}</style>
+<script src="roster.js?v=5.6.14"></script>
+<script src="kbrh-ui-upgrade.js"></script>
+<script src="kbrh-v5.js?v=5.6.10"></script>
+<script src="urine-screen.js?v=5.6.30"></script>
+<script src="chat-floating.js?v=4"></script></body>
+</html>

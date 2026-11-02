@@ -16,12 +16,12 @@
 <script>requireLogin();</script>
 <link href="kbrh-v5.css?v=5.6.10" rel="stylesheet"/>
 <link href="resident-cards.css?v=20261027b" rel="stylesheet"/>
-</head>
-<body class="page-roster">
+<style>.kbrh-roster-nav-dropdown{position:relative;display:inline-block;align-self:center;z-index:110}.kbrh-roster-nav-dropdown summary{cursor:pointer;padding:10px 14px;font-weight:700}.kbrh-roster-nav-dropdown a{display:block;padding:9px 16px;color:#164e63;text-decoration:none;background:white;white-space:nowrap}.kbrh-roster-nav-dropdown a[aria-current=page]{font-weight:800;background:#e0f2fe}body[data-roster-view=phase1] .phase2-roster-section,body[data-roster-view=phase1] .archived-roster-section{display:none!important}body[data-roster-view=phase2] .phase1-roster-section,body[data-roster-view=phase2] .archived-roster-section,body[data-roster-view=phase2] .roster-summary,body[data-roster-view=phase2] .page-action-card{display:none!important}body[data-roster-view=archive] .phase1-roster-section,body[data-roster-view=archive] .phase2-roster-section,body[data-roster-view=archive] .roster-summary,body[data-roster-view=archive] .page-action-card{display:none!important}</style></head>
+<body class="page-roster" data-roster-view="phase1">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Client Roster</h1>
 <p>Current clients attending the home.</p>
-</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a aria-current="page" class="app-nav-link active" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="do-not-readmit.html">Do Not Readmit</a><a class="app-nav-link" href="house-chores.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="digital-logbook.html">Log Book</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="chat.html">Staff Chat</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a data-admin-only="" hidden="" class="app-nav-link" href="audit-log.html">Audit Log</a><a class="app-nav-link" data-admin-only="" hidden="" href="settings.html">Settings</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
+</div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><details class="kbrh-roster-nav-dropdown"><summary>Roster ▾</summary><a aria-current="page" href="roster.html">Phase 1</a><a href="phase2.html">Phase 2</a><a href="roster-archive.html">Archive</a></details><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="do-not-readmit.html">Do Not Readmit</a><a class="app-nav-link" href="house-chores.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="digital-logbook.html">Log Book</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="chat.html">Staff Chat</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a class="app-nav-link" data-admin-only="" hidden="" href="audit-log.html">Audit Log</a><a class="app-nav-link" data-admin-only="" hidden="" href="settings.html">Settings</a><a class="app-nav-link" href="staff-profile.html">My Profile</a><a class="app-nav-link" href="electronics-turn-in.html">Electronics Turn-In</a></nav></header>
 <main>
 <section class="card wide page-action-card">
 <div class="card-heading-row">
@@ -39,8 +39,6 @@
 <p class="roster-stat-value"><span id="phase1ResidentCount">0</span><span class="roster-stat-capacity">/18</span></p>
 <p class="roster-stat-detail" id="phase1CapacityDetail">18 Beds Available</p>
 </article>
-
-
 </section>
 <section class="card wide">
 <h2>Roster Controls</h2>
@@ -80,7 +78,7 @@
 </section>
 <section class="card wide phase1-roster-section">
 <h2>Phase 1 Clients</h2>
-<div id="phase1ResidentCards" class="kbrh-resident-cards" aria-label="Phase 1 resident cards"></div>
+<div aria-label="Phase 1 resident cards" class="kbrh-resident-cards" id="phase1ResidentCards"></div>
 <div class="table-wrap kbrh-legacy-roster">
 <table class="roster-table roster-table-full">
 <thead>
@@ -261,15 +259,15 @@
 </div>
 </div>
 <div class="modal-backdrop hidden" id="residentBedPickerModal">
-  <div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="residentBedPickerTitle">
-    <div class="modal-title-row">
-      <div><h2 id="residentBedPickerTitle">Choose an Available Bed</h2><p class="hint" id="residentBedPickerSummary">18 beds across 13 rooms</p></div>
-      <button type="button" class="secondary modal-close-button" id="closeResidentBedPickerBtn" aria-label="Close bed selection">×</button>
-    </div>
-    <div class="room-availability-grid" id="residentBedPickerGrid"></div>
-    <p class="hint">Occupied beds cannot be selected. Selecting a bed updates the edit form; use Save Changes to confirm the assignment.</p>
-    <div class="button-row modal-actions"><button type="button" class="secondary" id="cancelResidentBedPickerBtn">Back to Edit Resident</button></div>
-  </div>
+<div aria-labelledby="residentBedPickerTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row">
+<div><h2 id="residentBedPickerTitle">Choose an Available Bed</h2><p class="hint" id="residentBedPickerSummary">18 beds across 13 rooms</p></div>
+<button aria-label="Close bed selection" class="secondary modal-close-button" id="closeResidentBedPickerBtn" type="button">×</button>
+</div>
+<div class="room-availability-grid" id="residentBedPickerGrid"></div>
+<p class="hint">Occupied beds cannot be selected. Selecting a bed updates the edit form; use Save Changes to confirm the assignment.</p>
+<div class="button-row modal-actions"><button class="secondary" id="cancelResidentBedPickerBtn" type="button">Back to Edit Resident</button></div>
+</div>
 </div>
 <style>
 .bed-picker-input{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -278,18 +276,18 @@
 #residentBedPickerModal{z-index:10020!important}
 </style>
 <div class="modal-backdrop hidden" id="singleRoomAssignModal" role="presentation">
-<div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="singleRoomAssignTitle">
-<div class="modal-title-row"><h2 id="singleRoomAssignTitle">Assign Single Room</h2><button type="button" class="secondary" id="closeSingleRoomAssignBtn">Close</button></div>
+<div aria-labelledby="singleRoomAssignTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row"><h2 id="singleRoomAssignTitle">Assign Single Room</h2><button class="secondary" id="closeSingleRoomAssignBtn" type="button">Close</button></div>
 <p class="hint">Choose a resident currently in a double room or without a bed assignment. Existing single-room occupants are excluded.</p>
-<div id="singleRoomAssignList" class="single-room-candidates"></div>
+<div class="single-room-candidates" id="singleRoomAssignList"></div>
 </div></div>
 <style>#singleRoomAssignModal{z-index:10030!important}.single-room-candidates{max-height:60vh;overflow:auto;display:grid;gap:7px}</style>
 <div class="modal-backdrop hidden" id="roomAvailabilityModal" role="presentation">
-<div class="modal-card room-availability-dialog" role="dialog" aria-modal="true" aria-labelledby="roomAvailabilityTitle">
-<div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button type="button" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" aria-label="Close room availability">×</button></div>
-<div id="roomAvailabilityGrid" class="room-availability-grid"></div>
+<div aria-labelledby="roomAvailabilityTitle" aria-modal="true" class="modal-card room-availability-dialog" role="dialog">
+<div class="modal-title-row"><div><h2 id="roomAvailabilityTitle">Room &amp; Bed Availability</h2><p class="hint" id="roomAvailabilitySummary">18 beds across 13 rooms</p></div><button aria-label="Close room availability" class="secondary modal-close-button" id="closeRoomAvailabilityBtn" type="button">×</button></div>
+<div class="room-availability-grid" id="roomAvailabilityGrid"></div>
 <p class="hint">Select an available bed to assign it to a current resident. Occupancy reflects the current roster; rooms marked reserved or out of service are not automatically assigned.</p>
-<div class="button-row modal-actions"><button type="button" class="secondary" id="roomAvailabilityCloseFooter">Close</button></div>
+<div class="button-row modal-actions"><button class="secondary" id="roomAvailabilityCloseFooter" type="button">Close</button></div>
 </div></div>
 <style>
 .room-availability-dialog{max-width:900px!important;width:min(94vw,900px);max-height:90vh;overflow:auto}
@@ -303,7 +301,7 @@
 @media(max-width:460px){.room-availability-grid{grid-template-columns:1fr}}
 </style>
 <style>.krc-candidate-flag{display:inline-flex;align-items:center;border-radius:7px;background:#e0f2fe;color:#075985;border:1px solid #7dd3fc;padding:5px 8px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}.krc-flags{flex-wrap:wrap}</style>
-<script src="roster.js?v=5.6.31"></script>
+<script src="roster.js?v=5.6.14"></script>
 <script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js?v=5.6.10"></script>
 <script src="urine-screen.js?v=5.6.30"></script>
