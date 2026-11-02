@@ -229,7 +229,7 @@ function getMissingAdmissionFields(client) {
   if (!client.clientId) missing.push("Client ID");
   if (!client.dob) missing.push("DOB");
   if (!client.phone) missing.push("Phone");
-  if (!client.entryDate) missing.push("Entry");
+  if ((client.phase || "phase1") === "phase2" ? !(client.phase2AdmissionDate || client.phase2EntryDate) : !client.entryDate) missing.push("Entry");
   if (!getDischargeDate(client)) missing.push("Discharge");
 
   return missing;
@@ -376,6 +376,7 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
     client.entryDate = getInputValue(`editEntryDate-${clientId}`);
   } else {
     client.phase2AdmissionDate = getInputValue(`editPhase2AdmissionDate-${clientId}`);
+    client.phase2EntryDate = client.phase2AdmissionDate;
   }
 
   normalizeResidentNamesOnSave(client);
@@ -763,6 +764,7 @@ function moveToPhase(clientId, phase) {
 
   if (phase === "phase2") {
     client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
+    client.phase2EntryDate = client.phase2AdmissionDate;
   }
 
   renderRoster();
@@ -1496,7 +1498,8 @@ auth.onAuthStateChanged(user => {
       client.roomNumber = kbrhNormalizeBedId(client.roomNumber);
       client.phase = client.phase || "phase1";
       client.notes = Array.isArray(client.notes) ? client.notes : [];
-      client.phase2AdmissionDate = client.phase2AdmissionDate || "";
+      client.phase2AdmissionDate = client.phase2AdmissionDate || client.phase2EntryDate || "";
+      client.phase2EntryDate = client.phase2AdmissionDate;
       client.expectedDischargeDate = client.expectedDischargeDate || calculateExitDate(client.entryDate);
       client.opocCompleted = client.opocCompleted || false;
       client.archived = client.archived || false;
