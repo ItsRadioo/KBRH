@@ -1,59 +1,36 @@
 (() => {
-  const pages = [
-    ["roster.html", "Roster"],
-    ["waitlist.html", "Waitlist"],
-    ["index.html", "House Chores"],
-    ["meal-chores.html", "Meal Chores"],
-    ["verbalwarning.html", "Warnings"],
-    ["writeups.html", "Write-Ups"],
-    ["chore-checks.html", "Chore Checks"],
-    ["incident-report.html", "Incident Reports"],
-    ["charts.html", "Charts"],
-    ["prescreening.html", "Pre-Screening"],
-    ["counseling-notes.html", "Counseling Notes"],
-    ["operations.html?mode=bus", "Equipment & Transportation"],
-    ["electronics-turn-in.html", "Electronics Turn-In"],
-    ["staff-list.html", "Staff List"],
-    ["audit-log.html", "Audit Log"],
-    ["staff-profile.html", "My Profile"],
-  ];
-  const rosterPages = [
-    ["roster.html", "Phase 1 Roster"],
-    ["phase2.html", "Phase 2 Roster"],
-    ["roster-archive.html", "Roster Archive"],
-  ];
-  function installNavigation() {
-    const nav = document.querySelector("nav.app-nav");
-    if (!nav) return;
-    const current = window.location.pathname.split("/").pop() || "index.html";
-    const rosterActive = rosterPages.some(([href]) => href === current);
-    nav.innerHTML = pages.map(([href, label]) => {
-      if (href === "roster.html") {
-        return `<details class="kbrh-roster-nav-dropdown"${rosterActive ? ' data-active="true"' : ''}>
-          <summary class="app-nav-link${rosterActive ? ' active' : ''}" aria-label="Roster pages">Roster ▾</summary>
-          <div class="kbrh-roster-nav-menu">${rosterPages.map(([target, text]) =>
-            `<a class="app-nav-link${current === target ? ' active' : ''}"${current === target ? ' aria-current="page"' : ''} href="${target}">${text}</a>`
-          ).join("")}</div>
-        </details>`;
-      }
-      const active = href.split("?")[0] === current;
-      return `<a class="app-nav-link${active ? " active" : ""}"${active ? ' aria-current="page"' : ""} href="${href}">${label}</a>`;
-    }).join("");
-    if (!document.getElementById("kbrh-roster-navigation-style")) {
-      const style = document.createElement("style");
-      style.id = "kbrh-roster-navigation-style";
-      style.textContent = `
-        nav.app-nav .kbrh-roster-nav-dropdown { position:relative; display:inline-flex; align-items:center; z-index:100; }
-        nav.app-nav .kbrh-roster-nav-dropdown > summary { display:inline-flex; align-items:center; cursor:pointer; list-style:none; user-select:none; }
-        nav.app-nav .kbrh-roster-nav-dropdown > summary::-webkit-details-marker { display:none; }
-        nav.app-nav .kbrh-roster-nav-menu { position:absolute; top:100%; left:0; z-index:200; min-width:190px; padding:5px; border:1px solid #cbd5e1; border-radius:9px; background:#fff; box-shadow:0 10px 25px #0002; }
-        nav.app-nav .kbrh-roster-nav-menu a { display:block; color:#17324d; padding:10px 12px; border-radius:5px; text-decoration:none; white-space:nowrap; }
-        nav.app-nav .kbrh-roster-nav-menu a:hover, nav.app-nav .kbrh-roster-nav-menu a.active { background:#e0f2fe; color:#075985; }
-        @media(max-width:700px) { nav.app-nav .kbrh-roster-nav-menu { left:auto; right:0; } }
-      `;
-      document.head.appendChild(style);
-    }
+ const rosterPages=[["roster.html","Phase 1"],["phase2.html","Phase 2"],["roster-archive.html","Archive"]];
+ function install(){
+  const nav=document.querySelector("nav.app-nav");if(!nav)return;
+  const current=location.pathname.split("/").pop()||"index.html";
+  const roster=nav.querySelector('a[href="roster.html"],details.kbrh-roster-nav-dropdown');
+  const html=`<details class="kbrh-roster-nav-dropdown"><summary class="app-nav-link${rosterPages.some(([p])=>p===current)?" active":""}">Roster ▾</summary><div class="kbrh-roster-nav-menu">${rosterPages.map(([href,label])=>`<a class="app-nav-link${href===current?" active":""}" href="${href}">${label}</a>`).join("")}</div></details>`;
+  if(roster)roster.outerHTML=html;
+  else nav.insertAdjacentHTML("afterbegin",html);
+  if(!nav.querySelector('a[href="electronics-turn-in.html"]'))nav.insertAdjacentHTML("beforeend",'<a class="app-nav-link" href="electronics-turn-in.html">Electronics Turn-In</a>');
+  const electronics=nav.querySelector('a[href="electronics-turn-in.html"]');
+  if(electronics&&current==="electronics-turn-in.html")electronics.classList.add("active");
+  if(!document.getElementById("kbrh-roster-nav-style")){
+   const style=document.createElement("style");style.id="kbrh-roster-nav-style";
+   style.textContent=`nav.app-nav .kbrh-roster-nav-dropdown{position:relative;display:inline-flex;z-index:100;align-items:center}
+nav.app-nav .kbrh-roster-nav-dropdown>summary{display:inline-flex;cursor:pointer;list-style:none}
+nav.app-nav .kbrh-roster-nav-dropdown>summary::-webkit-details-marker{display:none}
+nav.app-nav .kbrh-roster-nav-menu{position:absolute;top:100%;left:0;z-index:250;min-width:165px;padding:5px;background:white;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 10px 24px #0003}
+nav.app-nav .kbrh-roster-nav-menu a{display:block;padding:10px 12px;color:#17324d;text-decoration:none;white-space:nowrap;border-radius:5px}
+nav.app-nav .kbrh-roster-nav-menu a:hover,nav.app-nav .kbrh-roster-nav-menu a.active{background:#e0f2fe;color:#075985}
+.roster-view-switch{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:14px 0 20px}
+.roster-view-switch a{padding:10px 16px;border:1px solid #b9c9d7;border-radius:9px;background:#fff;color:#164e63;text-decoration:none;font-weight:700}
+.roster-view-switch a[aria-current=page]{background:#164e63;color:white}
+@media(max-width:700px){nav.app-nav .kbrh-roster-nav-menu{left:auto;right:0}}`;
+   document.head.appendChild(style);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installNavigation);
-  else installNavigation();
+  if(document.body?.dataset.rosterView&&!document.getElementById("roster-view-switch")){
+   const bar=document.createElement("div");bar.id="roster-view-switch";bar.className="roster-view-switch";
+   bar.setAttribute("aria-label","Switch roster section");
+   bar.innerHTML=rosterPages.map(([href,label])=>`<a href="${href}"${href===current?' aria-current="page"':""}>${label==="Phase 1"?"Phase 1 Roster":label==="Phase 2"?"Phase 2 Roster":"Archive"}</a>`).join("");
+   const main=document.querySelector("main");if(main)main.insertAdjacentElement("afterbegin",bar);
+   else document.querySelector("header")?.insertAdjacentElement("afterend",bar);
+  }
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
 })();

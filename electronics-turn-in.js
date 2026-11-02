@@ -22,10 +22,35 @@ function draw(){
  $("electronicsReview").innerHTML=review.length?review.map(r=>`<p><strong>${esc(r.residentName)}</strong> — ${esc(displayTime(r.time))} <span class="electronics-pill review">Review required</span></p>`).join(""):"No late turn-ins flagged for this date.";
  $("electronicsStatus").textContent=`${today.length} of ${residents.length} residents checked off for ${$("collectionDate").value}.`;
  document.querySelectorAll("#electronicsRows input[type=checkbox]").forEach(box=>box.addEventListener("change",()=>{
-   if(!box.checked){box.checked=true;alert("Turn-in history cannot be erased by unchecking. Correct the record through the logbook review process.");return}
+   if(!box.checked){
+     box.checked=true;
+     const existing=byId.get(box.dataset.id);
+     if(existing)undoTurnIn(existing);
+     return;
+   }
    const resident=residents.find(c=>idOf(c)===box.dataset.id);
    if(resident)beginTurnIn(resident);
  }));
+}
+async function undoTurnIn(record){
+ if(busy)return;
+ if(!confirm(`Undo the device turn-in for ${record.residentName} on ${record.date} at ${displayTime(record.time)}? A correction will be added to the log book.`))return;
+ const reason=prompt("Reason for correcting this check-off (required):");
+ if(!reason||!reason.trim()){draw();return}
+ busy=true;draw();
+ try{
+  await db.runTransaction(async tx=>{
+   const ref=EDOC(),log=LREF();
+   const [a,b]=await Promise.all([tx.get(ref),tx.get(log)]);
+   const existing=a.exists&&Array.isArray(a.data().records)?a.data().records:[];
+   if(!existing.some(x=>x.id===record.id))throw Error("This turn-in has already been corrected.");
+   const entries=b.exists&&Array.isArray(b.data().entries)?b.data().entries:[];
+   const note=`CORRECTION: ${record.residentName}'s device turn-in at ${displayTime(record.time)} on ${record.date} was unchecked. Reason: ${reason.trim()}`;
+   tx.set(ref,{records:existing.filter(x=>x.id!==record.id),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+   tx.set(log,{entries:[...entries,{id:`electronics-correction-${Date.now()}-${record.id}`,type:"note",logScope:"phase1",note,summary:"Electronics Turn-In Correction",residentId:record.residentId,residentName:record.residentName,createdAt:new Date().toISOString(),enteredBy:auth.currentUser?.email||"",enteredByUid:auth.currentUser?.uid||"",electronicsRecordId:record.id,correctionReason:reason.trim()}],updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+  });
+ }catch(e){alert("Could not correct turn-in: "+(e.message||e))}
+ finally{busy=false;draw()}
 }
 function beginTurnIn(resident){
  const now=new Date(),selected=$("collectionDate").value;
