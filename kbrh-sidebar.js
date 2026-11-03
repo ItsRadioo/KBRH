@@ -31,9 +31,26 @@
   body.kbrh-single-sidebar.kbrh-nav-collapsed{padding-left:0!important}
   body.kbrh-single-sidebar>header,body.kbrh-single-sidebar>main,body.kbrh-single-sidebar>footer{box-sizing:border-box!important;position:relative!important;left:auto!important;right:auto!important;transform:none!important;visibility:visible!important;opacity:1!important;max-width:100%!important;width:100%!important}
   body.kbrh-single-sidebar>header{display:block!important;margin:0!important}
-  body.kbrh-single-sidebar>main{display:block!important;margin:20px auto!important;padding:0 18px!important;min-width:0!important}
+  body.kbrh-single-sidebar>main{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;margin:16px 0 36px!important;padding:0 18px!important;min-width:0!important;width:100%!important;max-width:none!important}
   body.kbrh-single-sidebar>main>*{min-width:0}
   .kbrh-page-title{margin:0 0 18px;padding:14px 18px;background:#0b2b4d;border-radius:10px;color:white}.kbrh-page-title h1{margin:0;color:white;font-size:clamp(22px,2.3vw,32px)}
+  /* Content width follows the sidebar state; preserve the site's 12-column grid. */
+  html{overflow-x:hidden}
+  body.kbrh-single-sidebar{width:100%!important;max-width:none!important}
+  body.kbrh-single-sidebar>main{
+    display:grid!important;
+    grid-template-columns:repeat(12,minmax(0,1fr))!important;
+    width:100%!important;max-width:none!important;
+    margin:16px 0 36px!important;padding:0 18px!important;
+    box-sizing:border-box!important;min-width:0!important;
+  }
+  body.kbrh-single-sidebar.kbrh-nav-collapsed>main{
+    width:100%!important;max-width:none!important;
+    margin-left:0!important;margin-right:0!important;
+    padding-left:18px!important;padding-right:18px!important;
+  }
+  body.kbrh-single-sidebar>main>.kbrh-page-title{grid-column:1/-1!important}
+  body.kbrh-single-sidebar>main>*{max-width:100%;min-width:0}
   #kbrh-sidebar{position:fixed!important;top:0!important;bottom:0!important;left:0!important;width:260px!important;z-index:10000!important;box-sizing:border-box!important;overflow-y:auto!important;padding:14px 12px!important;background:linear-gradient(180deg,#06182d,#0a2744)!important;color:white!important;display:flex!important;flex-direction:column!important;transform:translateX(0)!important;transition:transform .2s ease!important}
   body.kbrh-nav-collapsed #kbrh-sidebar{transform:translateX(-100%)!important;pointer-events:none!important}
   #kbrh-sidebar .kbrh-sidebar-brand{text-align:center;padding:22px 4px;border-bottom:1px solid #ffffff40;margin-bottom:18px!important}
