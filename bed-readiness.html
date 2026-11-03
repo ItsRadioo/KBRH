@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bed Readiness | KBRH</title><link rel="stylesheet" href="style.css">
+<style>
+body.page-bed-readiness{background:#eef3f8;color:#152c43;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body.page-bed-readiness main#bed-readiness-main{display:block!important;grid-template-columns:none!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:24px!important}
+body.page-bed-readiness main#bed-readiness-main>*{grid-column:auto!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
+.bed-panel{background:#fff;border:1px solid #d5e0ea;border-radius:14px;padding:24px;margin-bottom:18px}
+.bed-panel h1{font-size:26px;margin:0 0 8px}.bed-panel p{color:#536b80;margin:0 0 14px}
+.bed-totals{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.bed-total{border:1px solid #d7e1eb;background:#f6f9fc;border-radius:10px;padding:12px 18px;min-width:135px}.bed-total strong{font-size:26px;display:block}.bed-total span{font-size:13px;color:#4e6478}
+.bed-room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.bed-room{border:1px solid #cbd8e4;border-radius:12px;padding:16px;background:#fff;min-width:0}
+.bed-room h2{font-size:18px;margin:0 0 14px}.bed-room-beds{display:grid;gap:10px}
+.bed-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-radius:9px;border:1px solid #d7e0e8;background:#f8fafc;flex-wrap:wrap}
+.bed-item.ready{border-color:#9acbb4;background:#ecf8f0}.bed-item.unready{border-color:#e6bc9a;background:#fff5ec}
+.bed-item strong{display:block}.bed-item small{display:block;color:#5b7082;font-size:12px;margin-top:3px}
+.bed-item button{font:inherit;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;border:0;color:#fff;background:#a44c1e;min-width:106px}
+.bed-item.ready button{background:#15734c}.bed-item button:disabled{opacity:.5;cursor:wait}
+.bed-item button:focus-visible{outline:3px solid #2678d9;outline-offset:3px}
+#bed-message{min-height:20px;color:#8b241c;font-weight:600}#bed-message:empty{display:none}
+@media(max-width:650px){body.page-bed-readiness main#bed-readiness-main{padding:12px!important}.bed-panel{padding:16px}}
+</style>
+<script src="auth.js?v=5.6.22"></script><script src="data-store.js?v=5.6.20"></script><script>requireLogin();</script></head>
+<body class="page-bed-readiness"><main id="bed-readiness-main"><section class="bed-panel"><h1>Bed Readiness</h1><p>Set each Phase 1 bed to Ready or Unready independently. Room 5 is not part of the inventory. These flags do not change room assignments or inspection results.</p><div id="bed-totals" class="bed-totals" aria-live="polite"></div><div id="bed-message" role="alert"></div></section><section class="bed-panel"><div id="bed-room-grid" class="bed-room-grid" aria-live="polite"><p>Loading beds…</p></div></section></main>
+<script src="bed-readiness.js?v=20261103-1"></script><script src="kbrh-sidebar.js?v=bed-readiness-20261103"></script></body></html>
