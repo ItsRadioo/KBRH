@@ -1,6 +1,6 @@
 (()=>{
  const groups=[
- ['MAIN','house',[['index.html','Dashboard','layout-dashboard'],['roster-overview.html','Roster Overview','clipboard-list']]],
+ ['MAIN','house',[['index.html','Dashboard','layout-dashboard']]],
  ['ROSTER','users',[['roster.html','Phase 1','users'],['phase2.html','Phase 2','users'],['roster-archive.html','Archive','archive']]],
  ['ADMISSIONS','clipboard-check',[['prescreening.html','Prescreening','clipboard-check'],['pending-admissions.html','Pending Admission','user-plus'],['waitlist.html','Waitlist','list'],['do-not-readmit.html','Do Not Readmit','shield-alert']]],
  ['DAILY OPERATIONS','calendar-days',[['operations.html','Daily Operations','calendar'],['house-chores.html','House Chores','check-square'],['meal-chores.html','Meal Chores','utensils'],['electronics-turn-in.html','Electronics Turn In','smartphone'],['digital-logbook.html','Log Book','book-open'],['assignment-board.html','Assignment Board','layout-grid'],['chore-checks.html','Chore Checks','check-circle'],['bus-passes.html','Bus Passes','ticket'],['tool-signout.html','Tool Signout','wrench']]],

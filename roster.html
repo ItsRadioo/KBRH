@@ -2500,7 +2500,21 @@ body.kbrh-nav-collapsed #kbrh-menu-toggle{display:block!important;position:fixed
 body.kbrh-nav-collapsed>header{padding-left:112px!important}
 @media(max-width:900px){body.kbrh-sidebar-layout{padding-left:0!important}body.kbrh-sidebar-layout #kbrh-sidebar{transform:translateX(-100%)}body.kbrh-sidebar-layout.kbrh-nav-open #kbrh-sidebar{transform:translateX(0);pointer-events:auto}body.kbrh-sidebar-layout #kbrh-menu-toggle{display:block!important;position:fixed;top:12px;left:12px;z-index:10020;background:#125b9e;color:white;padding:9px 13px;border-radius:8px}body.kbrh-sidebar-layout>header{padding-left:110px!important}}
 @media print{#kbrh-sidebar,#kbrh-menu-toggle{display:none!important}body.kbrh-sidebar-layout{padding-left:0!important}}
-</style></head>
+</style><style id="kbrh-clear-nav-headings">
+/* KBRH clear section headings: sitewide navigation */
+#kbrh-sidebar .kbrh-nav-group{margin:12px 0 14px;border:0!important;}
+#kbrh-sidebar .kbrh-nav-group>summary{display:flex!important;align-items:center!important;gap:11px!important;background:linear-gradient(100deg,#105494,#0b417a)!important;color:#fff!important;border:1px solid rgba(112,184,255,.19)!important;border-radius:10px!important;padding:12px 14px!important;margin:0!important;min-height:46px!important;font-size:.88rem!important;font-weight:800!important;letter-spacing:.025em!important;box-shadow:0 2px 7px rgba(0,0,0,.12)!important;list-style:none!important;cursor:pointer!important;}
+#kbrh-sidebar .kbrh-nav-group>summary:hover,#kbrh-sidebar .kbrh-nav-group>summary:focus-visible{background:linear-gradient(100deg,#176bb6,#14518f)!important;outline-offset:2px;}
+#kbrh-sidebar .kbrh-nav-group>summary .kbrh-nav-icon{flex:0 0 22px;text-align:center;color:#fff!important;font-size:1.14rem!important;}
+#kbrh-sidebar .kbrh-nav-group-name{flex:1;min-width:0;}
+#kbrh-sidebar .kbrh-nav-chevron{margin-left:auto;font-size:1.25rem!important;font-weight:900;line-height:1;transition:transform .18s ease;transform:rotate(-90deg);}
+#kbrh-sidebar .kbrh-nav-group[open] .kbrh-nav-chevron{transform:rotate(0deg);}
+#kbrh-sidebar .kbrh-nav-items{padding:5px 0 2px 6px;}
+#kbrh-sidebar .kbrh-nav-items a{display:flex!important;align-items:center!important;gap:9px!important;background:transparent!important;border-radius:9px!important;min-height:38px;}
+#kbrh-sidebar .kbrh-nav-items a:hover{background:rgba(63,139,223,.24)!important;}
+#kbrh-sidebar .kbrh-nav-items a[aria-current="page"]{background:#1973d0!important;color:#fff!important;}
+</style>
+</head>
 <body class="page-roster" data-roster-view="phase1">
 <header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Client Roster</h1>
