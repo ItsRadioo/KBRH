@@ -12,11 +12,23 @@
  const KEY='kbrh-nav-collapsed-v2';
  function init(){
   if(!document.body||document.getElementById('kbrh-sidebar'))return;
-  document.body.classList.add('kbrh-sidebar-layout');
+  document.body.classList.add('kbrh-sidebar-layout');document.body.classList.remove('v5-sidebar-collapsed');
   const nav=document.createElement('aside');nav.id='kbrh-sidebar';nav.setAttribute('aria-label','Site navigation');
   const link=([href,label,ico])=>`<a class="kbrh-nav-link" href="${href}" ${href===current?'aria-current="page"':''}><span class="kbrh-nav-icon" aria-hidden="true">${icons[ico]||'•'}</span><span>${label}</span></a>`;
   nav.innerHTML=`<div class="kbrh-sidebar-brand"><span class="kbrh-logo">KBRH</span><small>Ken Brown Recovery Home</small><button id="kbrh-sidebar-collapse" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">☰</button></div><div class="kbrh-sidebar-links">${groups.map(([label,ico,links],i)=>`<details class="kbrh-nav-group" ${i===0||links.some(x=>x[0]===current)?'open':''}><summary><span class="kbrh-nav-icon" aria-hidden="true">${icons[ico]}</span><span class="kbrh-nav-group-name">${label}</span><span class="kbrh-nav-chevron" aria-hidden="true">⌄</span></summary><div class="kbrh-nav-items">${links.map(link).join('')}</div></details>`).join('')}</div>`;
   document.body.insertAdjacentElement('afterbegin',nav);
+  // The original fixed header is itself a legacy sidebar. Remove its
+  // visual shell, keeping logout available in the replacement navigation.
+  const legacyHeader=document.querySelector('body > header');
+  if(legacyHeader){
+    legacyHeader.setAttribute('aria-hidden','true');
+    legacyHeader.style.setProperty('display','none','important');
+  }
+  const logout=document.createElement('button');
+  logout.type='button';logout.id='kbrh-sidebar-logout';logout.textContent='Sign Out';
+  logout.addEventListener('click',()=>{if(typeof window.logout==='function')window.logout();});
+  nav.appendChild(logout);
+
   const navStyle=document.createElement('style');navStyle.id='kbrh-sidebar-header-restore';navStyle.textContent='#kbrh-sidebar .kbrh-nav-group>summary{background:linear-gradient(100deg,#105494,#0b417a)!important;color:#fff!important;border:1px solid rgba(112,184,255,.22)!important;border-radius:10px!important;padding:12px 14px!important;font-weight:800!important;display:flex!important;align-items:center!important;gap:11px!important;cursor:pointer!important}#kbrh-sidebar .kbrh-nav-group>summary .kbrh-nav-chevron{margin-left:auto!important;color:white!important}#kbrh-sidebar .kbrh-nav-group{margin:12px 0 14px!important}#kbrh-sidebar .kbrh-nav-items a[aria-current=page]{background:#1973d0!important;color:white!important}';document.head.appendChild(navStyle);
   const finalCSS=document.createElement('style');finalCSS.id='kbrh-nav-final';finalCSS.textContent=`
   #kbrh-sidebar{background:linear-gradient(180deg,#06182d,#0a2744)!important}
@@ -64,6 +76,13 @@
     #kbrh-sidebar-edge-toggle:focus-visible{outline:3px solid #60a5fa!important}
     @media(max-width:900px){body.kbrh-sidebar-layout{padding-left:0!important}body.kbrh-sidebar-layout #kbrh-sidebar{transform:translateX(-100%)!important}body.kbrh-sidebar-layout:not(.kbrh-nav-collapsed) #kbrh-sidebar{transform:translateX(0)!important}body.kbrh-sidebar-layout>header{padding-left:24px!important}}
     @media print{#kbrh-sidebar-edge-toggle{display:none!important}}
+
+    body.kbrh-sidebar-layout>header{display:none!important}
+    body.kbrh-sidebar-layout>main{margin-left:0!important;transform:none!important;width:100%!important;max-width:none!important}
+    #kbrh-sidebar{display:flex!important;flex-direction:column!important}
+    #kbrh-sidebar .kbrh-sidebar-links{flex:1!important}
+    #kbrh-sidebar-logout{display:block!important;width:100%!important;padding:11px!important;border:1px solid #ffffff40!important;border-radius:9px!important;background:#ffffff14!important;color:white!important;font-weight:700!important;cursor:pointer!important;margin-top:20px!important}
+    @media(max-width:900px){body.kbrh-sidebar-layout>main{margin-left:0!important;width:100%!important}}
   `;document.head.appendChild(unify);
   sync();
   nav.addEventListener('click',e=>{if(e.target.closest('a'))document.body.classList.remove('kbrh-nav-open')});
