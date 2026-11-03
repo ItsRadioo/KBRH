@@ -419,6 +419,24 @@ body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0
 .page-waitlist .waitlist-callin-card-nocall .waitlist-callin-detail strong{color:#9e2f38;}
 @media(max-width:800px){.page-waitlist .waitlist-callin-summary{grid-template-columns:1fr;}.page-waitlist .waitlist-callin-card{padding:14px 16px;}}
 
+
+/* Phase 1 matches Phase 2 resident card design; retain operational flags. */
+#phase1ResidentCards.kbrh-resident-cards{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:16px!important}
+#phase1ResidentCards .phase1-matched-card{padding:0!important;display:block!important;overflow:hidden!important}
+#phase1ResidentCards .phase1-matched-card .p2-card-head{background:linear-gradient(100deg,#092e59,#0c4688)!important;color:#fff!important;padding:13px 14px!important;min-height:50px!important;display:flex!important;align-items:center!important;justify-content:space-between!important}
+#phase1ResidentCards .phase1-matched-card .p2-card-head strong{color:#fff!important;font-size:.97rem!important}
+#phase1ResidentCards .phase1-matched-card .p2-card-content{padding:14px!important;display:block!important}
+#phase1ResidentCards .phase1-matched-card .p2-field{display:grid!important;grid-template-columns:105px minmax(0,1fr)!important;gap:7px!important;margin:9px 0!important}
+#phase1ResidentCards .phase1-matched-card .p2-field span{font-weight:750!important;color:#324a65!important}
+#phase1ResidentCards .phase1-matched-card .p2-field strong{color:#152338;overflow-wrap:anywhere}
+#phase1ResidentCards .phase1-matched-card .p2-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;margin-top:20px!important}
+#phase1ResidentCards .phase1-matched-card .p2-actions button{width:100%!important;min-width:0!important}
+#phase1ResidentCards .p1-status-flags{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+#phase1ResidentCards .p1-status-flags .p1-opoc-flag:empty{display:none}
+#phase1ResidentCards .p1-roster-position{color:#dceafe;font-weight:700;font-size:.8rem}
+@media(max-width:1250px){#phase1ResidentCards.kbrh-resident-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:720px){#phase1ResidentCards.kbrh-resident-cards{grid-template-columns:minmax(0,1fr)!important}}
+
 </style><style data-original-file="kbrh-modern.css">
 /* KBRH Modern UI — presentation-only layer */
 :root{
@@ -2804,5 +2822,5 @@ body.kbrh-nav-collapsed>header{padding-left:112px!important}
 <script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js?v=5.6.10"></script>
 <script src="urine-screen.js?v=5.6.30"></script>
-<script src="chat-floating.js?v=4"></script><script src="kbrh-nav.js?v=5.6.18"></script><script src="kbrh-sidebar.js?v=20261102"></script></body>
+<script src="chat-floating.js?v=4"></script><script src="kbrh-nav.js?v=5.6.18"></script><script src="kbrh-sidebar.js?v=20261103-card-nav"></script></body>
 </html>

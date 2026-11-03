@@ -1131,20 +1131,19 @@ function renderResidentCards(){
  const remaining=calculateDaysRemainingForClient(c);
  const remainingNumber=Number.parseInt(remaining,10);
  const remainingClass=!discharge?'krc-days-none':remaining==='Today'||remaining==='Due / Past'?'krc-days-urgent':Number.isFinite(remainingNumber)&&remainingNumber<=7?'krc-days-soon':'krc-days-ok';
- return `<article class="krc-card krc-approved">
-  <div class="krc-topline">
-   <div class="krc-identity"><div class="krc-name"><span class="krc-position" title="Phase 1 roster position">${positions.get(c.id)||'—'}.</span> ${escapeHtml([c.firstName,c.lastName].filter(Boolean).join(' '))} <span class="krc-id">#${escapeHtml(c.clientId||'—')}</span>${c.phase2Candidate ? ` <span class="krc-candidate-flag" title="Flagged for Phase 2 consideration">PHASE 2 CANDIDATE</span>` : ""}</div></div>
-   <div class="krc-flags">${kbrhTHCTags(c)}</div>
+ return `<article class="p2-card phase1-matched-card">
+  <div class="p2-card-head"><strong>♟ ${escapeHtml([c.lastName,c.firstName].filter(Boolean).join(', ')||'Unnamed resident')}</strong><span class="p1-roster-position" title="Phase 1 roster position">#${positions.get(c.id)||'—'}</span></div>
+  <div class="p2-card-content">
+   <div class="p1-status-flags">${c.phase2Candidate ? '<span class="krc-candidate-flag">PHASE 2 CANDIDATE</span>' : ''}${kbrhTHCTags(c)}<div class="p1-opoc-flag">${kbrhCardOPOC(c)}</div></div>
+   <div class="p2-field"><span>Room</span><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
+   <div class="p2-field"><span>Client ID</span><strong>${escapeHtml(c.clientId||'—')}</strong></div>
+   <div class="p2-field"><span>Contact</span><strong>${escapeHtml([c.contact,c.contactPhone].filter(Boolean).join(' · ')||c.phone||'—')}</strong></div>
+   <div class="p2-field"><span>Entry Date</span><strong>${escapeHtml(c.entryDate?formatDate(c.entryDate):'—')}</strong></div>
+   <div class="p2-field"><span>Exit Date</span><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
+   <div class="p2-field"><span>Days Remaining</span><strong class="${remainingClass}">${escapeHtml(remaining||'—')}</strong></div>
+   <div class="p2-actions"><button type="button" onclick="openRosterActionsModal('${id}')">Actions / Edit</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div>
   </div>
-  <div class="krc-approved-content">
-   <div class="krc-field krc-room"><small>ROOM</small><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
-   <div class="krc-field krc-days ${remainingClass}"><small>DAYS REMAINING</small><strong>${escapeHtml(remaining||'—')}</strong></div>
-   <div class="krc-field krc-phone"><small>PHONE</small><strong>${escapeHtml(c.phone||'—')}</strong></div>
-   <div class="krc-field krc-contact"><small>EMERGENCY CONTACT</small><strong>${escapeHtml(c.contact||'—')}</strong><span>${escapeHtml(c.contactPhone||'')}</span></div>
-   <div class="krc-field krc-discharge"><small>DISCHARGE</small><strong>${escapeHtml(discharge?formatDate(discharge):'—')}</strong></div>
-   <div class="krc-controls"><div class="krc-opoc">${kbrhCardOPOC(c)}</div><div class="krc-buttons"><button type="button" onclick="openRosterActionsModal('${id}')">Actions</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div>
-  </div>
- </article>`;
+ </article>`
  }).join(''):'<p class="empty">No Phase 1 residents.</p>';
 }
 
