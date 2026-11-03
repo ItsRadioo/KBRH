@@ -82,7 +82,41 @@ function renderGrid(){
   updateAssignmentWeekLabel();
 }
 function startArea(id){if(id==='rooms')return openRoomPicker();openCheck(id,'');}
-function openRoomPicker(){$('roomButtonGrid').innerHTML=RESIDENT_ROOM_NUMBERS.map(n=>{const r=latestRecord('rooms',n);return `<button class="room-pick ${r?(r.issuesFound?'issues':'complete'):''}" onclick="openCheck('rooms','${n}')">Room ${n}<span>${r?(r.issuesFound?'Issues noted':'Checked'):'Not checked'}</span></button>`}).join('');$('roomPickerModal').classList.remove('hidden');document.body.classList.add('kbrh-modal-open');}
+function roomReadyStatus(room){
+  return checkState.roomReadiness?.[String(room)]?.ready===true;
+}
+async function toggleRoomReady(room){
+  const key=String(room);
+  const previous=checkState.roomReadiness?.[key]||{};
+  const ready=!previous.ready;
+  checkState.roomReadiness={...(checkState.roomReadiness||{}),
+    [key]:{ready,updatedAt:new Date().toISOString(),updatedBy:typeof currentStaffName==='function'?currentStaffName():''}};
+  try{
+    await saveAppState(checkState);
+    openRoomPicker();
+  }catch(error){
+    checkState.roomReadiness={...(checkState.roomReadiness||{}),[key]:previous};
+    alert('Could not save room readiness. Please try again.');
+    openRoomPicker();
+  }
+}
+function openRoomPicker(){
+  $('roomButtonGrid').innerHTML=RESIDENT_ROOM_NUMBERS.map(n=>{
+    const r=latestRecord('rooms',n);
+    const ready=roomReadyStatus(n);
+    return `<div class="room-ready-card ${ready?'is-ready':'is-unready'}">
+      <button type="button" class="room-pick" onclick="openCheck('rooms','${n}')">
+        <strong>Room ${n}</strong>
+        <span>${r?(r.issuesFound?'Issues noted':'Checked'):'Not checked'}</span>
+      </button>
+      <button type="button" class="room-ready-toggle ${ready?'ready':'unready'}"
+        onclick="toggleRoomReady('${n}')" aria-label="Mark Room ${n} ${ready?'unready':'ready'}"
+        aria-pressed="${ready}">${ready?'✓ Ready':'Unready'} <span aria-hidden="true">↔</span></button>
+    </div>`;
+  }).join('');
+  $('roomPickerModal').classList.remove('hidden');
+  document.body.classList.add('kbrh-modal-open');
+}
 function closeRoomPicker(){$('roomPickerModal').classList.add('hidden');if($('checkModal').classList.contains('hidden'))document.body.classList.remove('kbrh-modal-open');}
 function openCheck(areaId,room=''){
   currentAreaId=areaId;
@@ -122,6 +156,7 @@ auth.onAuthStateChanged(async u=>{
     checkState=s;
     await ensureWeeklyAssignmentSnapshot();
     renderGrid();
+    if(!$('roomPickerModal').classList.contains('hidden'))openRoomPicker();
   });
   if(!snapshotTimer){
     snapshotTimer=setInterval(async()=>{
