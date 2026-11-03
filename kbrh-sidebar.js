@@ -43,7 +43,7 @@
    document.body.classList.toggle('kbrh-nav-open');
   };
   nav.addEventListener('click',e=>{if(e.target.closest('a'))document.body.classList.remove('kbrh-nav-open')});
-  document.querySelectorAll('header nav.app-nav').forEach(el=>el.setAttribute('aria-hidden','true'));
+  document.querySelectorAll('header nav.app-nav').forEach(el=>el.remove());
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

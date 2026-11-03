@@ -1132,7 +1132,7 @@ function renderResidentCards(){
  const remainingNumber=Number.parseInt(remaining,10);
  const remainingClass=!discharge?'krc-days-none':remaining==='Today'||remaining==='Due / Past'?'krc-days-urgent':Number.isFinite(remainingNumber)&&remainingNumber<=7?'krc-days-soon':'krc-days-ok';
  return `<article class="p2-card phase1-matched-card">
-  <div class="p2-card-head"><strong>♟ ${escapeHtml([c.lastName,c.firstName].filter(Boolean).join(', ')||'Unnamed resident')}</strong><span class="p1-roster-position" title="Phase 1 roster position">#${positions.get(c.id)||'—'}</span></div>
+  <div class="p2-card-head"><strong>♟ ${escapeHtml([c.lastName,c.firstName].filter(Boolean).join(', ')||'Unnamed resident')} <span class="kbrh-client-id-badge">ID: ${escapeHtml(c.clientId||'—')}</span></strong><span class="p1-roster-position" title="Phase 1 roster position">#${positions.get(c.id)||'—'}</span></div>
   <div class="p2-card-content">
    <div class="p1-status-flags">${c.phase2Candidate ? '<span class="krc-candidate-flag">PHASE 2 CANDIDATE</span>' : ''}${kbrhTHCTags(c)}<div class="p1-opoc-flag">${kbrhCardOPOC(c)}</div></div>
    <div class="p2-field"><span>Room</span><strong>${escapeHtml(kbrhNormalizeBedId(c.roomNumber)||'—')}</strong></div>
@@ -1174,7 +1174,7 @@ function renderPhase2Cards(clients) {
   const extended=Array.isArray(c.phase2Extensions)&&c.phase2Extensions.length>0;
   const name=[c.lastName,c.firstName].filter(Boolean).join(", ")||"Unnamed resident";
   const field=(label,value)=>`<div class="p2-field"><span>${label}</span><strong>${escapeHtml(value||"—")}</strong></div>`;
-  return `<article class="p2-card"><div class="p2-card-head"><strong>♟ ${escapeHtml(name)}</strong>${extended?'<span class="p2-extension">6-Month Extension</span>':''}</div>
+  return `<article class="p2-card"><div class="p2-card-head"><strong>♟ ${escapeHtml(name)} <span class="kbrh-client-id-badge">ID: ${escapeHtml(c.clientId||'—')}</span></strong>${extended?'<span class="p2-extension">6-Month Extension</span>':''}</div>
    <div class="p2-card-content">${field("Room",kbrhNormalizeBedId(c.roomNumber))}${field("Client ID",c.clientId)}${field("Contact",[c.contact,c.contactPhone].filter(Boolean).join(" · ")||c.phone)}${field("Entry Date",entry?formatDate(entry):"")}${field("Exit Date",discharge?formatDate(discharge):"")}
    <div class="p2-actions"><button type="button" onclick="openRosterActionsModal('${id}')">Actions / Edit</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div></article>`;
  }).join(""):'<p class="empty">No Phase 2 residents.</p>';
