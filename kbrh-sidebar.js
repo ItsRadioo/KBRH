@@ -31,7 +31,7 @@
   body.kbrh-single-sidebar.kbrh-nav-collapsed{padding-left:0!important}
   body.kbrh-single-sidebar>header,body.kbrh-single-sidebar>main,body.kbrh-single-sidebar>footer{box-sizing:border-box!important;position:relative!important;left:auto!important;right:auto!important;transform:none!important;visibility:visible!important;opacity:1!important;max-width:100%!important;width:100%!important}
   body.kbrh-single-sidebar>header{display:block!important;margin:0!important}
-  body.kbrh-single-sidebar>main{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;margin:16px 0 36px!important;padding:0 18px!important;min-width:0!important;width:100%!important;max-width:none!important}
+  body.kbrh-single-sidebar:not(.page-tool-signout)>main{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;margin:16px 0 36px!important;padding:0 18px!important;min-width:0!important;width:100%!important;max-width:none!important}
   body.kbrh-single-sidebar>main>*{min-width:0}
   .kbrh-page-title{margin:0 0 18px;padding:14px 18px;background:#0b2b4d;border-radius:10px;color:white}.kbrh-page-title h1{margin:0;color:white;font-size:clamp(22px,2.3vw,32px)}
   /* Content width follows the sidebar state; preserve the site's 12-column grid. */
@@ -92,6 +92,16 @@
   html body.kbrh-single-sidebar>main>.v5-page-hero,
   html body.kbrh-single-sidebar>main>.roster-summary{
     grid-column:1/-1!important;width:100%!important;max-width:none!important;min-width:0!important;
+  }
+  body.kbrh-single-sidebar.page-tool-signout>main.tool-signout-main{
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    grid-template-columns:none!important;width:100%!important;max-width:none!important;
+    min-width:0!important;margin:0!important;padding:20px 24px 48px!important;gap:18px!important;
+  }
+  body.kbrh-single-sidebar.page-tool-signout>main.tool-signout-main>section.card,
+  body.kbrh-single-sidebar.page-tool-signout>main.tool-signout-main>.v5-page-hero{
+    display:block!important;grid-column:auto!important;flex:0 0 auto!important;
+    width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;
   }
   @media print{body.kbrh-single-sidebar{padding-left:0!important}#kbrh-sidebar,#kbrh-sidebar-edge-toggle{display:none!important}}
   `;
