@@ -70,6 +70,29 @@
   body.kbrh-nav-collapsed #kbrh-sidebar-edge-toggle{left:0!important}
   .v5-sidebar-toggle,#kbrh-menu-toggle,header .app-nav{display:none!important}
 
+
+  /* Authoritative layout: older UI code must not reserve a phantom sidebar. */
+  html body.kbrh-single-sidebar.kbrh-nav-collapsed,
+  html body.kbrh-single-sidebar.kbrh-nav-collapsed.kbrh-sidebar-layout,
+  html body.kbrh-single-sidebar.kbrh-nav-collapsed.kbrh-v5{
+    padding-left:0!important;margin-left:0!important;width:100%!important;max-width:none!important;
+  }
+  html body.kbrh-single-sidebar:not(.kbrh-nav-collapsed),
+  html body.kbrh-single-sidebar:not(.kbrh-nav-collapsed).kbrh-sidebar-layout{
+    padding-left:260px!important;margin-left:0!important;width:100%!important;max-width:none!important;
+  }
+  html body.kbrh-single-sidebar>main,
+  html body.kbrh-single-sidebar.kbrh-nav-collapsed>main{
+    position:relative!important;left:0!important;right:auto!important;transform:none!important;
+    width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;
+    box-sizing:border-box!important;
+  }
+  html body.kbrh-single-sidebar>main>section,
+  html body.kbrh-single-sidebar>main>.card,
+  html body.kbrh-single-sidebar>main>.v5-page-hero,
+  html body.kbrh-single-sidebar>main>.roster-summary{
+    grid-column:1/-1!important;width:100%!important;max-width:none!important;min-width:0!important;
+  }
   @media print{body.kbrh-single-sidebar{padding-left:0!important}#kbrh-sidebar,#kbrh-sidebar-edge-toggle{display:none!important}}
   `;
   document.head.append(css);
