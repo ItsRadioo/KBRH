@@ -765,7 +765,7 @@ body:not(.page-login):not(.page-print):not(.page-meal-print)>header .logout-btn:
 body:not(.page-login):not(.page-print):not(.page-meal-print)>main{
   width:auto!important;
   max-width:none!important;
-  margin:0 0 0 var(--v5-sidebar)!important;
+  margin:0!important;
   padding:28px clamp(22px,3vw,48px) 54px!important;
   display:grid!important;
   grid-template-columns:repeat(12,minmax(0,1fr))!important;
@@ -2368,7 +2368,13 @@ body.kbrh-nav-collapsed>header{padding-left:112px!important}
 #kbrh-sidebar .kbrh-nav-items a:hover{background:rgba(63,139,223,.24)!important;}
 #kbrh-sidebar .kbrh-nav-items a[aria-current="page"]{background:#1973d0!important;color:#fff!important;}
 </style>
-</head>
+<style id="kbrh-v5-spacing-root-fix">
+/* v5 sidebar retired: the replacement owns the page offset. */
+body.kbrh-single-sidebar{--v5-sidebar:0px!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
+html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
+</style></head>
 <body class="page-reports">
 <main>
 <section class="card wide"><div class="card-heading-row"><div><h2>Program Outcomes</h2><p class="hint">Program success rate = successful completions ÷ (successful completions + involuntary removals). Voluntary early departures are neutral, not failures. Historic/legacy, other, medical, transfer and legal outcomes are not included in this rate or the outcome charts. Records remain preserved in resident history.</p></div></div><div class="report-filters"><label>From<input id="reportStart" type="date"/></label><label>To<input id="reportEnd" type="date"/></label><button id="applyReport" type="button">Apply</button><button class="secondary" id="resetReport" type="button">All Time</button><button class="secondary" id="exportReport" type="button">Export CSV</button></div></section>
@@ -2376,4 +2382,4 @@ body.kbrh-nav-collapsed>header{padding-left:112px!important}
 <section class="card wide"><h2>Reporting Trends</h2><p class="hint">Charts use the selected date range. Monthly success rates use completed and involuntary outcomes occurring in each month; neutral and unclassified outcomes are excluded.</p><div class="report-chart-grid"><div><h3>Admissions vs. Counted Outcomes</h3><div id="admissionsChart" class="report-chart" role="img" aria-label="Monthly admissions and counted outcomes"></div></div><div><h3>Discharge Outcomes</h3><div id="outcomesChart" class="report-chart" role="img" aria-label="Breakdown of discharge outcomes"></div></div><div class="report-chart-wide"><h3>Monthly Program Success Rate</h3><div id="successChart" class="report-chart" role="img" aria-label="Monthly percentage of counted outcomes completed successfully"></div></div></div></section>
 <section class="card wide"><h2>Outcome Breakdown</h2><div class="table-wrap"><table><thead><tr><th>Outcome</th><th>Count</th><th>Counted in Success Rate?</th></tr></thead><tbody id="outcomeBody"></tbody></table></div></section>
 <section class="card wide"><h2>Monthly Summary</h2><div class="table-wrap"><table><thead><tr><th>Month</th><th>Intakes</th><th>Completed</th><th>Involuntary / Removed</th><th>Other Counted Outcomes</th><th>Program Success Rate</th></tr></thead><tbody id="monthlyBody"></tbody></table></div></section>
-</main><script src="reports.js"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=layout-final-20261103c"></script></body></html>
+</main><script src="reports.js"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body></html>

@@ -97,7 +97,7 @@
   `;
   document.head.append(css);
   document.body.classList.remove('kbrh-sidebar-layout','v5-sidebar-collapsed','kbrh-nav-open');
-  document.body.classList.add('kbrh-single-sidebar');
+  document.body.classList.add('kbrh-single-sidebar');document.body.style.setProperty('--v5-sidebar','0px','important');
   const read=()=>{try{return localStorage.getItem(KEY)==='1'}catch{return false}};
   const save=v=>{try{localStorage.setItem(KEY,v?'1':'0')}catch{}};
   const sync=()=>{const closed=document.body.classList.contains('kbrh-nav-collapsed');toggle.textContent=closed?'›':'‹';toggle.setAttribute('aria-label',closed?'Open navigation':'Collapse navigation');toggle.setAttribute('aria-expanded',String(!closed));};

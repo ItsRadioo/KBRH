@@ -352,7 +352,7 @@ body:not(.page-login):not(.page-print):not(.page-meal-print)>header .logout-btn:
 body:not(.page-login):not(.page-print):not(.page-meal-print)>main{
   width:auto!important;
   max-width:none!important;
-  margin:0 0 0 var(--v5-sidebar)!important;
+  margin:0!important;
   padding:28px clamp(22px,3vw,48px) 54px!important;
   display:grid!important;
   grid-template-columns:repeat(12,minmax(0,1fr))!important;
@@ -1954,11 +1954,17 @@ body.kbrh-nav-collapsed>header{padding-left:112px!important}
 #kbrh-sidebar .kbrh-nav-items a:hover{background:rgba(63,139,223,.24)!important;}
 #kbrh-sidebar .kbrh-nav-items a[aria-current="page"]{background:#1973d0!important;color:#fff!important;}
 </style>
-</head>
+<style id="kbrh-v5-spacing-root-fix">
+/* v5 sidebar retired: the replacement owns the page offset. */
+body.kbrh-single-sidebar{--v5-sidebar:0px!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
+html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
+</style></head>
 <body class="page-writeups">
 <main>
 <section class="card wide"><div class="section-heading-row"><div><h2>Current Residents</h2><p class="hint">Write-up totals are calculated from each resident's saved records.</p></div></div><div class="table-wrap"><table><thead><tr><th>Name</th><th># of Write-Ups</th><th>More Info</th></tr></thead><tbody id="writeupRosterBody"></tbody></table></div></section></main>
 <div class="modal-backdrop hidden" id="writeupModal"><div aria-labelledby="writeupModalTitle" aria-modal="true" class="modal-card wide-modal" role="dialog"><div class="modal-title-row"><div><h2 id="writeupModalTitle">Write-Up Details</h2><p class="hint" id="writeupModalHint"></p></div><button class="secondary modal-close-button" id="closeWriteupModalX" type="button">×</button></div><div class="section-heading-row"><h3>Write-Up History</h3><button class="primary-action-btn" id="addWriteupBtn" type="button">+ Add Write-Up</button></div><div class="record-list" id="writeupHistory"></div><div class="button-row modal-actions"><button class="secondary" id="closeWriteupModalBtn" type="button">Close</button></div></div></div>
 <div class="modal-backdrop hidden" id="writeupFormModal"><div aria-labelledby="writeupFormTitle" aria-modal="true" class="modal-card" role="dialog"><div class="modal-title-row"><h2 id="writeupFormTitle">Add Write-Up</h2><button class="secondary modal-close-button" id="closeWriteupFormX" type="button">×</button></div><div class="form-row"><div class="field-group"><label for="writeupDate">Date Given</label><input id="writeupDate" type="date"/></div><div class="field-group"><label for="writeupIssuedBy">Given By</label><input id="writeupIssuedBy" placeholder="Staff name" type="text"/></div></div><div class="field-group"><label for="writeupReason">Reason</label><textarea class="notes-box" id="writeupReason"></textarea></div><div class="field-group"><label for="writeupNotes">Additional Notes</label><textarea class="notes-box" id="writeupNotes"></textarea></div><div class="button-row modal-actions"><button class="success" id="saveWriteupBtn" type="button">Save Write-Up</button><button class="secondary" id="cancelWriteupBtn" type="button">Cancel</button></div></div></div>
 <script src="writeups.js"></script><script src="kbrh-v5.js?v=5.6.9"></script>
-<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=layout-final-20261103c"></script></body></html>
+<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body></html>
