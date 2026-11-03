@@ -2463,7 +2463,35 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style>
+<style id="kbrh-authoritative-layout">
+html,body{max-width:none!important;overflow-x:hidden!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){
+  display:block!important;position:relative!important;width:100%!important;
+  max-width:none!important;min-width:0!important;margin:0!important;
+  padding:0 0 0 260px!important;box-sizing:border-box!important;
+  --v5-sidebar:0px!important;
+}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print){
+  padding:0!important;margin:0!important;width:100%!important;max-width:none!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{
+  position:relative!important;left:0!important;right:auto!important;float:none!important;
+  transform:none!important;box-sizing:border-box!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin:0!important;padding:20px 24px 48px!important;
+  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>section,
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card{
+  grid-column:1/-1!important;min-width:0!important;max-width:none!important;
+}
+@media(max-width:700px){
+ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){padding-left:0!important}
+ html body.kbrh-single-sidebar>main{padding:16px!important}
+}
+</style>
+</head>
 <body class="page-prescreening">
 
 <main>
@@ -2479,4 +2507,4 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
 <div class="modal-backdrop hidden" id="prescreenMoveRosterModal"><div aria-labelledby="prescreenMoveRosterTitle" aria-modal="true" class="modal-card move-roster-modal" role="dialog"><div class="modal-title-row"><div><h2 id="prescreenMoveRosterTitle">Move to Current Roster</h2><p class="hint" id="prescreenMoveRosterName"></p></div><button aria-label="Close" class="secondary modal-close-button" id="closePrescreenMoveRosterBtn" type="button">×</button></div><div class="transfer-confirmation-box"><strong>Confirm admission details</strong><p>This transfers the applicant to the active Phase 1 roster and removes them from the waitlist. It does not archive the applicant.</p></div><label class="position-field"><span>Admission / Entry Date</span><input id="prescreenMoveEntryDate" required="" type="date"/></label><div class="button-row modal-actions"><button class="secondary" id="cancelPrescreenMoveRosterBtn" type="button">Cancel</button><button id="confirmPrescreenMoveRosterBtn" type="button">Confirm Move to Roster</button></div></div></div>
 <script src="prescreening.js?v=5.6.10"></script><script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js?v=5.6.9"></script>
-<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body></html>
+<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=dashboard-layout-repair-20261103"></script></body></html>

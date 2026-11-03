@@ -2520,7 +2520,35 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style>
+<style id="kbrh-authoritative-layout">
+html,body{max-width:none!important;overflow-x:hidden!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){
+  display:block!important;position:relative!important;width:100%!important;
+  max-width:none!important;min-width:0!important;margin:0!important;
+  padding:0 0 0 260px!important;box-sizing:border-box!important;
+  --v5-sidebar:0px!important;
+}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print){
+  padding:0!important;margin:0!important;width:100%!important;max-width:none!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{
+  position:relative!important;left:0!important;right:auto!important;float:none!important;
+  transform:none!important;box-sizing:border-box!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin:0!important;padding:20px 24px 48px!important;
+  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>section,
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card{
+  grid-column:1/-1!important;min-width:0!important;max-width:none!important;
+}
+@media(max-width:700px){
+ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){padding-left:0!important}
+ html body.kbrh-single-sidebar>main{padding:16px!important}
+}
+</style>
+</head>
 <body class="page-roster" data-roster-view="phase2">
 
 <main>
@@ -2807,5 +2835,5 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
 <script src="kbrh-ui-upgrade.js"></script>
 <script src="kbrh-v5.js?v=5.6.10"></script>
 <script src="urine-screen.js?v=5.6.30"></script>
-<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body>
+<script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=dashboard-layout-repair-20261103"></script></body>
 </html>

@@ -27,7 +27,7 @@
   const css=document.createElement('style');css.id='kbrh-single-sidebar-css';
   css.textContent=`
   /* One fixed sidebar; the actual header and main stay in document flow. */
-  body.kbrh-single-sidebar{--kbrh-nav-width:260px;padding-left:var(--kbrh-nav-width)!important;margin:0!important;box-sizing:border-box!important;min-width:0!important}
+  body.kbrh-single-sidebar{--kbrh-nav-width:260px;padding-left:260px!important;margin:0!important;box-sizing:border-box!important;min-width:0!important}
   body.kbrh-single-sidebar.kbrh-nav-collapsed{padding-left:0!important}
   body.kbrh-single-sidebar>header,body.kbrh-single-sidebar>main,body.kbrh-single-sidebar>footer{box-sizing:border-box!important;position:relative!important;left:auto!important;right:auto!important;transform:none!important;visibility:visible!important;opacity:1!important;max-width:100%!important;width:100%!important}
   body.kbrh-single-sidebar>header{display:block!important;margin:0!important}

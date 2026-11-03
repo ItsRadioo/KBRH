@@ -2379,9 +2379,37 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style>
+<style id="kbrh-authoritative-layout">
+html,body{max-width:none!important;overflow-x:hidden!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){
+  display:block!important;position:relative!important;width:100%!important;
+  max-width:none!important;min-width:0!important;margin:0!important;
+  padding:0 0 0 260px!important;box-sizing:border-box!important;
+  --v5-sidebar:0px!important;
+}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print){
+  padding:0!important;margin:0!important;width:100%!important;max-width:none!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{
+  position:relative!important;left:0!important;right:auto!important;float:none!important;
+  transform:none!important;box-sizing:border-box!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin:0!important;padding:20px 24px 48px!important;
+  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>section,
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card{
+  grid-column:1/-1!important;min-width:0!important;max-width:none!important;
+}
+@media(max-width:700px){
+ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){padding-left:0!important}
+ html body.kbrh-single-sidebar>main{padding:16px!important}
+}
+</style>
+</head>
 <body class="page-digital-logbook">
 <main>
 <section class="v5-page-hero"><div class="v5-page-hero-copy"><p class="v5-eyebrow">Operations</p><h1>Digital Log Book</h1><p>Every entry is timestamped and attributed to the signed-in staff member.</p></div><div class="v5-page-hero-badge" id="v5StaffBadge">Signed in</div></section>
 <section class="card wide" id="phase1PresenceWidget"></section><section class="card wide" id="logbookSelectorCard"><h2>Log Book</h2><p class="hint">Select which log book to view and enter records in.</p><div class="lb-report-row"><div class="lb-field"><label for="logbookScope">Log Book</label><select id="logbookScope"><option value="phase1">Phase 1 Log</option></select></div></div></section><section class="card wide"><h2>New Log Entry</h2><p class="hint">Select a reason.</p><div class="log-actions"><button class="log-action" data-reason="movement"><strong>Resident In / Out</strong><span>Record when a resident leaves or returns.</span></button><button class="log-action" data-reason="medication"><strong>Medication Delivery</strong><span>Record a pharmacy delivery.</span></button><button class="log-action" data-reason="repair" id="phase2RepairAction" hidden><strong>Issue / Repair</strong><span>Record Phase 2 maintenance issues and repair follow-up.</span></button><button class="log-action" data-reason="note"><strong>Note</strong><span>Record unique details or uncommon occurrences.</span></button></div></section>
-<section class="card wide"><h2>Print Report</h2><p class="hint">Print all log book entries for a selected date.</p><div class="lb-report-row"><div class="lb-field"><label for="reportDate">Report Date</label><input id="reportDate" type="date"></div><button type="button" id="printReportBtn">Print Daily Report</button></div></section><section class="card wide"><h2>Recent Entries</h2><div id="logEntries"><p class="hint">Loading…</p></div></section></main><div id="lbRoot"></div><script src="digital-logbook.js?v=5.6.7"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="phase1-presence.js?v=5.6.19"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body></html>
+<section class="card wide"><h2>Print Report</h2><p class="hint">Print all log book entries for a selected date.</p><div class="lb-report-row"><div class="lb-field"><label for="reportDate">Report Date</label><input id="reportDate" type="date"></div><button type="button" id="printReportBtn">Print Daily Report</button></div></section><section class="card wide"><h2>Recent Entries</h2><div id="logEntries"><p class="hint">Loading…</p></div></section></main><div id="lbRoot"></div><script src="digital-logbook.js?v=5.6.7"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="phase1-presence.js?v=5.6.19"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=dashboard-layout-repair-20261103"></script></body></html>

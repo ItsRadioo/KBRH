@@ -1960,11 +1960,39 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style>
+<style id="kbrh-authoritative-layout">
+html,body{max-width:none!important;overflow-x:hidden!important}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){
+  display:block!important;position:relative!important;width:100%!important;
+  max-width:none!important;min-width:0!important;margin:0!important;
+  padding:0 0 0 260px!important;box-sizing:border-box!important;
+  --v5-sidebar:0px!important;
+}
+html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print){
+  padding:0!important;margin:0!important;width:100%!important;max-width:none!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{
+  position:relative!important;left:0!important;right:auto!important;float:none!important;
+  transform:none!important;box-sizing:border-box!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin:0!important;padding:20px 24px 48px!important;
+  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
+}
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>section,
+html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card{
+  grid-column:1/-1!important;min-width:0!important;max-width:none!important;
+}
+@media(max-width:700px){
+ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){padding-left:0!important}
+ html body.kbrh-single-sidebar>main{padding:16px!important}
+}
+</style>
+</head>
 <body class="page-staff-profile">
 <main>
 <section class="card wide" style="max-width:720px"><div class="card-heading-row"><div><h2>Staff Identity</h2><p class="hint">This identity is linked to your Firebase login and is automatically recorded when you save changes.</p></div></div><div class="field-group"><label>Login Email</label><input disabled="" id="profileEmail"/></div><div class="form-row"><div class="field-group"><label for="profileName">Full Name</label><input disabled="" id="profileName"/></div><div class="field-group"><label for="profilePosition">Position / Role</label><input disabled="" id="profilePosition"/></div></div><div class="button-row"><a class="button-link secondary" href="index.html">Back to System</a></div><p class="hint" id="profileStatus"></p></section></main>
 <script>
 async function loadProfilePage(){const user=auth.currentUser;if(!user)return;const emailField=document.getElementById('profileEmail');const nameField=document.getElementById('profileName');const positionField=document.getElementById('profilePosition');const status=document.getElementById('profileStatus');emailField.value=user.email||'';try{const p=await loadCurrentStaffProfile(true);nameField.value=p?.name||'';positionField.value=p?.position||p?.role||'';if(p?.name){status.textContent='Identity loaded from kbrh/staffProfiles.';}else if(p?.lookupFailed){status.textContent='Could not read the staff profile from Firestore. Login is valid, but the profile lookup failed.';}else{status.textContent='No matching staff profile was found for this Firebase user. Check the UID/email in kbrh/staffProfiles.';}}catch(err){console.error('Could not load staff profile page',err);nameField.value='';positionField.value='';status.textContent='Could not load the staff profile. Check Firestore access and the browser console.';}}
 auth.onAuthStateChanged(u=>{if(u)loadProfilePage();});
-</script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=root-cause-fullwidth-20261103"></script></body></html>
+</script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=dashboard-layout-repair-20261103"></script></body></html>
