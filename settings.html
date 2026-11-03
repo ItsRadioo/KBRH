@@ -2330,6 +2330,29 @@ body.kbrh-sidebar-layout .roster-view-switch{display:none!important}
 @media(max-width:850px){body.kbrh-sidebar-layout{padding-left:0!important}#kbrh-sidebar{transform:translateX(-100%);transition:transform .2s}body.kbrh-nav-open #kbrh-sidebar{transform:translateX(0)}#kbrh-menu-toggle{display:block}body.kbrh-sidebar-layout header{padding-left:100px!important}}
 @media(max-width:620px){.p2-cards{grid-template-columns:minmax(0,1fr)!important}.p2-card-head{flex-wrap:wrap}}
 
+</style><style id="kbrh-navigation-v2">
+#kbrh-sidebar{background:linear-gradient(180deg,#061b30,#092642)!important;color:#fff!important;width:274px!important;overflow-y:auto!important}
+#kbrh-sidebar .kbrh-sidebar-brand{position:relative;padding:22px 42px 22px 16px;border-bottom:1px solid #255077;text-align:center}
+#kbrh-sidebar .kbrh-sidebar-brand .kbrh-logo{font-size:30px;font-weight:900;letter-spacing:1px;color:white}
+#kbrh-sidebar .kbrh-sidebar-brand small{display:block;color:#dce9f6}
+#kbrh-sidebar #kbrh-sidebar-collapse{position:absolute;right:8px;top:15px;width:31px;height:32px;border:1px solid #6389ad;background:#133e66;color:#fff;border-radius:7px;cursor:pointer}
+#kbrh-sidebar .kbrh-sidebar-links{padding:14px 12px 22px}
+#kbrh-sidebar details.kbrh-nav-group{display:block;margin:8px 0 13px;border:0;background:transparent}
+#kbrh-sidebar .kbrh-nav-group>summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;background:linear-gradient(110deg,#0d467d,#1262a8);color:#fff!important;border-radius:9px;padding:11px 12px;font-weight:800;font-size:13px;letter-spacing:.04em}
+#kbrh-sidebar .kbrh-nav-group>summary::-webkit-details-marker{display:none}
+#kbrh-sidebar .kbrh-nav-chevron{margin-left:auto;font-size:22px;line-height:14px;transition:transform .15s}
+#kbrh-sidebar .kbrh-nav-group:not([open]) .kbrh-nav-chevron{transform:rotate(-90deg)}
+#kbrh-sidebar .kbrh-nav-items{padding:5px 0 1px 10px}
+#kbrh-sidebar a.kbrh-nav-link{display:flex!important;align-items:center;gap:12px;color:#e7effa!important;text-decoration:none!important;padding:10px 12px!important;border-radius:8px;font-size:14px;font-weight:650;min-height:38px;box-sizing:border-box}
+#kbrh-sidebar a.kbrh-nav-link:hover{background:#17446c!important;color:white!important}
+#kbrh-sidebar a.kbrh-nav-link[aria-current="page"]{background:#1971d2!important;color:white!important}
+#kbrh-sidebar .kbrh-nav-icon{display:inline-flex;justify-content:center;align-items:center;width:20px;flex-shrink:0;font-size:20px;color:white}
+body.kbrh-sidebar-layout.kbrh-nav-collapsed{padding-left:0!important}
+body.kbrh-nav-collapsed #kbrh-sidebar{transform:translateX(-100%);pointer-events:none}
+body.kbrh-nav-collapsed #kbrh-menu-toggle{display:block!important;position:fixed;left:12px;top:12px;z-index:10020;background:#125b9e;color:#fff;border-radius:8px;padding:9px 13px;box-shadow:0 2px 10px #0003}
+body.kbrh-nav-collapsed>header{padding-left:112px!important}
+@media(max-width:900px){body.kbrh-sidebar-layout{padding-left:0!important}body.kbrh-sidebar-layout #kbrh-sidebar{transform:translateX(-100%)}body.kbrh-sidebar-layout.kbrh-nav-open #kbrh-sidebar{transform:translateX(0);pointer-events:auto}body.kbrh-sidebar-layout #kbrh-menu-toggle{display:block!important;position:fixed;top:12px;left:12px;z-index:10020;background:#125b9e;color:white;padding:9px 13px;border-radius:8px}body.kbrh-sidebar-layout>header{padding-left:110px!important}}
+@media print{#kbrh-sidebar,#kbrh-menu-toggle{display:none!important}body.kbrh-sidebar-layout{padding-left:0!important}}
 </style></head>
 <body class="page-settings"><header><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span><h1>System Settings</h1><p>Administrative controls for shared workflow rules.</p></div></div><button class="logout-btn" onclick="logout()" type="button">Sign Out</button></div><nav aria-label="Primary navigation" class="app-nav"><a class="app-nav-link" href="roster.html">Roster</a><a class="app-nav-link" href="waitlist.html">Waitlist</a><a class="app-nav-link" href="do-not-readmit.html">Do Not Readmit</a><a class="app-nav-link" href="house-chores.html">House Chores</a><a class="app-nav-link" href="meal-chores.html">Meal Chores</a><a class="app-nav-link" href="digital-logbook.html">Log Book</a><a class="app-nav-link" href="verbalwarning.html">Warnings</a><a class="app-nav-link" href="writeups.html">Write-Ups</a><a class="app-nav-link" href="chore-checks.html">Chore Checks</a><a class="app-nav-link" href="incident-report.html">Incident Reports</a><a class="app-nav-link" href="charts.html">Charts</a><a class="app-nav-link" href="prescreening.html">Pre-Screening</a><a class="app-nav-link" href="chat.html">Staff Chat</a><a class="app-nav-link" href="staff-list.html">Staff Contacts</a><a data-admin-only="" hidden="" class="app-nav-link" href="audit-log.html">Audit Log</a><a aria-current="page" class="app-nav-link active" data-admin-only="" hidden="" href="settings.html">Settings</a><a class="app-nav-link" href="staff-profile.html">My Profile</a></nav></header>
 <main><section class="card wide"><h2>Administration</h2><p class="hint">The Administrator and Executive Director have the same administrative permissions.</p><div class="button-row"><a class="button-link" href="staff-accounts.html">Manage Staff Accounts</a><a class="button-link" href="audit-log.html">Open Audit Log</a></div></section><section class="card wide"><h2>Waitlist</h2><div class="settings-grid"><label><span>Standard call-in day</span><select id="callInDay"></select></label><label><span>Consecutive No Call warning threshold</span><input id="noCallWarningThreshold" max="10" min="1" step="1" type="number"/></label></div><p class="hint">The No Call threshold controls the red follow-up flag and the “missed multiple call-ins” counter.</p></section>

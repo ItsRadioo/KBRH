@@ -22,4 +22,27 @@ body.kbrh-sidebar-layout .roster-view-switch{display:none!important}
 @media(max-width:850px){body.kbrh-sidebar-layout{padding-left:0!important}#kbrh-sidebar{transform:translateX(-100%);transition:transform .2s}body.kbrh-nav-open #kbrh-sidebar{transform:translateX(0)}#kbrh-menu-toggle{display:block}body.kbrh-sidebar-layout header{padding-left:100px!important}}
 @media(max-width:620px){.p2-cards{grid-template-columns:minmax(0,1fr)!important}.p2-card-head{flex-wrap:wrap}}
 
+</style><style id="kbrh-navigation-v2">
+#kbrh-sidebar{background:linear-gradient(180deg,#061b30,#092642)!important;color:#fff!important;width:274px!important;overflow-y:auto!important}
+#kbrh-sidebar .kbrh-sidebar-brand{position:relative;padding:22px 42px 22px 16px;border-bottom:1px solid #255077;text-align:center}
+#kbrh-sidebar .kbrh-sidebar-brand .kbrh-logo{font-size:30px;font-weight:900;letter-spacing:1px;color:white}
+#kbrh-sidebar .kbrh-sidebar-brand small{display:block;color:#dce9f6}
+#kbrh-sidebar #kbrh-sidebar-collapse{position:absolute;right:8px;top:15px;width:31px;height:32px;border:1px solid #6389ad;background:#133e66;color:#fff;border-radius:7px;cursor:pointer}
+#kbrh-sidebar .kbrh-sidebar-links{padding:14px 12px 22px}
+#kbrh-sidebar details.kbrh-nav-group{display:block;margin:8px 0 13px;border:0;background:transparent}
+#kbrh-sidebar .kbrh-nav-group>summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;background:linear-gradient(110deg,#0d467d,#1262a8);color:#fff!important;border-radius:9px;padding:11px 12px;font-weight:800;font-size:13px;letter-spacing:.04em}
+#kbrh-sidebar .kbrh-nav-group>summary::-webkit-details-marker{display:none}
+#kbrh-sidebar .kbrh-nav-chevron{margin-left:auto;font-size:22px;line-height:14px;transition:transform .15s}
+#kbrh-sidebar .kbrh-nav-group:not([open]) .kbrh-nav-chevron{transform:rotate(-90deg)}
+#kbrh-sidebar .kbrh-nav-items{padding:5px 0 1px 10px}
+#kbrh-sidebar a.kbrh-nav-link{display:flex!important;align-items:center;gap:12px;color:#e7effa!important;text-decoration:none!important;padding:10px 12px!important;border-radius:8px;font-size:14px;font-weight:650;min-height:38px;box-sizing:border-box}
+#kbrh-sidebar a.kbrh-nav-link:hover{background:#17446c!important;color:white!important}
+#kbrh-sidebar a.kbrh-nav-link[aria-current="page"]{background:#1971d2!important;color:white!important}
+#kbrh-sidebar .kbrh-nav-icon{display:inline-flex;justify-content:center;align-items:center;width:20px;flex-shrink:0;font-size:20px;color:white}
+body.kbrh-sidebar-layout.kbrh-nav-collapsed{padding-left:0!important}
+body.kbrh-nav-collapsed #kbrh-sidebar{transform:translateX(-100%);pointer-events:none}
+body.kbrh-nav-collapsed #kbrh-menu-toggle{display:block!important;position:fixed;left:12px;top:12px;z-index:10020;background:#125b9e;color:#fff;border-radius:8px;padding:9px 13px;box-shadow:0 2px 10px #0003}
+body.kbrh-nav-collapsed>header{padding-left:112px!important}
+@media(max-width:900px){body.kbrh-sidebar-layout{padding-left:0!important}body.kbrh-sidebar-layout #kbrh-sidebar{transform:translateX(-100%)}body.kbrh-sidebar-layout.kbrh-nav-open #kbrh-sidebar{transform:translateX(0);pointer-events:auto}body.kbrh-sidebar-layout #kbrh-menu-toggle{display:block!important;position:fixed;top:12px;left:12px;z-index:10020;background:#125b9e;color:white;padding:9px 13px;border-radius:8px}body.kbrh-sidebar-layout>header{padding-left:110px!important}}
+@media print{#kbrh-sidebar,#kbrh-menu-toggle{display:none!important}body.kbrh-sidebar-layout{padding-left:0!important}}
 </style></head><body><h1>KBRH System Health</h1><p>Restricted, read-only diagnostic checks. No resident names or clinical records are displayed or exported.</p><p id="app-version"></p><button id="run-health">Run checks again</button><section><ul><li>Sign-in: <strong id="auth-status">Waiting</strong></li><li>Staff profile: <strong id="profile-status">Waiting</strong></li><li>Firestore access: <strong id="db-status">Waiting</strong></li></ul></section><section id="health-details" hidden><h2>Administrator checklist</h2><p>For save errors, record the time, page, app version and error code. Do not include resident identifiers in issue reports.</p><p>Verify your organization controls GitHub, Firebase, billing/recovery email and backup credentials before handover.</p></section><p><a href="index.html">Return to dashboard</a></p><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="system-health.js"></script><script src="kbrh-sidebar.js?v=20261102"></script></body></html>

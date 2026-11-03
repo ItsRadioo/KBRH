@@ -1,21 +1,29 @@
 (()=>{
  const groups=[
-  ['Main',[['index.html','Dashboard','layout-dashboard'],['roster.html','Roster','users']]],
-  ['Roster',[['roster.html','Phase 1'],['phase2.html','Phase 2'],['roster-archive.html','Archive']]],
-  ['Admissions',[['prescreening.html','Prescreening'],['pending-admissions.html','Pending Admission'],['waitlist.html','Waitlist'],['do-not-readmit.html','Do Not Readmit']]],
-  ['Daily Operations',[['digital-logbook.html','Log Book'],['house-chores.html','House Chores'],['meal-chores.html','Meal Chores'],['electronics-turn-in.html','Electronics Turn In'],['chore-checks.html','Chore Checks'],['assignment-board.html','Assignment Board'],['bus-passes.html','Bus Passes'],['tool-signout.html','Tool Signout']]],
-  ['Staff & Records',[['staff-list.html','Staff Contacts'],['staff-profile.html','My Profile'],['chat.html','Staff Chat'],['counseling-notes.html','Counseling Notes'],['incident-report.html','Incident Reports'],['verbalwarning.html','Warnings'],['writeups.html','Write-Ups']]],
-  ['Reports & Admin',[['charts.html','Charts'],['reports.html','Reports'],['audit-log.html','Audit Log'],['settings.html','Settings'],['staff-accounts.html','Staff Accounts'],['system-health.html','System Health']]]
+ ['MAIN','house',[['index.html','Dashboard','layout-dashboard'],['roster-overview.html','Roster Overview','clipboard-list']]],
+ ['ROSTER','users',[['roster.html','Phase 1','users'],['phase2.html','Phase 2','users'],['roster-archive.html','Archive','archive']]],
+ ['ADMISSIONS','clipboard-check',[['prescreening.html','Prescreening','clipboard-check'],['pending-admissions.html','Pending Admission','user-plus'],['waitlist.html','Waitlist','list'],['do-not-readmit.html','Do Not Readmit','shield-alert']]],
+ ['DAILY OPERATIONS','calendar-days',[['operations.html','Daily Operations','calendar'],['house-chores.html','House Chores','check-square'],['meal-chores.html','Meal Chores','utensils'],['electronics-turn-in.html','Electronics Turn In','smartphone'],['digital-logbook.html','Log Book','book-open'],['assignment-board.html','Assignment Board','layout-grid'],['chore-checks.html','Chore Checks','check-circle'],['bus-passes.html','Bus Passes','ticket'],['tool-signout.html','Tool Signout','wrench']]],
+ ['STAFF & RECORDS','contact',[['staff-list.html','Staff Contacts','users'],['staff-profile.html','My Profile','user'],['chat.html','Staff Chat','message-square'],['counseling-notes.html','Counseling Notes','folder'],['incident-report.html','Incident Reports','file-text'],['verbalwarning.html','Warnings','alert-triangle'],['writeups.html','Write-Ups','file-text']]],
+ ['REPORTS & ADMIN','chart-column',[['charts.html','Charts','chart-column'],['reports.html','Reports','file-bar-chart'],['audit-log.html','Audit Log','history'],['settings.html','Settings','settings'],['staff-accounts.html','Staff Accounts','user-cog'],['system-health.html','System Health','activity']]]
  ];
+ const icons={house:'⌂',users:'♟','layout-dashboard':'▦','clipboard-list':'☷',archive:'▣','clipboard-check':'☑','user-plus':'⊕',list:'☷','shield-alert':'⚑','calendar-days':'▦',calendar:'▦','check-square':'☑',utensils:'♜',smartphone:'▯','book-open':'▤','layout-grid':'▦','check-circle':'✓',ticket:'▤',wrench:'⚒',contact:'▣',user:'♙','message-square':'▤',folder:'▱','file-text':'▤','alert-triangle':'⚠','chart-column':'▥','file-bar-chart':'▥',history:'◷',settings:'⚙','user-cog':'♙',activity:'⌁'};
  const current=location.pathname.split('/').pop()||'index.html';
+ const KEY='kbrh-nav-collapsed-v2';
  function init(){
   if(!document.body||document.getElementById('kbrh-sidebar'))return;
   document.body.classList.add('kbrh-sidebar-layout');
   const nav=document.createElement('aside');nav.id='kbrh-sidebar';nav.setAttribute('aria-label','Site navigation');
-  const makeLink=([href,label])=>`<a href="${href}" ${href===current?'aria-current="page"':''}>${label}</a>`;
-  nav.innerHTML=`<div class="kbrh-sidebar-brand"><span class="kbrh-logo">KBRH</span><small>Ken Brown Recovery Home</small></div><div class="kbrh-sidebar-links">${groups.map(([label,links],i)=>`<section class="kbrh-nav-group"><div class="kbrh-nav-group-label">${label}</div>${i>1?`<details ${links.some(x=>x[0]===current)?'open':''}><summary>${label}</summary>${links.map(makeLink).join('')}</details>`:links.map(makeLink).join('')}</section>`).join('')}</div>`;
+  const link=([href,label,ico])=>`<a class="kbrh-nav-link" href="${href}" ${href===current?'aria-current="page"':''}><span class="kbrh-nav-icon" aria-hidden="true">${icons[ico]||'•'}</span><span>${label}</span></a>`;
+  nav.innerHTML=`<div class="kbrh-sidebar-brand"><span class="kbrh-logo">KBRH</span><small>Ken Brown Recovery Home</small><button id="kbrh-sidebar-collapse" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">☰</button></div><div class="kbrh-sidebar-links">${groups.map(([label,ico,links],i)=>`<details class="kbrh-nav-group" ${i===0||links.some(x=>x[0]===current)?'open':''}><summary><span class="kbrh-nav-icon" aria-hidden="true">${icons[ico]}</span><span class="kbrh-nav-group-name">${label}</span><span class="kbrh-nav-chevron" aria-hidden="true">⌄</span></summary><div class="kbrh-nav-items">${links.map(link).join('')}</div></details>`).join('')}</div>`;
   document.body.insertAdjacentElement('afterbegin',nav);
-  const toggle=document.createElement('button');toggle.id='kbrh-menu-toggle';toggle.type='button';toggle.setAttribute('aria-label','Toggle navigation');toggle.textContent='☰ Menu';toggle.onclick=()=>document.body.classList.toggle('kbrh-nav-open');document.body.appendChild(toggle);
+  const toggle=document.createElement('button');toggle.id='kbrh-menu-toggle';toggle.type='button';toggle.setAttribute('aria-label','Open navigation');toggle.textContent='☰ Menu';document.body.appendChild(toggle);
+  const restore=()=>{try{return localStorage.getItem(KEY)==='1'}catch{return false}};
+  const persist=(v)=>{try{localStorage.setItem(KEY,v?'1':'0')}catch{}};
+  if(restore())document.body.classList.add('kbrh-nav-collapsed');
+  function collapse(){const collapsed=document.body.classList.toggle('kbrh-nav-collapsed');persist(collapsed);nav.querySelector('#kbrh-sidebar-collapse').setAttribute('aria-label',collapsed?'Expand sidebar':'Collapse sidebar');}
+  nav.querySelector('#kbrh-sidebar-collapse').addEventListener('click',collapse);
+  toggle.onclick=()=>document.body.classList.toggle('kbrh-nav-open');
   nav.addEventListener('click',e=>{if(e.target.closest('a'))document.body.classList.remove('kbrh-nav-open')});
   document.querySelectorAll('header nav.app-nav').forEach(el=>el.setAttribute('aria-hidden','true'));
  }
