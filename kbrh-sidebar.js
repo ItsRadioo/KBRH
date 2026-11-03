@@ -30,18 +30,42 @@
   body.kbrh-nav-collapsed #kbrh-menu-toggle{display:block!important}
   @media(max-width:900px){body.kbrh-sidebar-layout #kbrh-menu-toggle{display:block!important}body.kbrh-sidebar-layout.kbrh-nav-open #kbrh-sidebar{transform:translateX(0)!important}}
   `;document.head.appendChild(finalCSS);
-  const toggle=document.createElement('button');toggle.id='kbrh-menu-toggle';toggle.type='button';toggle.setAttribute('aria-label','Open navigation');toggle.textContent='☰ Menu';document.body.appendChild(toggle);
+  // One unified side-edge arrow replaces the legacy and floating Menu buttons.
+  document.querySelectorAll('#kbrh-menu-toggle,.v5-sidebar-toggle').forEach(el=>el.remove());
+  const arrow=document.createElement('button');
+  arrow.id='kbrh-sidebar-edge-toggle';arrow.type='button';
+  document.body.appendChild(arrow);
   const restore=()=>{try{return localStorage.getItem(KEY)==='1'}catch{return false}};
-  const persist=(v)=>{try{localStorage.setItem(KEY,v?'1':'0')}catch{}};
-  if(restore())document.body.classList.add('kbrh-nav-collapsed');
-  function collapse(){const collapsed=document.body.classList.toggle('kbrh-nav-collapsed');document.body.classList.remove('kbrh-nav-open');persist(collapsed);nav.querySelector('#kbrh-sidebar-collapse').setAttribute('aria-label',collapsed?'Expand sidebar':'Collapse sidebar');}
-  nav.querySelector('#kbrh-sidebar-collapse').addEventListener('click',collapse);
-  toggle.onclick=()=>{
-   if(document.body.classList.contains('kbrh-nav-collapsed')){
-    document.body.classList.remove('kbrh-nav-collapsed');persist(false);
-   }
-   document.body.classList.toggle('kbrh-nav-open');
+  const persist=v=>{try{localStorage.setItem(KEY,v?'1':'0')}catch{}};
+  const sync=()=>{
+    const hidden=document.body.classList.contains('kbrh-nav-collapsed');
+    arrow.textContent=hidden?'›':'‹';
+    arrow.title=hidden?'Open navigation':'Collapse navigation';
+    arrow.setAttribute('aria-label',arrow.title);
+    arrow.setAttribute('aria-expanded',String(!hidden));
+    arrow.style.left=hidden?'0px':'274px';
+    nav.querySelector('#kbrh-sidebar-collapse').setAttribute('aria-label',arrow.title);
   };
+  document.body.classList.toggle('kbrh-nav-collapsed',restore());
+  function collapse(){document.body.classList.toggle('kbrh-nav-collapsed');persist(document.body.classList.contains('kbrh-nav-collapsed'));sync();}
+  arrow.addEventListener('click',collapse);
+  nav.querySelector('#kbrh-sidebar-collapse').remove();
+  // Remove the older top/side navigation from the DOM; no duplicate toggle.
+  document.querySelectorAll('.v5-sidebar-toggle,#kbrh-menu-toggle,header .app-nav').forEach(el=>el.remove());
+  const unify=document.createElement('style');unify.id='kbrh-single-navigation';unify.textContent=`
+    .v5-sidebar-toggle,#kbrh-menu-toggle,header .app-nav{display:none!important}
+    body.kbrh-sidebar-layout{padding-left:274px!important}
+    body.kbrh-sidebar-layout.kbrh-nav-collapsed{padding-left:0!important}
+    body.kbrh-sidebar-layout>header,body.kbrh-sidebar-layout>main,body.kbrh-sidebar-layout>footer{transform:none!important;margin-left:0!important;width:100%!important;max-width:none!important}
+    body.kbrh-sidebar-layout.kbrh-nav-collapsed>header{padding-left:24px!important}
+    #kbrh-sidebar{transform:translateX(0)!important;transition:transform .2s ease!important}
+    body.kbrh-nav-collapsed #kbrh-sidebar{transform:translateX(-100%)!important;pointer-events:none!important}
+    #kbrh-sidebar-edge-toggle{position:fixed!important;top:50%!important;transform:translateY(-50%)!important;z-index:10050!important;width:26px!important;height:60px!important;border:0!important;border-radius:0 9px 9px 0!important;background:#087c78!important;color:white!important;font-size:24px!important;font-weight:800!important;cursor:pointer!important;box-shadow:2px 2px 10px #0003!important;transition:left .2s ease!important}
+    #kbrh-sidebar-edge-toggle:focus-visible{outline:3px solid #60a5fa!important}
+    @media(max-width:900px){body.kbrh-sidebar-layout{padding-left:0!important}body.kbrh-sidebar-layout #kbrh-sidebar{transform:translateX(-100%)!important}body.kbrh-sidebar-layout:not(.kbrh-nav-collapsed) #kbrh-sidebar{transform:translateX(0)!important}body.kbrh-sidebar-layout>header{padding-left:24px!important}}
+    @media print{#kbrh-sidebar-edge-toggle{display:none!important}}
+  `;document.head.appendChild(unify);
+  sync();
   nav.addEventListener('click',e=>{if(e.target.closest('a'))document.body.classList.remove('kbrh-nav-open')});
   document.querySelectorAll('header nav.app-nav').forEach(el=>el.remove());
  }

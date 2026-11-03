@@ -156,7 +156,7 @@
   function init() {
     if (document.body.classList.contains("page-login") || document.body.classList.contains("page-print") || document.body.classList.contains("page-meal-print")) return;
     document.body.classList.add("kbrh-v5");
-    addSidebarToggle();
+    // Side-arrow is owned by kbrh-sidebar.js only.
     buildHero();
     classifyCards();
     enhanceActionCard();
