@@ -40,7 +40,7 @@ async function saveRoster() {
   try {
     // Reapply outstanding candidate changes before submitting the roster.
     for (const client of (rosterState.roster || [])) {
-      if (client && kbrhPendingCandidateFlags.has(client.id))
+      if (client && (client.phase || "phase1") === "phase1" && kbrhPendingCandidateFlags.has(client.id))
         client.phase2Candidate = kbrhPendingCandidateFlags.get(client.id);
     }
     await saveAppState(rosterState);
@@ -368,7 +368,7 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
 
   if ((client.phase || "phase1") === "phase1") {
     const candidateInput = document.getElementById(`editPhase2Candidate-${clientId}`);
-    if (candidateInput) kbrhSetCandidateFlag(client, candidateInput.checked);
+    if (candidateInput && candidateInput.checked !== Boolean(client.phase2Candidate)) kbrhSetCandidateFlag(client, candidateInput.checked);
     client.address = kbrhDisplayAddress(getInputValue(`editAddress-${clientId}`));
     client.city = getInputValue(`editCity-${clientId}`);
     client.contact = getInputValue(`editContact-${clientId}`);
@@ -505,7 +505,11 @@ function saveEditResidentModal(event) {
   client.phone = formatPhoneNumber(value("modalEditPhone"));
   client.expectedDischargeDate = value("modalEditDischargeDate");
   client.opocCompleted = Boolean(document.getElementById("modalEditOpoc")?.checked);
-  if ((client.phase || "phase1") === "phase1") kbrhSetCandidateFlag(client, document.getElementById("modalPhase2Candidate")?.checked);
+  if ((client.phase || "phase1") === "phase1") {
+    const candidateCheckbox = document.getElementById("modalPhase2Candidate");
+    if (candidateCheckbox && candidateCheckbox.checked !== Boolean(client.phase2Candidate))
+      kbrhSetCandidateFlag(client, candidateCheckbox.checked);
+  }
 
   if ((client.phase || "phase1") === "phase1") {
     client.address = value("modalEditAddress");
@@ -758,6 +762,10 @@ function moveToPhase(clientId, phase) {
   } else if (client.phase === 'phase2') {
     // Phase 1 uses an independent inventory; never carry Phase 2 bed numbers across.
     client.roomNumber='';
+  }
+  if ((client.phase || "phase1") === "phase1" && phase !== "phase1") {
+    client.phase2Candidate = false;
+    kbrhPendingCandidateFlags.delete(client.id);
   }
   client.phase = phase;
   appendPersonActivity(client,"Phase",phase==="phase2"?"Moved to Phase 2":"Moved to Phase 1","");
@@ -1496,6 +1504,7 @@ auth.onAuthStateChanged(user => {
     // A delayed snapshot must not visually roll back an unsynchronized staff edit.
     for (const client of (nextState.roster || [])) {
       if (!client || !kbrhPendingCandidateFlags.has(client.id)) continue;
+      if ((client.phase || "phase1") !== "phase1") { kbrhPendingCandidateFlags.delete(client.id); continue; }
       const desired = kbrhPendingCandidateFlags.get(client.id);
       if (Boolean(client.phase2Candidate) === desired) {
         kbrhPendingCandidateFlags.delete(client.id);
