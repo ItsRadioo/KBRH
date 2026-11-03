@@ -1166,12 +1166,28 @@ function renderPhase1Roster() {
   }
 }
 
+function renderPhase2Cards(clients) {
+ const target=document.getElementById("phase2ResidentCards");if(!target)return;
+ target.innerHTML=clients.length?clients.map(c=>{
+  const id=escapeAttribute(String(c.id||""));
+  const entry=c.phase2AdmissionDate||c.phase2EntryDate||"";
+  const discharge=getDischargeDate(c);
+  const extended=Array.isArray(c.phase2Extensions)&&c.phase2Extensions.length>0;
+  const name=[c.lastName,c.firstName].filter(Boolean).join(", ")||"Unnamed resident";
+  const field=(label,value)=>`<div class="p2-field"><span>${label}</span><strong>${escapeHtml(value||"—")}</strong></div>`;
+  return `<article class="p2-card"><div class="p2-card-head"><strong>♟ ${escapeHtml(name)}</strong>${extended?'<span class="p2-extension">6-Month Extension</span>':''}</div>
+   <div class="p2-card-content">${field("Room",kbrhNormalizeBedId(c.roomNumber))}${field("Client ID",c.clientId)}${field("Contact",[c.contact,c.contactPhone].filter(Boolean).join(" · ")||c.phone)}${field("Entry Date",entry?formatDate(entry):"")}${field("Exit Date",discharge?formatDate(discharge):"")}
+   <div class="p2-actions"><button type="button" onclick="openRosterActionsModal('${id}')">Actions / Edit</button><button type="button" class="secondary" onclick="openNotes('${id}')">Notes</button></div></div></article>`;
+ }).join(""):'<p class="empty">No Phase 2 residents.</p>';
+}
+
 function renderPhase2Roster() {
   const body = document.getElementById("phase2RosterBody");
   const compactBody = document.getElementById("compactPhase2RosterBody");
   if (!body) return;
 
   const roster = getPhaseClients("phase2");
+  renderPhase2Cards(roster);
 
   body.innerHTML = roster.length
     ? roster.map(client => renderActiveRosterRow(client, "phase2")).join("")
