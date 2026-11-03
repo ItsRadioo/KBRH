@@ -31,9 +31,9 @@
   body.kbrh-single-sidebar.kbrh-nav-collapsed{padding-left:0!important}
   body.kbrh-single-sidebar>header,body.kbrh-single-sidebar>main,body.kbrh-single-sidebar>footer{box-sizing:border-box!important;position:relative!important;left:auto!important;right:auto!important;transform:none!important;visibility:visible!important;opacity:1!important;max-width:100%!important;width:100%!important}
   body.kbrh-single-sidebar>header{display:block!important;margin:0!important}
-  body.kbrh-single-sidebar>main{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:20px 0!important;padding:0 18px!important;min-width:0!important}
+  body.kbrh-single-sidebar>main{display:block!important;margin:20px auto!important;padding:0 18px!important;min-width:0!important}
   body.kbrh-single-sidebar>main>*{min-width:0}
-  body.kbrh-single-sidebar>main>.wide{grid-column:1/-1}
+  .kbrh-page-title{margin:0 0 18px;padding:14px 18px;background:#0b2b4d;border-radius:10px;color:white}.kbrh-page-title h1{margin:0;color:white;font-size:clamp(22px,2.3vw,32px)}
   #kbrh-sidebar{position:fixed!important;top:0!important;bottom:0!important;left:0!important;width:260px!important;z-index:10000!important;box-sizing:border-box!important;overflow-y:auto!important;padding:14px 12px!important;background:linear-gradient(180deg,#06182d,#0a2744)!important;color:white!important;display:flex!important;flex-direction:column!important;transform:translateX(0)!important;transition:transform .2s ease!important}
   body.kbrh-nav-collapsed #kbrh-sidebar{transform:translateX(-100%)!important;pointer-events:none!important}
   #kbrh-sidebar .kbrh-sidebar-brand{text-align:center;padding:22px 4px;border-bottom:1px solid #ffffff40;margin-bottom:18px!important}
@@ -52,7 +52,7 @@
   #kbrh-sidebar-edge-toggle{position:fixed!important;top:50%!important;left:260px!important;transform:translateY(-50%)!important;z-index:10001!important;width:26px!important;height:60px!important;background:#087c78!important;color:white!important;border:0!important;border-radius:0 9px 9px 0!important;font-size:25px!important;cursor:pointer!important;transition:left .2s!important}
   body.kbrh-nav-collapsed #kbrh-sidebar-edge-toggle{left:0!important}
   .v5-sidebar-toggle,#kbrh-menu-toggle,header .app-nav{display:none!important}
-  @media(max-width:700px){body.kbrh-single-sidebar>main{grid-template-columns:minmax(0,1fr)!important}}
+
   @media print{body.kbrh-single-sidebar{padding-left:0!important}#kbrh-sidebar,#kbrh-sidebar-edge-toggle{display:none!important}}
   `;
   document.head.append(css);
