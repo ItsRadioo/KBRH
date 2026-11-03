@@ -1,8 +1,8 @@
 (()=>{
  const groups=[
- ['MAIN','house',[['dashboard.html','Dashboard','layout-dashboard']]],
+ ['MAIN','house',[['dashboard.html','Dashboard','layout-dashboard'],['waitlist.html','Waitlist','list']]],
  ['ROSTER','users',[['roster.html','Phase 1','users'],['phase2.html','Phase 2','users'],['roster-archive.html','Archive','archive']]],
- ['ADMISSIONS','clipboard-check',[['prescreening.html','Prescreening','clipboard-check'],['pending-admissions.html','Pending Admission','user-plus'],['waitlist.html','Waitlist','list'],['do-not-readmit.html','Do Not Readmit','shield-alert']]],
+ ['ADMISSIONS','clipboard-check',[['prescreening.html','Prescreening','clipboard-check'],['pending-admissions.html','Pending Admission','user-plus'],['do-not-readmit.html','Do Not Readmit','shield-alert']]],
  ['DAILY OPERATIONS','calendar-days',[['operations.html','Daily Operations','calendar'],['house-chores.html','House Chores','check-square'],['meal-chores.html','Meal Chores','utensils'],['electronics-turn-in.html','Electronics Turn In','smartphone'],['digital-logbook.html','Log Book','book-open'],['assignment-board.html','Assignment Board','layout-grid'],['chore-checks.html','Chore Checks','check-circle'],['bus-passes.html','Bus Passes','ticket'],['tool-signout.html','Tool Signout','wrench']]],
  ['STAFF & RECORDS','contact',[['staff-list.html','Staff Contacts','users'],['staff-profile.html','My Profile','user'],['chat.html','Staff Chat','message-square'],['counseling-notes.html','Counseling Notes','folder'],['incident-report.html','Incident Reports','file-text'],['verbalwarning.html','Warnings','alert-triangle'],['writeups.html','Write-Ups','file-text']]],
  ['REPORTS & ADMIN','chart-column',[['charts.html','Charts','chart-column'],['reports.html','Reports','file-bar-chart'],['audit-log.html','Audit Log','history'],['settings.html','Settings','settings'],['staff-accounts.html','Staff Accounts','user-cog'],['system-health.html','System Health','activity']]]
@@ -57,7 +57,7 @@
   #kbrh-sidebar .kbrh-sidebar-brand strong{display:block;font-size:29px!important;color:white!important}
   #kbrh-sidebar .kbrh-sidebar-brand small{display:block;font-size:12px;color:#dbeafe!important}
   #kbrh-sidebar .kbrh-sidebar-links{flex:1!important}
-  #kbrh-sidebar .kbrh-nav-group{margin:12px 0 22px!important}
+  #kbrh-sidebar .kbrh-nav-group{margin:6px 0 9px!important}
   #kbrh-sidebar .kbrh-nav-group>summary{list-style:none!important;cursor:pointer!important;display:flex!important;align-items:center!important;gap:12px!important;background:linear-gradient(105deg,#155c9d,#0d437a)!important;color:white!important;padding:13px!important;border-radius:10px!important;font-size:13px!important;font-weight:800!important}
   #kbrh-sidebar .kbrh-nav-group>summary::-webkit-details-marker{display:none}
   #kbrh-sidebar .kbrh-chevron{margin-left:auto!important;font-size:22px!important;transition:transform .2s!important}
