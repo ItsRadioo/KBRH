@@ -2444,42 +2444,38 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
 </style>
-<style id="kbrh-authoritative-layout">
-html,body{max-width:none!important;overflow-x:hidden!important}
-html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){
-  display:block!important;position:relative!important;width:100%!important;
-  max-width:none!important;min-width:0!important;margin:0!important;
-  padding:0 0 0 260px!important;box-sizing:border-box!important;
-  --v5-sidebar:0px!important;
-}
-html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print){
-  padding:0!important;margin:0!important;width:100%!important;max-width:none!important;
-}
-html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{
-  position:relative!important;left:0!important;right:auto!important;float:none!important;
-  transform:none!important;box-sizing:border-box!important;
-  width:100%!important;max-width:none!important;min-width:0!important;
-  margin:0!important;padding:20px 24px 48px!important;
-  display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;
-}
-html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>section,
-html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main>.card{
-  grid-column:1/-1!important;min-width:0!important;max-width:none!important;
-}
-@media(max-width:700px){
- html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print){padding-left:0!important}
- html body.kbrh-single-sidebar>main{padding:16px!important}
-}
-</style>
 
 
 
 
-</head><body class="page-tool-signout"><main class="tool-signout-main">
+
+<style id="kbrh-tool-layout-source">
+body.page-tool-signout > main.tool-signout-main,
+body.page-tool-signout.kbrh-single-sidebar > main.tool-signout-main,
+html body.page-tool-signout.kbrh-single-sidebar > main.tool-signout-main {
+  display:flex!important; flex-direction:column!important; align-items:stretch!important;
+  grid-template-columns:none!important; gap:18px!important;
+  width:100%!important; max-width:none!important; min-width:0!important;
+  margin:0!important; padding:20px 24px 48px!important; box-sizing:border-box!important;
+}
+body.page-tool-signout > main.tool-signout-main > section.card,
+html body.page-tool-signout.kbrh-single-sidebar > main.tool-signout-main > section.card {
+  display:block!important; grid-column:auto!important; flex:0 0 auto!important;
+  align-self:stretch!important; width:100%!important; max-width:none!important;
+  min-width:0!important; box-sizing:border-box!important;
+}
+body.page-tool-signout .section-title-row {display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}
+body.page-tool-signout .tool-summary-row {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+body.page-tool-signout .tool-summary-row > div {min-width:0!important;overflow-wrap:normal!important;word-break:normal!important}
+body.page-tool-signout .table-wrap {display:block!important;max-width:100%!important;overflow-x:auto!important}
+body.page-tool-signout .table-wrap table {min-width:580px!important;width:100%!important;table-layout:auto!important}
+body.page-tool-signout .table-wrap th,body.page-tool-signout .table-wrap td {word-break:normal!important;overflow-wrap:normal!important}
+@media(max-width:700px){body.page-tool-signout>main.tool-signout-main{padding:16px!important}}
+</style></head><body class="page-tool-signout"><main class="tool-signout-main">
 <section class="card wide"><div class="section-title-row"><div><h2>Tool Inventory</h2><p class="hint">Add each tool once. Use Sign Out to issue it to a resident.</p></div><div class="tool-heading-actions"><span class="v5-page-hero-badge" id="toolStaffBadge">Signed in</span><button id="addToolBtn" type="button">+ Add Tool</button></div></div><div class="tool-summary-row"><div><strong id="inventoryTotal">0</strong><span>Total tools</span></div><div><strong id="inventoryAvailable">0</strong><span>Available</span></div><div><strong id="inventoryOut">0</strong><span>Currently out</span></div></div><div class="table-wrap"><table><thead><tr><th>Tool</th><th>ID #</th><th>Status</th><th>Resident</th><th>Action</th></tr></thead><tbody id="toolInventoryBody"></tbody></table></div></section>
 <section class="card wide"><div class="section-title-row"><div><h2>Tools Currently Out</h2><p class="hint">Return a tool as soon as it is handed back.</p></div><strong class="tool-count" id="toolOutCount">0 out</strong></div><div class="table-wrap"><table><thead><tr><th>Resident Name</th><th>Reason</th><th>Time Out</th><th>Tool</th><th>ID #</th><th>Issued By</th><th>Action</th></tr></thead><tbody id="toolOutBody"></tbody></table></div></section>
 <section class="card wide"><div class="section-title-row"><div><h2>Sign-Out History</h2><p class="hint">Newest records appear first.</p></div><div><button class="secondary" id="toolPrint" type="button">Print Sheet</button></div></div><div class="table-wrap"><table><thead><tr><th>Resident Name</th><th>Reason</th><th>Time Out</th><th>Time In</th><th>Tool</th><th>ID #</th></tr></thead><tbody id="toolHistoryBody"></tbody></table></div></section>
 </main>
 <div aria-labelledby="addToolTitle" aria-modal="true" class="modal hidden" id="addToolModal" role="dialog"><div class="modal-card tool-modal-card"><div class="modal-header"><div><h2 id="addToolTitle">Add Tool</h2><p class="hint">Add a tool to the inventory.</p></div><button aria-label="Close" class="modal-x secondary" data-close-add="" type="button">×</button></div><div class="modal-body"><form class="tool-modal-form" id="addToolForm"><div><label for="inventoryToolName">Tool *</label><input id="inventoryToolName" maxlength="100" placeholder="e.g. Cordless drill" required=""/></div><div><label for="inventoryToolId">ID # *</label><input id="inventoryToolId" maxlength="60" placeholder="Tool ID / asset number" required=""/></div></form></div><div class="modal-footer"><button class="secondary" data-close-add="" type="button">Cancel</button><button form="addToolForm" type="submit">Add Tool</button></div></div></div>
 <div aria-labelledby="signOutToolTitle" aria-modal="true" class="modal hidden" id="signOutToolModal" role="dialog"><div class="modal-card tool-modal-card"><div class="modal-header"><div><h2 id="signOutToolTitle">Sign Out Tool</h2><p class="hint" id="signOutToolSummary"></p></div><button aria-label="Close" class="modal-x secondary" data-close-signout="" type="button">×</button></div><div class="modal-body"><form class="tool-modal-form" id="signOutToolForm"><div><label for="toolResident">Resident Name *</label><select id="toolResident" required=""><option value="">Select resident…</option></select></div><div><label for="toolTimeOut">Time Out *</label><input id="toolTimeOut" required="" type="datetime-local"/></div><div class="full"><label for="toolReason">Reason *</label><input id="toolReason" maxlength="200" placeholder="Reason tool is being issued" required=""/></div></form></div><div class="modal-footer"><button class="secondary" data-close-signout="" type="button">Cancel</button><button form="signOutToolForm" type="submit">Sign Out Tool</button></div></div></div>
-<script src="tool-signout.js"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=tool-grid-root-20261103"></script></body></html>
+<script src="tool-signout.js"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=tool-source-repair-20261103"></script></body></html>

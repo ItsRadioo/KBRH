@@ -37,7 +37,7 @@
   /* Content width follows the sidebar state; preserve the site's 12-column grid. */
   html{overflow-x:hidden}
   body.kbrh-single-sidebar{width:100%!important;max-width:none!important}
-  body.kbrh-single-sidebar>main{
+  body.kbrh-single-sidebar:not(.page-tool-signout)>main{
     display:grid!important;
     grid-template-columns:repeat(12,minmax(0,1fr))!important;
     width:100%!important;max-width:none!important;
