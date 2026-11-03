@@ -2471,6 +2471,40 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
  html body.kbrh-single-sidebar>main{padding:16px!important}
 }
 </style>
+
+<style id="kbrh-tool-signout-layout-fix">
+/* Replace the tool page's conflicting grid layout, without changing other pages. */
+html body.page-tool-signout.kbrh-single-sidebar>main{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ gap:18px!important;width:100%!important;max-width:none!important;min-width:0!important;
+ padding:20px 24px 48px!important;margin:0!important;box-sizing:border-box!important;
+ grid-template-columns:none!important;
+}
+html body.page-tool-signout.kbrh-single-sidebar>main>section,
+html body.page-tool-signout.kbrh-single-sidebar>main>.card,
+html body.page-tool-signout.kbrh-single-sidebar>main>.wide{
+ display:block!important;flex:0 0 auto!important;width:100%!important;max-width:none!important;
+ min-width:0!important;margin:0!important;grid-column:auto!important;box-sizing:border-box!important;
+}
+html body.page-tool-signout .section-title-row{
+ display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;
+ justify-content:space-between!important;gap:12px!important;
+}
+html body.page-tool-signout .tool-summary-row{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:12px!important;min-width:0!important;
+}
+html body.page-tool-signout .tool-summary-row>div{min-width:0!important;overflow-wrap:normal!important;word-break:normal!important}
+html body.page-tool-signout table{width:100%!important;min-width:560px!important;table-layout:auto!important}
+html body.page-tool-signout th,html body.page-tool-signout td{
+ word-break:normal!important;overflow-wrap:normal!important;white-space:normal!important;
+}
+html body.page-tool-signout .table-wrap{max-width:100%!important;overflow-x:auto!important}
+@media(max-width:700px){
+ html body.page-tool-signout.kbrh-single-sidebar>main{padding:16px!important}
+ html body.page-tool-signout .tool-summary-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+</style>
 </head><body class="page-tool-signout"><main>
 <section class="card wide"><div class="section-title-row"><div><h2>Tool Inventory</h2><p class="hint">Add each tool once. Use Sign Out to issue it to a resident.</p></div><div class="tool-heading-actions"><span class="v5-page-hero-badge" id="toolStaffBadge">Signed in</span><button id="addToolBtn" type="button">+ Add Tool</button></div></div><div class="tool-summary-row"><div><strong id="inventoryTotal">0</strong><span>Total tools</span></div><div><strong id="inventoryAvailable">0</strong><span>Available</span></div><div><strong id="inventoryOut">0</strong><span>Currently out</span></div></div><div class="table-wrap"><table><thead><tr><th>Tool</th><th>ID #</th><th>Status</th><th>Resident</th><th>Action</th></tr></thead><tbody id="toolInventoryBody"></tbody></table></div></section>
 <section class="card wide"><div class="section-title-row"><div><h2>Tools Currently Out</h2><p class="hint">Return a tool as soon as it is handed back.</p></div><strong class="tool-count" id="toolOutCount">0 out</strong></div><div class="table-wrap"><table><thead><tr><th>Resident Name</th><th>Reason</th><th>Time Out</th><th>Tool</th><th>ID #</th><th>Issued By</th><th>Action</th></tr></thead><tbody id="toolOutBody"></tbody></table></div></section>
