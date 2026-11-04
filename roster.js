@@ -88,6 +88,7 @@ function addClient() {
     return;
   }
 
+  if(kbrhRejectUnreadyBed(client.roomNumber))return;
   KBRHUrine.open(client, async screen=>{
     client.urineScreens=[screen];
     kbrhApplyTHCProtocol(client,screen);
@@ -353,7 +354,9 @@ function saveClientFromEditInputs(clientId, shouldRender = true) {
   const client = rosterState.roster.find(item => item.id === clientId);
   if (!client) return;
 
-  client.roomNumber = getInputValue(`editRoomNumber-${clientId}`);
+  const editBed=getInputValue(`editRoomNumber-${clientId}`);
+  if((client.phase||"phase1")==="phase1" && kbrhRejectUnreadyBed(editBed,client.roomNumber))return;
+  client.roomNumber = editBed;
   client.firstName = getInputValue(`editFirstName-${clientId}`);
   client.lastName = getInputValue(`editLastName-${clientId}`);
   client.clientId = getInputValue(`editClientId-${clientId}`);
@@ -497,6 +500,7 @@ function saveEditResidentModal(event) {
   if (occupant) {
     alert(`Bed ${requestedBed} is already occupied. Choose another bed.`); return;
   }
+  if(client.phase !== "phase2" && kbrhRejectUnreadyBed(requestedBed,client.roomNumber))return;
   client.roomNumber = requestedBed;
   client.clientId = value("modalEditClientId");
   client.firstName = firstName;
@@ -1653,6 +1657,20 @@ function kbrhNormalizeBedId(value) {
 function kbrhBedIsInRoom(bed, room) {
   return bed === String(room) || bed.startsWith(`${room}-`);
 }
+function kbrhBedReady(bed){
+  const key=kbrhNormalizeBedId(bed);
+  // Unready (including not-yet-marked-ready) beds cannot be assigned.
+  return rosterState.bedReadiness?.[key]?.ready===true;
+}
+function kbrhBedAssignmentAllowed(bed,previousBed=''){
+  const key=kbrhNormalizeBedId(bed);
+  return !key || key===kbrhNormalizeBedId(previousBed) || kbrhBedReady(key);
+}
+function kbrhRejectUnreadyBed(bed,previousBed=''){
+  if(kbrhBedAssignmentAllowed(bed,previousBed))return false;
+  alert(`Bed ${bed} is unavailable. Mark it Ready on the Bed Readiness page before assigning a resident.`);
+  return true;
+}
 function kbrhCurrentBedOccupants(){
   const result = new Map();
   (rosterState.roster || []).filter(c=>c && !c.archived && (c.phase || 'phase1') === 'phase1').forEach(c=>{
@@ -1682,7 +1700,7 @@ function kbrhNextSingleRoomResident(){
 function updateRoomTrackers(){
   const occupied=kbrhCurrentBedOccupants();
   const openRooms=KBRH_ROOM_NUMBERS.filter(room=>
-    KBRH_ROOM_BEDS.some(bed=>kbrhBedIsInRoom(bed,room) && !occupied.has(bed)));
+    KBRH_ROOM_BEDS.some(bed=>kbrhBedIsInRoom(bed,room) && !occupied.has(bed) && kbrhBedReady(bed)));
   const rooms=document.getElementById('availableRoomNumbers');
   if(rooms)rooms.textContent=openRooms.length ? openRooms.join(', ') : 'None';
   const next=document.getElementById('nextSingleRoomResident');
@@ -1692,7 +1710,7 @@ function updateRoomTrackers(){
   }
 }
 function kbrhOpenSingleRoomAssignment(bed){
-  if(kbrhCurrentBedOccupants().has(bed)){renderRoomAvailability();return;}
+  if(kbrhCurrentBedOccupants().has(bed)||kbrhRejectUnreadyBed(bed)){renderRoomAvailability();return;}
   const modal=document.getElementById('singleRoomAssignModal');
   const list=document.getElementById('singleRoomAssignList');
   if(!modal || !list)return;
@@ -1712,7 +1730,8 @@ function kbrhOpenSingleRoomAssignment(bed){
       if(kbrhCurrentBedOccupants().has(bed)){alert('Room is no longer available.');renderRoomAvailability();return;}
       const previous=kbrhNormalizeBedId(resident.roomNumber);
       if(KBRH_SINGLE_ROOMS.has(Number(previous))){alert('Resident is already in a single room.');return;}
-      resident.roomNumber=bed;
+      if(kbrhRejectUnreadyBed(bed,resident.roomNumber))return;
+       resident.roomNumber=bed;
       button.disabled=true;
       if(!await saveRoster()){resident.roomNumber=previous;button.disabled=false;return;}
       modal.classList.add('hidden');renderRoster();renderRoomAvailability();
@@ -1733,17 +1752,17 @@ function renderRoomAvailability(){
     KBRH_ROOM_BEDS.filter(id=>kbrhBedIsInRoom(id,room)).forEach(bed=>{
       const residents=occupied.get(bed)||[];
       const btn=document.createElement('button');btn.type='button';
-      btn.className=`room-bed ${residents.length?'occupied':'available'}`;
-      btn.textContent=`${bed} — ${residents.length ? residents.map(c=>`${c.firstName||''} ${c.lastName||''}`.trim()).join(', ') + (residents.length>1?' (CONFLICT)':'') : 'Available'}`;
-      if(residents.length){btn.disabled=true;}else{btn.addEventListener('click',()=>KBRH_SINGLE_ROOMS.has(Number(bed)) ? kbrhOpenSingleRoomAssignment(bed) : assignAvailableBed(bed));}
+      btn.className=`room-bed ${residents.length?'occupied':!kbrhBedReady(bed)?'unavailable':'available'}`;
+      btn.textContent=`${bed} — ${residents.length ? residents.map(c=>`${c.firstName||''} ${c.lastName||''}`.trim()).join(', ') + (residents.length>1?' (CONFLICT)':'') : kbrhBedReady(bed)?'Available':'Unavailable'}`;
+      if(residents.length||!kbrhBedReady(bed)){btn.disabled=true;}else{btn.addEventListener('click',()=>KBRH_SINGLE_ROOMS.has(Number(bed)) ? kbrhOpenSingleRoomAssignment(bed) : assignAvailableBed(bed));}
       card.append(btn);
     });grid.append(card);
   });
-  const count=KBRH_ROOM_BEDS.filter(b=>!occupied.has(b)).length;
+  const count=KBRH_ROOM_BEDS.filter(b=>!occupied.has(b)&&kbrhBedReady(b)).length;
   document.getElementById('roomAvailabilitySummary').textContent=`${count} available / 18 total beds · 13 rooms`;
 }
 async function assignAvailableBed(bed){
-  if(kbrhCurrentBedOccupants().has(bed)){renderRoomAvailability();return;}
+  if(kbrhCurrentBedOccupants().has(bed)||kbrhRejectUnreadyBed(bed)){renderRoomAvailability();return;}
   const residents=(rosterState.roster||[]).filter(c=>c && !c.archived && (c.phase||'phase1')==='phase1');
   const candidates=residents.filter(c=>!KBRH_ROOM_BEDS.includes(kbrhNormalizeBedId(c.roomNumber)));
   if(!candidates.length){alert('No unassigned Phase 1 residents. Edit a resident to transfer them to this bed.');return;}
@@ -1753,8 +1772,10 @@ async function assignAvailableBed(bed){
   const index=Number(answer)-1;
   if(!Number.isInteger(index)||!candidates[index]){alert('Invalid resident selection.');return;}
   if(kbrhCurrentBedOccupants().has(bed)){alert('This bed is already occupied.');renderRoomAvailability();return;}
+  if(kbrhRejectUnreadyBed(bed))return;
   const resident=candidates[index], old=resident.roomNumber;
-  resident.roomNumber=bed;
+  if(kbrhRejectUnreadyBed(bed,resident.roomNumber))return;
+       resident.roomNumber=bed;
   if(!await saveRoster()){resident.roomNumber=old;return;}
   renderRoster();renderRoomAvailability();
 }
@@ -1788,10 +1809,11 @@ function openResidentBedPicker(){
     KBRH_ROOM_BEDS.filter(b=>kbrhBedIsInRoom(b,room)).forEach(bed=>{
       const others=(occupied.get(bed)||[]).filter(c=>c.id!==editingClientId);
       const button=document.createElement("button");button.type="button";
-      button.className=`room-bed ${others.length?"occupied":"available"}`;
-      button.textContent=`${bed} — ${others.length ? "Occupied: "+others.map(c=>`${c.firstName||""} ${c.lastName||""}`.trim()).join(", ") : bed===current ? "Current selection" : "Available"}`;
-      button.disabled=others.length>0;
-      if(!others.length)button.addEventListener("click",()=>{
+      const unavailable=!kbrhBedAssignmentAllowed(bed,editingResident?.roomNumber);
+      button.className=`room-bed ${others.length?"occupied":unavailable?"unavailable":"available"}`;
+      button.textContent=`${bed} — ${others.length ? "Occupied: "+others.map(c=>`${c.firstName||""} ${c.lastName||""}`.trim()).join(", ") : bed===current ? "Current selection" : unavailable ? "Unavailable" : "Available"}`;
+      button.disabled=others.length>0||unavailable;
+      if(!others.length&&!unavailable)button.addEventListener("click",()=>{
         document.getElementById("modalEditRoomNumber").value=bed;
         closeResidentBedPicker();
       });
@@ -1799,7 +1821,7 @@ function openResidentBedPicker(){
     });
     grid.append(card);
   });
-  document.getElementById("residentBedPickerSummary").textContent=`${KBRH_ROOM_BEDS.filter(b=>!(occupied.get(b)||[]).some(c=>c.id!==editingClientId)).length} selectable beds · 18 total`;
+  document.getElementById("residentBedPickerSummary").textContent=`${KBRH_ROOM_BEDS.filter(b=>!(occupied.get(b)||[]).some(c=>c.id!==editingClientId)&&kbrhBedAssignmentAllowed(b,editingResident?.roomNumber)).length} selectable beds · 18 total`;
   modal.classList.remove("hidden");
 }
 function closeResidentBedPicker(){
