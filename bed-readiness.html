@@ -11,7 +11,7 @@ body.page-bed-readiness main#bed-readiness-main>*{grid-column:auto!important;wid
 .bed-room h2{font-size:18px;margin:0 0 14px}.bed-room-beds{display:grid;gap:10px}
 .bed-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-radius:9px;border:1px solid #d7e0e8;background:#f8fafc;flex-wrap:wrap}
 .bed-item.ready{border-color:#9acbb4;background:#ecf8f0}.bed-item.unready{border-color:#e6bc9a;background:#fff5ec}
-.bed-item strong{display:block}.bed-item small{display:block;color:#5b7082;font-size:12px;margin-top:3px}
+.bed-item.occupied{border-color:#a5b4c5;background:#e8edf4}.bed-item.occupied button{background:#43556b;color:#fff;opacity:1;cursor:not-allowed}.occupied-total{border-color:#a5b4c5;background:#e8edf4}.bed-item strong{display:block}.bed-item small{display:block;color:#5b7082;font-size:12px;margin-top:3px}
 .bed-item button{font:inherit;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;border:0;color:#fff;background:#a44c1e;min-width:106px}
 .bed-item.ready button{background:#15734c}.bed-item button:disabled{opacity:.5;cursor:wait}
 .bed-item button:focus-visible{outline:3px solid #2678d9;outline-offset:3px}
@@ -19,5 +19,5 @@ body.page-bed-readiness main#bed-readiness-main>*{grid-column:auto!important;wid
 @media(max-width:650px){body.page-bed-readiness main#bed-readiness-main{padding:12px!important}.bed-panel{padding:16px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="auth.js?v=5.6.22"></script><script src="data-store.js?v=5.6.20"></script><script>requireLogin();</script></head>
-<body class="page-bed-readiness"><main id="bed-readiness-main"><section class="bed-panel"><h1>Bed Readiness</h1><p>Set each Phase 1 bed to Ready or Unready independently. Room 5 is not part of the inventory. These flags do not change room assignments or inspection results.</p><div id="bed-totals" class="bed-totals" aria-live="polite"></div><div id="bed-message" role="alert"></div></section><section class="bed-panel"><div id="bed-room-grid" class="bed-room-grid" aria-live="polite"><p>Loading beds…</p></div></section></main>
-<script src="bed-readiness.js?v=20261103-loading-fixed"></script><script src="kbrh-sidebar.js?v=bed-readiness-20261103"></script></body></html>
+<body class="page-bed-readiness"><main id="bed-readiness-main"><section class="bed-panel"><h1>Bed Readiness</h1><p>Vacant beds can be marked Ready or Unready. Beds assigned to active Phase 1 residents automatically display Occupied and cannot be toggled until vacant. Room 5 is not part of the inventory. These flags do not change room assignments or inspection results.</p><div id="bed-totals" class="bed-totals" aria-live="polite"></div><div id="bed-message" role="alert"></div></section><section class="bed-panel"><div id="bed-room-grid" class="bed-room-grid" aria-live="polite"><p>Loading beds…</p></div></section></main>
+<script src="bed-readiness.js?v=20261104-occupied"></script><script src="kbrh-sidebar.js?v=bed-readiness-20261103"></script></body></html>

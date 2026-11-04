@@ -10,20 +10,34 @@ const totals=document.getElementById('bed-totals');
 const message=document.getElementById('bed-message');
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const status=bed=>state?.bedReadiness?.[bed]?.ready===true;
+// Occupancy is derived from the live Phase 1 roster, never stored as a manual flag.
+// Single-bed rooms may have legacy IDs such as 6-1.
+const normalizeBed=value=>String(value??'').trim().replace(/^(3|4|6|9|10|11|13|14)-1$/,'$1');
+function occupiedBeds(){
+ const occupied=new Set();
+ for(const resident of (Array.isArray(state?.roster)?state.roster:[])){
+  if(!resident||resident==='temp'||resident.archived||(resident.phase||'phase1')!=='phase1')continue;
+  const bed=normalizeBed(resident.roomNumber);
+  if(BEDS.includes(bed))occupied.add(bed);
+ }
+ return occupied;
+}
 function render(){
  if(!state)return;
- const ready=BEDS.filter(status).length;
- totals.innerHTML=`<div class="bed-total"><strong>${ready}</strong><span>Ready</span></div><div class="bed-total"><strong>${BEDS.length-ready}</strong><span>Unready</span></div><div class="bed-total"><strong>${BEDS.length}</strong><span>Total Phase 1 beds</span></div>`;
+ const occupied=occupiedBeds();
+ const ready=BEDS.filter(b=>!occupied.has(b)&&status(b)).length;
+ const unready=BEDS.length-ready-occupied.size;
+ totals.innerHTML=`<div class="bed-total"><strong>${ready}</strong><span>Ready</span></div><div class="bed-total"><strong>${unready}</strong><span>Unready</span></div><div class="bed-total occupied-total"><strong>${occupied.size}</strong><span>Occupied</span></div><div class="bed-total"><strong>${BEDS.length}</strong><span>Total Phase 1 beds</span></div>`;
  grid.innerHTML=ROOMS.map(room=>{
   const beds=BEDS.filter(b=>b===String(room)||b.startsWith(room+'-'));
   return `<article class="bed-room"><h2>Room ${room}</h2><div class="bed-room-beds">${beds.map(b=>{
-   const ready=status(b), record=state.bedReadiness?.[b]||{};
-   return `<div class="bed-item ${ready?'ready':'unready'}"><div><strong>Bed ${escapeHtml(b)}</strong><small>${ready?'Ready':'Unready'}${record.updatedAt?' · Updated '+escapeHtml(new Date(record.updatedAt).toLocaleDateString('en-CA')):''}</small></div><button type="button" data-bed="${escapeHtml(b)}" aria-pressed="${ready}" ${saving?'disabled':''} aria-label="Mark bed ${escapeHtml(b)} ${ready?'unready':'ready'}">${ready?'✓ Ready':'Unready'}</button></div>`;
+   const ready=status(b), isOccupied=occupied.has(b), record=state.bedReadiness?.[b]||{};
+   return `<div class="bed-item ${isOccupied?'occupied':ready?'ready':'unready'}"><div><strong>Bed ${escapeHtml(b)}</strong><small>${isOccupied?'Occupied':ready?'Ready':'Unready'}${!isOccupied&&record.updatedAt?' · Updated '+escapeHtml(new Date(record.updatedAt).toLocaleDateString('en-CA')):''}</small></div><button type="button" data-bed="${escapeHtml(b)}" aria-pressed="${ready}" ${(saving||isOccupied)?'disabled':''} aria-label="${isOccupied?'Bed '+escapeHtml(b)+' is occupied':'Mark bed '+escapeHtml(b)+' '+(ready?'unready':'ready')}">${isOccupied?'Occupied':ready?'✓ Ready':'Unready'}</button></div>`;
   }).join('')}</div></article>`;
  }).join('');
 }
 async function toggle(bed){
- if(saving||!state||!BEDS.includes(bed))return;
+ if(saving||!state||!BEDS.includes(bed)||occupiedBeds().has(bed))return;
  saving=true;message.textContent='';
  const previous=state.bedReadiness?.[bed];
  const ready=!status(bed);
