@@ -110,9 +110,11 @@ async function saveWaitlist() {
     if (typeof KBRH_LAST_STATE !== "undefined" && KBRH_LAST_STATE) {
       KBRH_LAST_STATE = normalizeAppState({ ...KBRH_LAST_STATE, waitlist: cleanedWaitlist });
     }
+    return true;
   } catch (error) {
     console.error("Waitlist save failed:", error);
     alert(`Could not save waitlist${error?.code ? ` (${error.code})` : ""}. Check Console for details.`);
+    return false;
   }
 }
 
@@ -470,7 +472,7 @@ function moveApplicantToEndOfPriorityGroup(applicantId) {
   enforceCallPriorityOrder();
 }
 
-function addWaitlistApplicant() {
+async function addWaitlistApplicant() {
   waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp")
     : [];
@@ -524,10 +526,24 @@ function addWaitlistApplicant() {
   }
   const dnrMatch=KBRHDNR.match(waitlistState,applicant);
   if(dnrMatch){applicant.dnrFlagId=dnrMatch.id;alert(KBRHDNR.warning(dnrMatch)+"\n\nApplicant may be waitlisted, but admission requires ED approval.");}
+  // Capture the authenticated actor when the addition is initiated.
+  const actor = typeof getCurrentStaffIdentity === "function"
+    ? await getCurrentStaffIdentity()
+    : { uid: auth.currentUser?.uid || "", email: auth.currentUser?.email || "", name: typeof currentStaffName === "function" ? currentStaffName() : "" };
+  const previousWaitlist = [...waitlistState.waitlist];
   waitlistState.waitlist.push(applicant);
-  clearWaitlistForm();
   renderWaitlist();
-  saveWaitlist();
+  const saved = await saveWaitlist();
+  if (!saved) {
+    waitlistState.waitlist = previousWaitlist;
+    renderWaitlist();
+    return;
+  }
+  clearWaitlistForm();
+  // Only audit successfully persisted additions, never failed attempts.
+  if (typeof writeAuditEntry === "function") {
+    await writeAuditEntry([`Added to waitlist: ${applicant.firstName} ${applicant.lastName} (Applicant ID: ${applicant.id}; Application date: ${applicant.dateApplied || "Not recorded"})`], actor);
+  }
   if (returningResident) {
     alert("RETURNING RESIDENT ALERT\n\nThis applicant has at least 2 KBRH discharge records within the previous 2 years and is highlighted in blue.\n\nThey should be instructed to attend a more intensive treatment centre before qualifying for Ken Brown Recovery Home again.");
   }

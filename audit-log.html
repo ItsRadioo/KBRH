@@ -2421,11 +2421,20 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
 <main>
 <section class="card wide">
 <div class="card-heading-row"><div><h2>System Activity</h2><p class="hint">Records significant saved changes such as notes, client additions/removals, offers, status changes and client information updates with the authenticated user, date and time.</p></div><button class="secondary" id="refreshAuditBtn" type="button">Refresh</button></div>
+<section id="waitlistBackfillPanel" class="card wide" style="margin-top:18px">
+<h2>Historical Waitlist Audit Recovery</h2>
+<p class="hint">Read-only inspection first. Historical entries are clearly labelled; application dates are not assumed to be entry dates. Staff are never guessed. Existing audit records are not overwritten.</p>
+<div class="form-row" style="display:flex;gap:10px;flex-wrap:wrap">
+<button id="inspectWaitlistHistory" type="button" class="secondary">Inspect historical records</button>
+<button id="applyWaitlistHistory" type="button" disabled>Backfill verified candidates</button>
+</div>
+<div id="waitlistHistoryReport" role="status" aria-live="polite">No inspection performed.</div>
+</section>
 <div class="form-row"><input autocomplete="off" id="auditSearch" placeholder="Search staff, page, or action..." type="search"/></div>
 <div class="table-wrap"><table class="audit-table"><thead><tr><th>Date / Time</th><th>Staff Account</th><th>Page</th><th>Change</th></tr></thead><tbody id="auditBody"><tr><td colspan="4">Loading audit log…</td></tr></tbody></table></div>
 <p class="hint">Showing the 500 most recent activity records.</p>
 </section>
 </main>
-<script src="audit-log.js"></script>
+<script src="audit-log.js?v=historical-backfill-20261104"></script>
 <script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script>
 <script src="chat-floating.js?v=4"></script><script src="kbrh-sidebar.js?v=bed-readiness-20261103"></script></body></html>
