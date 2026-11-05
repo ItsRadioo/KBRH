@@ -91,29 +91,96 @@ function formatPhoneNumber(value) {
   return kbrhDisplayPhone(value);
 }
 
+
+// Auditing is best-effort and NEVER gates the operational waitlist save.
+// Compare persisted before/after snapshots so all save paths are covered.
+function waitlistAuditSnapshot(item){
+  const ignored=new Set(["updatedAt","lastModifiedAt","lastUpdated","lastSyncedAt"]);
+  const clean=(value)=>{
+    if(Array.isArray(value))return value.map(clean);
+    if(value&&typeof value==="object"){
+      if(typeof value.toDate==="function")return value.toDate().toISOString();
+      return Object.fromEntries(Object.keys(value).sort().filter(k=>!ignored.has(k)).map(k=>[k,clean(value[k])]));
+    }
+    return value===undefined?null:value;
+  };
+  return clean(item);
+}
+function waitlistAuditChanges(before,after){
+  const prev=new Map((before||[]).filter(x=>x?.id).map(x=>[String(x.id),x]));
+  const next=new Map((after||[]).filter(x=>x?.id).map(x=>[String(x.id),x]));
+  const events=[];
+  for(const [id,item] of next){
+    const old=prev.get(id);
+    const name=[item.firstName,item.lastName].filter(Boolean).join(" ")||id;
+    if(!old){events.push({id,name,action:"waitlist_added",changes:["Applicant added to waitlist"]});continue;}
+    const a=waitlistAuditSnapshot(old),b=waitlistAuditSnapshot(item);
+    const changes=[];
+    for(const key of new Set([...Object.keys(a),...Object.keys(b)])){
+      if(JSON.stringify(a[key])!==JSON.stringify(b[key])){
+        // Notes may contain sensitive client information. Audit the field and counts,
+        // not the full note body.
+        const sensitive=/note|medical|health|diagnos|substance|medication/i.test(key);
+        const val=v=>sensitive?"[content not copied]":JSON.stringify(v??null).slice(0,180);
+        changes.push(`${key}: ${val(a[key])} → ${val(b[key])}`);
+      }
+    }
+    if(changes.length)events.push({id,name,action:"waitlist_updated",changes});
+  }
+  for(const [id,item] of prev){
+    if(!next.has(id))events.push({id,name:[item.firstName,item.lastName].filter(Boolean).join(" ")||id,
+      action:"waitlist_removed",changes:["Applicant removed from waitlist (may have been transferred)"]});
+  }
+  return events;
+}
+async function recordWaitlistAuditChanges(before,after){
+  const events=waitlistAuditChanges(before,after);
+  if(!events.length)return;
+  const user=auth?.currentUser;
+  let actor={uid:user?.uid||"",name:user?.displayName||user?.email||"Unknown",email:user?.email||""};
+  try{
+    if(typeof getCurrentStaffIdentity==="function"){
+      const found=await getCurrentStaffIdentity();
+      if(found)actor={...actor,...Object.fromEntries(Object.entries(found).filter(([,v])=>v))};
+    }
+  }catch(error){console.warn("Staff identity lookup unavailable; using authentication identity.",error);}
+  const stamp=new Date();
+  for(const event of events){
+    try{
+      await db.collection("kbrhAudit").add({
+        applicantId:event.id,action:event.action,page:"waitlist.html",
+        staffUid:actor.uid||"",staffName:actor.name||"Unknown",staffEmail:actor.email||"",
+        summary:`${event.action==="waitlist_added"?"Added to waitlist":event.action==="waitlist_removed"?"Removed from waitlist":"Waitlist updated"}: ${event.name}`,
+        changes:[`Applicant ID: ${event.id}`,...event.changes],
+        timestamp:firebase.firestore.Timestamp.fromDate(stamp),
+        timestampIso:stamp.toISOString()
+      });
+    }catch(error){
+      console.error("Waitlist saved, but audit logging failed:",event,error);
+      // Never roll back or prevent the waitlist save.
+    }
+  }
+}
 async function saveWaitlist() {
   try {
-    // Persist the waitlist directly instead of rewriting the entire shared app
-    // document. This prevents another live page/state snapshot from restoring
-    // an older array order while a manual position change is being saved.
-    const active = resequenceActiveWaitlist(getActiveWaitlist());
-    const archived = getArchivedWaitlist();
-    waitlistState.waitlist = [...active, ...archived];
-
-    const cleanedWaitlist = normalizeAppState({ waitlist: waitlistState.waitlist }).waitlist;
-    await APP_DOC_REF().update({
-      waitlist: cleanedWaitlist,
-      updatedAt: new Date().toISOString()
-    });
-
-    // Keep the shared in-memory baseline synchronized with the successful write.
-    if (typeof KBRH_LAST_STATE !== "undefined" && KBRH_LAST_STATE) {
-      KBRH_LAST_STATE = normalizeAppState({ ...KBRH_LAST_STATE, waitlist: cleanedWaitlist });
+    const active=resequenceActiveWaitlist(getActiveWaitlist());
+    const archived=getArchivedWaitlist();
+    waitlistState.waitlist=[...active,...archived];
+    const cleanedWaitlist=normalizeAppState({waitlist:waitlistState.waitlist}).waitlist;
+    // Read the actual stored version, not a stale UI snapshot.
+    const prior=await APP_DOC_REF().get();
+    const previous=prior.exists?(prior.data()?.waitlist||[]):[];
+    await APP_DOC_REF().update({waitlist:cleanedWaitlist,updatedAt:new Date().toISOString()});
+    if(typeof KBRH_LAST_STATE!=="undefined"&&KBRH_LAST_STATE){
+      KBRH_LAST_STATE=normalizeAppState({...KBRH_LAST_STATE,waitlist:cleanedWaitlist});
     }
+    // Do not await audit work: it is independent of successful waitlist storage.
+    void recordWaitlistAuditChanges(previous,cleanedWaitlist).catch(error=>
+      console.error("Waitlist audit background task failed:",error));
     return true;
-  } catch (error) {
-    console.error("Waitlist save failed:", error);
-    alert(`Could not save waitlist${error?.code ? ` (${error.code})` : ""}. Check Console for details.`);
+  }catch(error){
+    console.error("Waitlist save failed:",error);
+    alert(`Could not save waitlist${error?.code?` (${error.code})`:""}. Check Console for details.`);
     return false;
   }
 }
@@ -526,10 +593,18 @@ async function addWaitlistApplicant() {
   }
   const dnrMatch=KBRHDNR.match(waitlistState,applicant);
   if(dnrMatch){applicant.dnrFlagId=dnrMatch.id;alert(KBRHDNR.warning(dnrMatch)+"\n\nApplicant may be waitlisted, but admission requires ED approval.");}
-  // Capture the authenticated actor when the addition is initiated.
-  const actor = typeof getCurrentStaffIdentity === "function"
-    ? await getCurrentStaffIdentity()
-    : { uid: auth.currentUser?.uid || "", email: auth.currentUser?.email || "", name: typeof currentStaffName === "function" ? currentStaffName() : "" };
+  // Capture authenticated identity and event time on the applicant itself so
+  // a missing audit write can be investigated without inventing an actor.
+  const user = auth.currentUser;
+  
+  let actor;
+  try { actor = await getCurrentStaffIdentity(); }
+  catch (error) { console.warn("Staff profile lookup failed; using authenticated account",error); }
+  actor = { uid:user.uid, email:user.email||"", name:actor?.name||user.email||"Authenticated staff" };
+  applicant.createdAt = new Date().toISOString();
+  applicant.createdByUid = actor.uid;
+  applicant.createdByEmail = actor.email;
+  applicant.createdByName = actor.name;
   const previousWaitlist = [...waitlistState.waitlist];
   waitlistState.waitlist.push(applicant);
   renderWaitlist();
@@ -540,13 +615,7 @@ async function addWaitlistApplicant() {
     return;
   }
   clearWaitlistForm();
-  // Only audit successfully persisted additions, never failed attempts.
-  if (typeof writeAuditEntry === "function") {
-    await writeAuditEntry([`Added to waitlist: ${applicant.firstName} ${applicant.lastName} (Applicant ID: ${applicant.id}; Application date: ${applicant.dateApplied || "Not recorded"})`], actor);
-  }
-  if (returningResident) {
-    alert("RETURNING RESIDENT ALERT\n\nThis applicant has at least 2 KBRH discharge records within the previous 2 years and is highlighted in blue.\n\nThey should be instructed to attend a more intensive treatment centre before qualifying for Ken Brown Recovery Home again.");
-  }
+
 }
 
 function clearWaitlistForm() {

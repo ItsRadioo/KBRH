@@ -154,7 +154,7 @@ async function applyHistoricalWaitlist(){
       const when=evidence.date.toISOString();
       await ref.set({
         applicantId:id,staffUid:actor.uid||"",staffName:actor.name||"Unknown — not recorded",
-        staffEmail:actor.email||"",page:"waitlist.html",historical:true,
+        staffEmail:actor.email||"",page:"waitlist.html",historical:true,action:"waitlist_added",
         historicalSource:`waitlist.${evidence.field}`,historicalConfidence:"Recorded creation timestamp",
         historicalEventDate:when,
         summary:`Historical — added to waitlist: ${fullName}`,
