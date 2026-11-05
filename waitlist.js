@@ -1110,6 +1110,7 @@ function openNotes(applicantId) {
   if (!applicant) return;
 
   notesApplicantId = applicantId;
+  editingWaitlistNoteId=null;
   applicant.notes = normalizeWaitlistNotes(applicant.notes);
 
   document.getElementById("notesModalTitle").textContent =
@@ -1123,6 +1124,7 @@ function openNotes(applicantId) {
 
 function closeNotesModal() {
   notesApplicantId = null;
+  editingWaitlistNoteId=null;
   document.getElementById("notesModal").classList.add("hidden");
 }
 
@@ -1167,6 +1169,38 @@ function deleteWaitlistNote(noteId) {
   saveWaitlist();
 }
 
+let editingWaitlistNoteId=null;
+function editWaitlistNote(noteId){
+  const applicant=waitlistState.waitlist.find(item=>item.id===notesApplicantId);
+  if(!applicant)return;
+  const note=normalizeWaitlistNotes(applicant.notes).find(item=>item.id===noteId);
+  if(!note)return;
+  editingWaitlistNoteId=noteId;
+  renderNotesModal(applicant);
+  document.getElementById('editWaitlistNoteText')?.focus();
+}
+function cancelWaitlistNoteEdit(){
+  editingWaitlistNoteId=null;
+  const applicant=waitlistState.waitlist.find(item=>item.id===notesApplicantId);
+  if(applicant)renderNotesModal(applicant);
+}
+function saveWaitlistNoteEdit(noteId){
+  const applicant=waitlistState.waitlist.find(item=>item.id===notesApplicantId);
+  if(!applicant)return;
+  const note=normalizeWaitlistNotes(applicant.notes).find(item=>item.id===noteId);
+  if(!note)return;
+  const text=document.getElementById('editWaitlistNoteText')?.value.trim()||'';
+  if(!text){alert('Note cannot be empty.');return;}
+  if(text===note.text){cancelWaitlistNoteEdit();return;}
+  note.text=text;
+  note.editedAt=new Date().toISOString();
+  note.editedBy=typeof currentStaffName==='function'?currentStaffName():(auth.currentUser?.email||'Unknown');
+  appendPersonActivity(applicant,'Note','Waitlist note edited',`Note ID: ${noteId}`);
+  editingWaitlistNoteId=null;
+  renderNotesModal(applicant);
+  renderWaitlist();
+  saveWaitlist();
+}
 function renderNotesModal(applicant) {
   const list = document.getElementById("waitlistNotesList");
   if (!list) return;
@@ -1174,15 +1208,20 @@ function renderNotesModal(applicant) {
   const notes = normalizeWaitlistNotes(applicant.notes);
 
   list.innerHTML = notes.length
-    ? notes.map(note => `
-        <li class="note-item">
-          <div>
-            <div>• ${escapeHtml(note.text)}</div>
-            <small>${escapeHtml(formatDateTime(note.createdAt))}</small>
+    ? notes.map(note => {
+        const id=JSON.stringify(String(note.id)).replace(/"/g,'&quot;');
+        const editing=editingWaitlistNoteId===note.id;
+        return `<li class="note-item" style="display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
+            ${editing ? `<textarea id="editWaitlistNoteText" rows="4" style="width:100%;box-sizing:border-box">${escapeHtml(note.text)}</textarea>` : `<div>• ${escapeHtml(note.text)}</div>`}
+            <small>Added ${escapeHtml(formatDateTime(note.createdAt))}${note.author?' by '+escapeHtml(note.author):''}</small>
+            ${note.editedAt?`<small style="display:block">Edited ${escapeHtml(formatDateTime(note.editedAt))} by ${escapeHtml(note.editedBy||'Unknown')}</small>`:''}
           </div>
-          <button type="button" class="danger" onclick="deleteWaitlistNote('${note.id}')">Delete</button>
-        </li>
-      `).join("")
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${editing ? `<button type="button" onclick="saveWaitlistNoteEdit(${id})">Save</button><button type="button" class="secondary" onclick="cancelWaitlistNoteEdit()">Cancel</button>` : `<button type="button" class="secondary" onclick="editWaitlistNote(${id})">Edit</button><button type="button" class="danger" onclick="deleteWaitlistNote(${id})">Delete</button>`}
+          </div>
+        </li>`;
+      }).join("")
     : `<li class="empty">No notes yet.</li>`;
 }
 
