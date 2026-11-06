@@ -553,6 +553,33 @@ function kbrhPickPhase2Bed(excludeId,current) {
   return bed;
 }
 
+async function kbrhClearUrineFlag(clientId, reason){
+  const user=auth?.currentUser;
+  if(!user?.uid)throw Error("Sign in before changing a clinical flag.");
+  if(!reason||reason.trim().length<8)throw Error("Provide a reason (at least 8 characters).");
+  const ref=db.collection("kbrh").doc("choreTracker");
+  const when=new Date().toISOString();
+  await db.runTransaction(async tx=>{
+    const snap=await tx.get(ref);
+    const roster=Array.isArray(snap.data()?.roster)?snap.data().roster.slice():[];
+    const i=roster.findIndex(r=>r?.id===clientId);
+    if(i<0)throw Error("Resident not found in the current roster.");
+    const previous=roster[i];
+    roster[i]={...previous,admissionStatus:previous.admissionStatus==="THC Protocol"?"":previous.admissionStatus,
+      thcRetestDue:null,thcProtocolClearedAt:when,thcProtocolClearedBy:user.uid,
+      thcProtocolClearReason:reason.trim()};
+    tx.update(ref,{roster,updatedAt:when});
+  });
+  const local=rosterState.roster.find(r=>r.id===clientId);
+  if(local){local.admissionStatus=local.admissionStatus==="THC Protocol"?"":local.admissionStatus;
+    local.thcRetestDue=null;local.thcProtocolClearedAt=when;local.thcProtocolClearedBy=user.uid;
+    local.thcProtocolClearReason=reason.trim();}
+  renderRoster();
+  try{await db.collection("kbrhAudit").add({page:"roster.html",action:"urine_flag_cleared",residentId:clientId,
+    summary:"THC Protocol flag manually cleared",changes:["THC Protocol flag cleared",`Reason: ${reason.trim()}`],
+    staffUid:user.uid,staffEmail:user.email||"",timestamp:firebase.firestore.Timestamp.fromDate(new Date(when))});}
+  catch(err){console.error("Flag cleared but audit write failed",err);alert("Flag cleared, but audit logging failed. Notify an administrator.");}
+}
 function handleRosterAction(clientId, action) {
   if(action==="urine") {
     if (!kbrhCanAccessUrineHistory()) {
@@ -591,7 +618,7 @@ function handleRosterAction(clientId, action) {
       }
       renderRoster();
       if(typeof writeAuditEntry==="function")Promise.resolve().then(()=>writeAuditEntry(["Urine screening saved for resident "+clientId],{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""})).catch(console.warn);
-    },false);
+    },false,{clearFlag:reason=>kbrhClearUrineFlag(clientId,reason)});
     return;
   }
   if (!action) return;
