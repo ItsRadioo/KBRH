@@ -2,24 +2,50 @@
 (function(){
 const TESTS=["COC","MET","THC","AMP","MOR","OXY","FYL","BUP","BZD","EDDP"];
 const BLOCKED=TESTS.filter(x=>!["THC","EDDP"].includes(x));
-let callback=null, resident=null;
+let callback=null, resident=null, correctionHandler=null;
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function due(date){let d=new Date(String(date).slice(0,10)+"T12:00:00");if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+45);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
 function records(c){return Array.isArray(c?.urineScreens)?c.urineScreens:[];}
 async function loadHistory(c){
  const legacy=records(c), merged=new Map(legacy.filter(r=>r?.id).map(r=>[r.id,r]));
- if(!c?.id || !window.db)return legacy;
+ if(!c?.id || !window.db)return sortScreenHistory([...merged.values()]);
  const snap=await db.collection("kbrhUrineScreens").doc(c.id).collection("records").get();
  snap.docs.forEach(doc=>{const r=doc.data();if(r?.id)merged.set(r.id,r);});
- return [...merged.values()].sort((a,b)=>String(a.createdAt||a.date||"").localeCompare(String(b.createdAt||b.date||"")));
+ return sortScreenHistory([...merged.values()]);
 }
-function historyHtml(items){return items.length?`<details><summary>Previous screening records (${items.length})</summary>${items.slice().reverse().map(r=>`<div class="us-record"><strong>${esc(r.date)} · ${esc(r.type)}</strong><div>${TESTS.map(t=>`${t}: ${esc(r.results?.[t]||"—")}`).join(" · ")}</div>${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}${r.override?`<div>Override by ${esc(r.author)}: ${esc(r.overrideReason)}</div>`:""}<div>${esc(r.notes)}</div></div>`).join("")}</details>`:"No previous screening records.";}
+function screenLastChange(record){
+ const value=record.correctedAt||record.updatedAt||record.createdAt||record.date||"";
+ const date=value?.toDate?.()||new Date(value);
+ return Number.isFinite(date.getTime())?date.getTime():0;
+}
+function sortScreenHistory(items){
+ return items.sort((a,b)=>screenLastChange(b)-screenLastChange(a));
+}
+function historyHtml(items){
+ if(!items.length)return '<p>No previous screening records.</p>';
+ const ordered=sortScreenHistory([...items]);
+ const recordHtml=(r,latest)=>`<div class="us-record ${latest?"us-latest-record":""}">
+ ${latest?'<div class="us-latest-label">MOST RECENT SCREENING CHANGE</div>':""}
+ <strong>${esc(r.date)} · ${esc(r.type)}</strong>
+ <div>${TESTS.map(t=>`${t}: ${esc(r.results?.[t]||"—")}`).join(" · ")}</div>
+ ${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}
+ ${r.correctedAt?`<div><strong>Last corrected:</strong> ${esc(r.correctedAt)} by ${esc(r.correctedBy||"Staff")} · ${esc(r.correctionReason||"")}</div>`:""}
+ <div>${esc(r.notes)}</div>
+ ${correctionHandler?`<button type="button" class="us-correct" data-correct-id="${esc(r.id)}">Correct this screening</button>`:""}
+ </div>`;
+ return `<section class="us-latest-section" aria-label="Most recent screening change">
+ ${recordHtml(ordered[0],true)}</section>
+ <details class="us-older-history"><summary>Earlier screening records (${ordered.length-1})</summary>
+ ${ordered.slice(1).map(r=>recordHtml(r,false)).join("")||"<p>No earlier records.</p>"}
+ </details>`;
+}
+
 function open(c,onSave,mandatory,management={}){
- resident=c;callback=onSave;
+ resident=c;callback=onSave;correctionHandler=typeof management.correctScreen==="function"?management.correctScreen:null;
  let el=document.getElementById("urineScreenOverlay");
  el.innerHTML=`<div class="us-dialog" role="dialog" aria-modal="true"><h2>Urine Drug Screening</h2>
  <p id="us-person"></p><p class="us-hint">${mandatory?"Intake screening is required before admission.":"Previous screens remain in the resident record."}</p>
- <div class="us-management"><h3>Existing screens and protocol status</h3><p class="us-hint">Historical results are retained. To remove a protocol flag, use the separate authorized action below; this does not alter a laboratory result.</p><div id="us-history"></div><div id="us-clear-zone"></div></div>
+ <div class="us-management"><h3>Existing screens and protocol status</h3><p class="us-hint">Historical results are retained. To remove a protocol flag, use the separate authorized action below; this does not alter a laboratory result.</p><div id="us-history"></div><div id="us-correction-zone"></div><div id="us-clear-zone"></div></div>
  <details class="us-new-screen" ${mandatory?"open":""}><summary>Record a new urine screen</summary><form id="us-form"><label>Screening date <input type="date" id="us-date" required></label>
  <label>Screening type <select id="us-type"><option>Admission</option><option>Follow-up</option><option>Other</option></select></label>
  <p class="us-hint">Check a substance only when the result is <strong>positive</strong>. Unchecked boxes are recorded as negative. Do not save an untested substance as negative.</p>
@@ -47,7 +73,48 @@ function open(c,onSave,mandatory,management={}){
  }
  const historyNode=document.getElementById("us-history");
  historyNode.textContent="Loading screening history…";
- loadHistory(c).then(items=>{if(resident===c)historyNode.innerHTML=historyHtml(items);}).catch(error=>{
+ const showHistory=items=>{
+  if(resident!==c)return;
+  historyNode.innerHTML=historyHtml(items);
+  historyNode.querySelectorAll("[data-correct-id]").forEach(button=>button.onclick=()=>{
+    const original=items.find(r=>r.id===button.dataset.correctId);
+    if(!original)return;
+    const zone=el.querySelector("#us-correction-zone");
+    zone.innerHTML=`<form id="us-correction-form" class="us-clear-box"><h4>Correct recorded screening</h4>
+      <p>The original results and all earlier corrections are retained for audit.</p>
+      <label>Screen date <input type="date" id="us-edit-date" required></label>
+      <label>Screening type <input id="us-edit-type" required></label>
+      <div class="us-grid">${TESTS.map(t=>`<label> ${t} <select data-us-edit-test="${t}"><option>Negative</option><option>Positive</option><option>Not tested</option></select></label>`).join("")}</div>
+      <label>Notes <textarea id="us-edit-notes" rows="3"></textarea></label>
+      <label>Reason for correction <textarea id="us-edit-reason" required minlength="8" rows="2"></textarea></label>
+      <div class="us-actions"><button type="button" id="us-edit-cancel">Cancel</button><button type="submit">Save correction</button></div>
+      <p id="us-edit-feedback" role="status"></p></form>`;
+    zone.querySelector("#us-edit-date").value=String(original.date||"").slice(0,10);
+    zone.querySelector("#us-edit-type").value=original.type||"Follow-up";
+    zone.querySelector("#us-edit-notes").value=original.notes||"";
+    zone.querySelectorAll("[data-us-edit-test]").forEach(select=>select.value=original.results?.[select.dataset.usEditTest]||"Not tested");
+    zone.querySelector("#us-edit-cancel").onclick=()=>zone.replaceChildren();
+    zone.querySelector("#us-correction-form").onsubmit=async event=>{
+      event.preventDefault();
+      const form=event.currentTarget,submit=form.querySelector('[type="submit"]');
+      const reason=form.querySelector("#us-edit-reason").value.trim();
+      if(reason.length<8){alert("Provide a correction reason of at least 8 characters.");return;}
+      const corrected={...original,date:form.querySelector("#us-edit-date").value,type:form.querySelector("#us-edit-type").value.trim(),
+        results:Object.fromEntries([...form.querySelectorAll("[data-us-edit-test]")].map(x=>[x.dataset.usEditTest,x.value])),
+        notes:form.querySelector("#us-edit-notes").value.trim()};
+      submit.disabled=true;
+      try{
+        await correctionHandler(original,corrected,reason);
+        zone.replaceChildren();
+        const refreshed=await loadHistory(c);
+        if(resident===c)showHistory(refreshed);
+        alert("Correction saved. Original record retained in correction history.");
+      }catch(error){console.error("Screen correction failed",error);form.querySelector("#us-edit-feedback").textContent="Correction failed: "+(error.message||error);}
+      finally{submit.disabled=false;}
+    };
+  });
+};
+loadHistory(c).then(showHistory).catch(error=>{
   console.error("Urine screening history could not be loaded",error);
   historyNode.textContent="Screening history could not be loaded. Please check permissions and try again. Do not assume the record has no history.";
  });

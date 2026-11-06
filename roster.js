@@ -566,13 +566,13 @@ async function kbrhClearUrineFlag(clientId, reason){
     if(i<0)throw Error("Resident not found in the current roster.");
     const previous=roster[i];
     roster[i]={...previous,admissionStatus:previous.admissionStatus==="THC Protocol"?"":previous.admissionStatus,
-      thcRetestDue:null,thcProtocolClearedAt:when,thcProtocolClearedBy:user.uid,
+      thcRetestDue:null,thcProtocolActive:false,thcProtocolClearedAt:when,thcProtocolClearedBy:user.uid,
       thcProtocolClearReason:reason.trim()};
     tx.update(ref,{roster,updatedAt:when});
   });
   const local=rosterState.roster.find(r=>r.id===clientId);
   if(local){local.admissionStatus=local.admissionStatus==="THC Protocol"?"":local.admissionStatus;
-    local.thcRetestDue=null;local.thcProtocolClearedAt=when;local.thcProtocolClearedBy=user.uid;
+    local.thcRetestDue=null;local.thcProtocolActive=false;local.thcProtocolClearedAt=when;local.thcProtocolClearedBy=user.uid;
     local.thcProtocolClearReason=reason.trim();}
   renderRoster();
   try{await db.collection("kbrhAudit").add({page:"roster.html",action:"urine_flag_cleared",residentId:clientId,
@@ -580,7 +580,44 @@ async function kbrhClearUrineFlag(clientId, reason){
     staffUid:user.uid,staffEmail:user.email||"",timestamp:firebase.firestore.Timestamp.fromDate(new Date(when))});}
   catch(err){console.error("Flag cleared but audit write failed",err);alert("Flag cleared, but audit logging failed. Notify an administrator.");}
 }
+async function kbrhCorrectUrineScreen(clientId,original,corrected,reason){
+ const user=auth?.currentUser;
+ if(!user?.uid)throw Error("Sign in to correct a screening.");
+ if(!reason||reason.trim().length<8)throw Error("A correction reason of at least 8 characters is required.");
+ const ref=db.collection("kbrhUrineScreens").doc(clientId).collection("records").doc(original.id);
+ const revisionRef=ref.collection("revisions").doc();
+ const when=new Date().toISOString();
+ await db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);
+   const previous=snap.exists?snap.data():original;
+   if(!previous?.id)throw Error("Original screening not found.");
+   if(snap.exists&&JSON.stringify(previous.results)!==JSON.stringify(original.results))
+     throw Error("Screening changed since it was opened. Reload history before editing.");
+   const updated={...previous,...corrected,id:original.id,createdAt:previous.createdAt||original.createdAt||when,
+     author:previous.author||original.author||"",correctedAt:when,
+     correctedBy:user.displayName||user.email||user.uid,correctedByUid:user.uid,
+     correctionReason:reason.trim(),residentId:clientId};
+   tx.set(revisionRef,{previous,updated,reason:reason.trim(),staffUid:user.uid,
+     staffEmail:user.email||"",recordedAt:when});
+   tx.set(ref,updated);
+ });
+ try{await db.collection("kbrhAudit").add({page:"roster.html",action:"urine_screen_corrected",
+  residentId:clientId,screenId:original.id,summary:"Urine screening corrected",
+  changes:["Screen ID: "+original.id,"Reason: "+reason.trim(),"Previous values retained in screening revision history"],
+  staffUid:user.uid,staffEmail:user.email||"",
+  timestamp:firebase.firestore.Timestamp.fromDate(new Date(when))});}
+ catch(error){console.error("Correction saved but audit failed",error);alert("Correction saved, but the central audit entry failed. Original retained in screening revisions.");}
+}
 function handleRosterAction(clientId, action) {
+  if(action==="clear-thc"){
+    if(!kbrhCanAccessUrineHistory()){alert("Authorized personnel only.");return;}
+    const reason=prompt("Reason for removing THC Protocol (minimum 8 characters):","");
+    if(reason===null)return;
+    if(reason.trim().length<8){alert("Enter a reason of at least 8 characters.");return;}
+    if(!confirm("Remove THC Protocol flag? Screening results will remain in history."))return;
+    kbrhClearUrineFlag(clientId,reason).catch(e=>alert("Could not remove flag: "+(e.message||e)));
+    return;
+  }
   if(action==="urine") {
     if (!kbrhCanAccessUrineHistory()) {
       alert("Authorized personnel only.");
@@ -618,7 +655,7 @@ function handleRosterAction(clientId, action) {
       }
       renderRoster();
       if(typeof writeAuditEntry==="function")Promise.resolve().then(()=>writeAuditEntry(["Urine screening saved for resident "+clientId],{uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""})).catch(console.warn);
-    },false,{clearFlag:reason=>kbrhClearUrineFlag(clientId,reason)});
+    },false,{clearFlag:reason=>kbrhClearUrineFlag(clientId,reason),correctScreen:(original,corrected,reason)=>kbrhCorrectUrineScreen(clientId,original,corrected,reason)});
     return;
   }
   if (!action) return;
@@ -654,6 +691,7 @@ function openRosterActionsModal(clientId) {
       `
       : `
         <button type="button" data-roster-action="edit">Edit</button>\n        <button type="button" data-roster-action="urine">Urine Screens / History</button>
+        ${phase === "phase1" ? '<button type="button" data-roster-action="clear-thc" class="secondary">Remove THC Protocol Flag</button>' : ""}
         <button type="button" data-roster-action="${phase === "phase1" ? "phase2" : "phase1"}">Move to ${phase === "phase1" ? "Phase 2" : "Phase 1"}</button>
         ${phase === "phase2" ? '<button type="button" data-roster-action="extend6">Grant 6-Month Extension</button>' : ""}
         <button type="button" data-roster-action="waitlist">Move back to Waitlist</button>
@@ -1124,6 +1162,7 @@ function kbrhApplyTHCProtocol(client,screen){
  client.notes.unshift({id:crypto.randomUUID(),author:"KBRH Intake",text:`THC Protocol — Retest due ${screen.thcRetestDue}. Admission screening positive for THC on ${screen.date}. Follow-up screening required in 45 days.`,createdAt:new Date().toISOString()});
 }
 function kbrhActiveTHCScreen(client){
+ if(client.thcProtocolActive===false || client.thcProtocolClearedAt && client.thcProtocolActive!==true)return null;
  const records=Array.isArray(client.urineScreens)?client.urineScreens:[];
  const ordered=records.slice().sort((a,b)=>String(a.date||a.createdAt||"").localeCompare(String(b.date||b.createdAt||""))||String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
  const isPositive=r=>{const v=r?.results?.THC??r?.THC??r?.thc;return v===true||v===1||["positive","pos","+","true","checked"].includes(String(v??"").trim().toLowerCase());};
@@ -1131,6 +1170,7 @@ function kbrhActiveTHCScreen(client){
  // Historical records can retain the THC Protocol status even if a previous save
  // omitted the urineScreens array. Never fabricate a positive laboratory result.
  if(!positives.length){
+  if(client.thcProtocolActive===true)return {record:{thcRetestDue:client.thcRetestDue||null},completed:false};
   if(String(client.admissionStatus||"").trim().toLowerCase()!=="thc protocol")return null;
   const note=(Array.isArray(client.notes)?client.notes:[]).find(n=>/THC Protocol/i.test(typeof n==="string"?n:n?.text||""));
   const txt=typeof note==="string"?note:note?.text||"";
