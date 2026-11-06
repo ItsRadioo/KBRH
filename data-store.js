@@ -271,6 +271,13 @@ function normalizeAppState(state) {
           ? client.urineScreens.map(screen => ({ ...screen, results: { ...(screen.results || {}) } }))
           : [],
         admissionStatus: client.admissionStatus || "",
+        // Explicit THC protocol state must survive normalization and page reloads.
+        // Preserve false (manual clearance), not just truthy values.
+        thcProtocolActive: typeof client.thcProtocolActive === "boolean" ? client.thcProtocolActive : null,
+        thcProtocolSetAt: client.thcProtocolSetAt || null,
+        thcProtocolClearedAt: client.thcProtocolClearedAt || null,
+        thcProtocolClearedBy: client.thcProtocolClearedBy || "",
+        thcProtocolClearReason: client.thcProtocolClearReason || "",
         thcRetestDue: client.thcRetestDue || "",
         phase: client.phase || "phase1",
         phase2AdmissionDate: client.phase2AdmissionDate || "",
