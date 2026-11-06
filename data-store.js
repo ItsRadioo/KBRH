@@ -753,19 +753,30 @@ async function saveAppState(state) {
 }
 
 function listenToAppState(callback) {
-  return APP_DOC_REF().onSnapshot(async snap => {
-    if (!snap.exists) {
-      const initial = defaultAppState();
-      await APP_DOC_REF().set(initial, { merge: true });
-      KBRH_LAST_STATE = normalizeAppState(initial);
+  // Serialize asynchronous migration/retention processing. Without this,
+  // callbacks for old snapshots can complete after callbacks for new ones.
+  let sequence=0;
+  let queue=Promise.resolve();
+  return APP_DOC_REF().onSnapshot(snap => {
+    const ticket=++sequence;
+    queue=queue.catch(error=>console.error('Previous roster snapshot processing failed',error)).then(async()=>{
+      if(ticket!==sequence)return;
+      if(!snap.exists){
+        const initial=defaultAppState();
+        await APP_DOC_REF().set(initial,{merge:true});
+        if(ticket!==sequence)return;
+        KBRH_LAST_STATE=normalizeAppState(initial);
+        callback(KBRH_LAST_STATE);
+        return;
+      }
+      let rawState=await migrateExistingAutoCaseV5534(snap.data());
+      if(ticket!==sequence)return;
+      rawState=await enforceArchivedRosterRetention(rawState);
+      if(ticket!==sequence)return;
+      KBRH_LAST_STATE=normalizeAppState(rawState);
       callback(KBRH_LAST_STATE);
-      return;
-    }
-    let rawState = await migrateExistingAutoCaseV5534(snap.data());
-    rawState = await enforceArchivedRosterRetention(rawState);
-    KBRH_LAST_STATE = normalizeAppState(rawState);
-    callback(KBRH_LAST_STATE);
-  });
+    }).catch(error=>console.error('Roster listener failed',error));
+  },error=>console.error('Firestore roster listener error',error));
 }
 
 function migrateLocalStorageToFirestore() {

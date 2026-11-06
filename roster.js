@@ -6,6 +6,9 @@ let rosterSearchTerm = "";
 let pendingDischargeClientId = null;
 // Preserve staff candidate edits while Firestore snapshots and writes are in flight.
 const kbrhPendingCandidateFlags = new Map();
+// Guard a just-confirmed THC change against delayed asynchronous snapshots.
+// This is a UI synchronization guard, not a replacement for Firestore persistence.
+const kbrhPendingTHCStatuses = new Map();
 function kbrhSetCandidateFlag(client, checked) {
   const value = Boolean(checked);
   client.phase2Candidate = value;
@@ -559,8 +562,9 @@ async function kbrhSetResidentTHCStatus(clientId,active,reason,screen=null){
  if(!user?.uid)throw Error("Staff sign-in required.");
  if(!active && String(reason||"").trim().length<8)throw Error("A removal reason of at least 8 characters is required.");
  const doc=db.collection("kbrh").doc("choreTracker"),when=new Date().toISOString();
+ kbrhPendingTHCStatuses.set(String(clientId),{active:!!active,when,confirmed:false});
  let updated=null;
- await db.runTransaction(async tx=>{
+ try { await db.runTransaction(async tx=>{
   const snap=await tx.get(doc);
   if(!snap.exists)throw Error("KBRH roster document is missing.");
   const roster=Array.isArray(snap.data().roster)?snap.data().roster.slice():[];
@@ -575,6 +579,9 @@ async function kbrhSetResidentTHCStatus(clientId,active,reason,screen=null){
   roster[i]=updated;
   tx.update(doc,{roster,updatedAt:when});
  });
+ } catch(error) { kbrhPendingTHCStatuses.delete(String(clientId)); throw error; }
+ const pending=kbrhPendingTHCStatuses.get(String(clientId));
+ if(pending)pending.confirmed=true;
  const resident=rosterState.roster.find(r=>String(r?.id)===String(clientId));
  if(resident)Object.assign(resident,updated);
  renderRoster();
@@ -1566,6 +1573,23 @@ auth.onAuthStateChanged(user => {
         kbrhPendingCandidateFlags.delete(client.id);
       } else {
         client.phase2Candidate = desired;
+      }
+    }
+    // Firestore's listener performs asynchronous migration work. An older
+    // callback can arrive after a newer one, and must not re-display the flag.
+    for(const client of (nextState.roster||[])){
+      const pending=kbrhPendingTHCStatuses.get(String(client?.id));
+      if(!pending)continue;
+      const serverTime=String(client?.thcProtocolClearedAt||client?.thcProtocolSetAt||'');
+      if(Boolean(client.thcProtocolActive)===pending.active && serverTime>=pending.when){
+        kbrhPendingTHCStatuses.delete(String(client.id));
+      }else{
+        client.thcProtocolActive=pending.active;
+        if(!pending.active){
+          client.thcProtocolClearedAt=pending.when;
+          client.thcRetestDue=null;
+          if(String(client.admissionStatus||'').toLowerCase()==='thc protocol')client.admissionStatus='';
+        }
       }
     }
     rosterState = nextState;
