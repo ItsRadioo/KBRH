@@ -25,7 +25,7 @@
       const success=outcomeDen?`${(completed/outcomeDen*100).toFixed(1)}%`:"—";
       const ack=await pendingAcknowledgements();
       document.getElementById("dashKpis").innerHTML=[
-        card("Phase 1 Occupancy",`${p1.length} / 18`,`${Math.max(0,18-p1.length)} bed${Math.max(0,18-p1.length)===1?"":"s"} available`,p1.length>=16?"attention":""),
+        card("Phase 1 Occupancy",`${p1.length} / 18`,`${Math.max(0,18-p1.length)} bed${Math.max(0,18-p1.length)===1?"":"s"} empty`,p1.length>=16?"attention":""),
         card("Phase 2",p2.length,"Current Phase 2 residents"),
         card("Waitlist",wait.length,"Active applicants"),
         card("Pending Admission",pending.length,"Approved / expected"),

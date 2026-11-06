@@ -37,7 +37,12 @@ function historyHtml(items){
  const recordHtml=(r,latest)=>`<div class="us-record ${latest?"us-latest-record":""}">
  ${latest?'<div class="us-latest-label">MOST RECENT SCREENING CHANGE</div>':""}
  <strong>${esc(r.date)} · ${esc(r.type)}</strong>
- <div>${TESTS.map(t=>`${t}: ${esc(r.results?.[t]||"—")}`).join(" · ")}</div>
+ <div class="us-results-grid" aria-label="Screening results">${TESTS.map(t=>{
+   const value=String(r.results?.[t]||"").trim().toLowerCase();
+   const status=value==="positive"?"positive":value==="negative"?"negative":"unknown";
+   const label=status==="positive"?"Positive":status==="negative"?"Negative":value==="not tested"?"Not tested":"Not recorded";
+   return `<div class="us-result us-result-${status}"><strong>${t}</strong><span>${label}</span></div>`;
+ }).join("")}</div>
  ${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}
  ${r.correctedAt?`<div><strong>Last corrected:</strong> ${esc(r.correctedAt)} by ${esc(r.correctedBy||"Staff")} · ${esc(r.correctionReason||"")}</div>`:""}
  <div>${esc(r.notes)}</div>
@@ -53,9 +58,9 @@ function historyHtml(items){
 function open(c,onSave,mandatory,management={}){
  resident=c;callback=onSave;correctionHandler=typeof management.correctScreen==="function"?management.correctScreen:null;
  let el=document.getElementById("urineScreenOverlay");
- el.innerHTML=`<div class="us-dialog" role="dialog" aria-modal="true"><h2>Urine Drug Screening</h2>
- <p id="us-person"></p><p class="us-hint">${mandatory?"Intake screening is required before admission.":"Previous screens remain in the resident record."}</p>
- <div class="us-management"><h3>Existing screens and protocol status</h3><p class="us-hint">Historical results are retained. To remove a protocol flag, use the separate authorized action below; this does not alter a laboratory result.</p><div id="us-history"></div><div id="us-correction-zone"></div><div id="us-clear-zone"></div></div>
+ el.innerHTML=`<div class="us-dialog" role="dialog" aria-modal="true" aria-labelledby="us-title"><header class="us-dialog-header"><h2 id="us-title">${mandatory?"Urine Drug Screening":"Urine Screening History"}</h2><button type="button" id="us-close-top" aria-label="Close urine screening history">Close ×</button></header>
+ <p id="us-person"></p>${!mandatory?'<p id="us-protocol-status" class="us-hint"></p>':""}<p class="us-hint">${mandatory?"Intake screening is required before admission.":"Previous screens remain in the resident record."}</p>
+ <div class="us-management"><h3>Screening history</h3><p class="us-hint">Positive <span class="us-legend-red">●</span> · Negative <span class="us-legend-green">●</span></p><div id="us-history"></div><div id="us-correction-zone"></div><div id="us-clear-zone"></div></div>
  <details class="us-new-screen" ${mandatory?"open":""}><summary>Record a new urine screen</summary><form id="us-form"><label>Screening date <input type="date" id="us-date" required></label>
  <label>Screening type <select id="us-type"><option>Admission</option><option>Follow-up</option><option>Other</option></select></label>
  <p class="us-hint">Check a substance only when the result is <strong>positive</strong>. Unchecked boxes are recorded as negative. Do not save an untested substance as negative.</p>
@@ -66,17 +71,22 @@ function open(c,onSave,mandatory,management={}){
  <label id="us-reason-wrap" hidden>Override reason <textarea id="us-reason" rows="2"></textarea></label>
  <div class="us-actions"><button type="button" id="us-cancel">Close</button><button type="submit">Save Screening${mandatory?" & Continue":""}</button></div></form></details></div>`;
  document.getElementById("us-person").textContent=[c?.firstName,c?.lastName].filter(Boolean).join(" ");
+ const protocolNode=document.getElementById("us-protocol-status");
+ if(protocolNode){
+  const active=typeof kbrhActiveTHCScreen==="function"?!!kbrhActiveTHCScreen(c):c?.thcProtocolActive===true;
+  protocolNode.textContent="THC Protocol: "+(active?"Active":"Inactive");
+ }
  document.getElementById("us-date").value=new Date().toLocaleDateString("en-CA");
  document.getElementById("us-type").value=mandatory?"Admission":"Follow-up";
  const clearZone=document.getElementById("us-clear-zone");
  if(!mandatory&&typeof management.clearFlag==="function"){
-   clearZone.innerHTML=`<div class="us-clear-box"><strong>THC Protocol flag management</strong><p>Remove the current flag without deleting or rewriting screening history.</p><label>Reason for clearing the flag <textarea id="us-clear-reason" rows="2" placeholder="Document the reason for removing the flag"></textarea></label><button type="button" id="us-clear-flag">Remove THC Protocol flag</button><p id="us-clear-feedback" role="status"></p></div>`;
+   clearZone.innerHTML=`<details class="us-clear-box"><summary>THC Protocol flag management</summary><p>Remove the current flag without deleting or rewriting screening history.</p><label>Reason for clearing the flag <textarea id="us-clear-reason" rows="2" placeholder="Document the reason for removing the flag"></textarea></label><button type="button" id="us-clear-flag">Remove THC Protocol flag</button><p id="us-clear-feedback" role="status"></p></details>`;
    clearZone.querySelector("#us-clear-flag").onclick=async()=>{
      const reason=clearZone.querySelector("#us-clear-reason").value.trim();
      if(reason.length<8){alert("Enter a reason of at least 8 characters.");return;}
      if(!confirm("Remove this resident's THC Protocol flag? Screening history will remain unchanged."))return;
      const button=clearZone.querySelector("#us-clear-flag");button.disabled=true;
-     try{await management.clearFlag(reason);clearZone.querySelector("#us-clear-feedback").textContent="Protocol flag removed and roster updated.";}
+     try{await management.clearFlag(reason);if(protocolNode)protocolNode.textContent="THC Protocol: Inactive";clearZone.querySelector("#us-clear-feedback").textContent="Protocol flag removed and roster updated.";}
      catch(err){console.error("Flag removal failed",err);alert("Flag was not removed: "+(err.message||err));}
      finally{button.disabled=false;}
    };
@@ -137,6 +147,8 @@ loadHistory(c).then(showHistory).catch(error=>{
  }
  el.querySelectorAll("select,input").forEach(i=>i.addEventListener("change",update));
  el.querySelector("#us-cancel").onclick=()=>{el.hidden=true;};
+ el.querySelector("#us-close-top").onclick=()=>{el.hidden=true;};
+ el.onkeydown=event=>{if(event.key==="Escape"&&el.dataset.saving!=="1"){event.preventDefault();el.hidden=true;}};
  el.querySelector("#us-form").onsubmit=async e=>{
   e.preventDefault();
   if(el.dataset.saving==="1")return;
@@ -150,12 +162,13 @@ loadHistory(c).then(showHistory).catch(error=>{
   const button=el.querySelector('[type="submit"]');button.disabled=true;el.dataset.saving='1';
   try{await callback(record);el.hidden=true;}catch(err){const incidentId="US-"+Date.now().toString(36).toUpperCase();console.error("KBRH urine screening save failed",incidentId,err);const code=String(err?.code||"unknown");const detail=String(err?.message||"No further details available").slice(0,350);alert("Screening was not confirmed saved. Do not close this form.\nReference: "+incidentId+"\nError: "+code+"\nDetails: "+detail+"\nPlease report this message to the administrator.");}finally{button.disabled=false;el.dataset.saving="0";}
  };
- update();el.hidden=false;
+ update();el.hidden=false;el.querySelector("#us-close-top").focus();
 }
 window.KBRHUrine={open,records,loadHistory,TESTS};
 document.addEventListener("DOMContentLoaded",()=>{
  let overlay=document.createElement("div");overlay.id="urineScreenOverlay";overlay.hidden=true;document.body.append(overlay);
  let style=document.createElement("style");style.textContent=`#urineScreenOverlay:not([hidden]){position:fixed;inset:0;background:#000a;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:14px}.us-dialog{background:white;color:#222;max-height:92vh;overflow:auto;width:min(800px,100%);padding:24px;border-radius:12px;box-shadow:0 10px 50px #0007}.us-dialog label{display:block;margin:10px 0}.us-dialog input,.us-dialog select,.us-dialog textarea{display:block;width:100%;padding:8px;box-sizing:border-box}.us-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px}.us-dialog .us-test-check{display:flex!important;align-items:center!important;flex-direction:row!important;gap:9px;padding:12px;border:1px solid #ddd;border-radius:8px;margin:0;cursor:pointer}.us-dialog .us-test-check input[type="checkbox"]{appearance:auto!important;-webkit-appearance:checkbox!important;display:inline-block!important;position:static!important;opacity:1!important;visibility:visible!important;width:20px!important;min-width:20px!important;max-width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px!important;margin:0!important;padding:0!important;accent-color:#b45309;transform:none!important}.us-dialog .us-test-check .us-test-name{font-weight:700;min-width:0}.us-dialog .us-test-check small{font-size:11px;white-space:normal;text-align:right}.us-test-check small{margin-left:auto;color:#666}.us-test-check:has(input:checked){border-color:#b45309;background:#fff7ed}.us-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:15px}.us-record{border-bottom:1px solid #ddd;padding:9px}.us-hint{color:#666}.us-management{padding:15px;border:1px solid #d8e2ec;border-radius:10px;margin:12px 0}.us-new-screen{margin-top:15px;border:1px solid #d8e2ec;border-radius:10px;padding:12px}.us-new-screen>summary{cursor:pointer;font-weight:700}.us-clear-box{background:#fff8ee;border:1px solid #e7c69e;border-radius:9px;padding:14px;margin-top:12px}.us-clear-box button{background:#9a3412;color:white;border:0;border-radius:6px;padding:10px 14px;cursor:pointer}#us-eligibility{font-weight:bold;padding:10px;background:#f3f3f3}`;
+ style.textContent+=`#urineScreenOverlay .us-dialog{padding:0 24px 24px;border-radius:16px}#urineScreenOverlay .us-dialog-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border-bottom:1px solid #dbe3ec;padding:18px 0;margin-bottom:16px}#urineScreenOverlay .us-dialog-header h2{margin:0;font-size:1.35rem}#urineScreenOverlay .us-dialog-header button{flex:none;padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#172b4d;cursor:pointer}#urineScreenOverlay .us-management{padding:0;border:0}#urineScreenOverlay .us-record{padding:18px;border:1px solid #dbe3ec;border-radius:12px;margin:12px 0;background:#fff}#urineScreenOverlay .us-latest-record{background:#f8fafc;border-color:#b9cbdc}#urineScreenOverlay .us-latest-label{font-size:.72rem;letter-spacing:.08em;font-weight:800;color:#475569;margin-bottom:8px}#urineScreenOverlay .us-results-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:16px 0}#urineScreenOverlay .us-result{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid;border-radius:9px;padding:12px 5px;text-align:center}#urineScreenOverlay .us-result strong{font-size:1rem}#urineScreenOverlay .us-result span{font-size:.75rem;font-weight:650}#urineScreenOverlay .us-result-positive{background:#fef2f2;border-color:#dc2626;color:#b91c1c}#urineScreenOverlay .us-result-negative{background:#f0fdf4;border-color:#16a34a;color:#166534}#urineScreenOverlay .us-result-unknown{background:#f1f5f9;border-color:#cbd5e1;color:#475569}#urineScreenOverlay .us-legend-red{color:#b91c1c}#urineScreenOverlay .us-legend-green{color:#166534}#urineScreenOverlay .us-correct{margin-top:12px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:7px;background:white;color:#1e3a5f;cursor:pointer}#urineScreenOverlay .us-older-history>summary{font-weight:700;cursor:pointer;padding:12px 0}@media(max-width:520px){#urineScreenOverlay .us-dialog{padding:0 14px 16px}#urineScreenOverlay .us-results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#urineScreenOverlay .us-record{padding:12px}}`;
  document.head.append(style);
 });
 })();

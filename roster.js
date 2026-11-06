@@ -1123,7 +1123,7 @@ function updatePhase1ResidentCount() {
   countElement.textContent = String(count);
   detailElement.textContent = count >= capacity
     ? "FULL"
-    : `${available} bed${available === 1 ? "" : "s"} available`;
+    : `${available} bed${available === 1 ? "" : "s"} empty`;
 
   card.classList.remove("capacity-open", "capacity-near", "capacity-full");
   if (count >= capacity) card.classList.add("capacity-full");
