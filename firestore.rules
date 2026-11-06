@@ -27,6 +27,24 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Screening correction history is append-only; original screening records remain immutable.
+    match /kbrhUrineScreens/{residentId}/records/{screenId}/revisions/{revisionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.staffUid == request.auth.uid &&
+        request.resource.data.updated.id == screenId &&
+        request.resource.data.updated.residentId == residentId &&
+        request.resource.data.reason is string && request.resource.data.reason.size() >= 8;
+      allow update, delete: if false;
+    }
+    match /kbrhUrineScreens/{residentId}/records/{screenId}/metadata/current {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null &&
+        request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.revisionId is string;
+      allow delete: if false;
+    }
+
     // Internal staff chat: conversation membership and message access enforced server-side.
     match /kbrhChatConversations/{conversationId} {
       function member() { return request.auth != null && (conversationId == 'staff-wide' || request.auth.uid in resource.data.memberUids); }

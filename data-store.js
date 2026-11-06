@@ -748,7 +748,8 @@ async function saveAppState(state) {
   const changes = describeAppStateChanges(before, cleaned);
   await APP_DOC_REF().set(cleaned, { merge: true });
   KBRH_LAST_STATE = normalizeAppState(cleaned);
-  await writeAuditEntry(changes, identity);
+  try { await writeAuditEntry(changes, identity); }
+  catch(error) { console.error('Application state saved, but audit write failed',error); }
 }
 
 function listenToAppState(callback) {

@@ -7,10 +7,20 @@ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function due(date){let d=new Date(String(date).slice(0,10)+"T12:00:00");if(Number.isNaN(d.getTime()))return null;d.setDate(d.getDate()+45);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
 function records(c){return Array.isArray(c?.urineScreens)?c.urineScreens:[];}
 async function loadHistory(c){
- const legacy=records(c), merged=new Map(legacy.filter(r=>r?.id).map(r=>[r.id,r]));
- if(!c?.id || !window.db)return sortScreenHistory([...merged.values()]);
- const snap=await db.collection("kbrhUrineScreens").doc(c.id).collection("records").get();
+ const merged=new Map(records(c).filter(r=>r?.id).map(r=>[r.id,r]));
+ if(!c?.id||!window.db)return sortScreenHistory([...merged.values()]);
+ const collection=db.collection('kbrhUrineScreens').doc(c.id).collection('records');
+ const snap=await collection.get();
  snap.docs.forEach(doc=>{const r=doc.data();if(r?.id)merged.set(r.id,r);});
+ // Each original screening stays immutable; only the latest revision is displayed.
+ await Promise.all([...merged.keys()].map(async id=>{
+  const base=collection.doc(id);
+  const current=await base.collection('metadata').doc('current').get();
+  if(!current.exists||!current.data()?.revisionId)return;
+  const revision=await base.collection('revisions').doc(current.data().revisionId).get();
+  if(!revision.exists||!revision.data()?.updated)throw Error('Screening correction metadata is incomplete for '+id);
+  merged.set(id,revision.data().updated);
+ }));
  return sortScreenHistory([...merged.values()]);
 }
 function screenLastChange(record){
