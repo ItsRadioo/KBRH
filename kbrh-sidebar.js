@@ -58,8 +58,8 @@
   #kbrh-sidebar .kbrh-sidebar-brand{text-align:center;padding:22px 4px;border-bottom:1px solid #ffffff40;margin-bottom:18px!important}
   #kbrh-sidebar .kbrh-sidebar-brand strong{display:block;font-size:29px!important;color:white!important}
   #kbrh-sidebar .kbrh-sidebar-brand small{display:block;font-size:12px;color:#dbeafe!important}
-  #kbrh-sidebar .kbrh-sidebar-links{flex:1!important}
-  #kbrh-sidebar .kbrh-nav-group{margin:6px 0 9px!important}
+  #kbrh-sidebar .kbrh-sidebar-links{flex:1!important;display:flex!important;flex-direction:column!important;justify-content:flex-start!important;gap:8px!important}
+  #kbrh-sidebar .kbrh-nav-group{flex:0 0 auto!important;margin:0!important}
   #kbrh-sidebar .kbrh-nav-group>summary{list-style:none!important;cursor:pointer!important;display:flex!important;align-items:center!important;gap:12px!important;background:linear-gradient(105deg,#155c9d,#0d437a)!important;color:white!important;padding:13px!important;border-radius:10px!important;font-size:13px!important;font-weight:800!important}
   #kbrh-sidebar .kbrh-nav-group>summary::-webkit-details-marker{display:none}
   #kbrh-sidebar .kbrh-chevron{margin-left:auto!important;font-size:22px!important;transition:transform .2s!important}
