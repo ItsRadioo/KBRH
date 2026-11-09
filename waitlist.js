@@ -120,9 +120,22 @@ function waitlistAuditChanges(before,after){
       if(JSON.stringify(a[key])!==JSON.stringify(b[key])){
         // Notes may contain sensitive client information. Audit the field and counts,
         // not the full note body.
+        const labels={activityHistory:"Activity history",callInHistory:"Call-in history",waitlistPosition:"Waitlist position",dateApplied:"Application date",callPriority:"Call-in priority",firstName:"First name",lastName:"Last name"};
+        const label=labels[key]||key.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./,c=>c.toUpperCase());
         const sensitive=/note|medical|health|diagnos|substance|medication/i.test(key);
-        const val=v=>sensitive?"[content not copied]":JSON.stringify(v??null).slice(0,180);
-        changes.push(`${key}: ${val(a[key])} → ${val(b[key])}`);
+        if(sensitive){changes.push(`${label} updated (contents not copied)`);continue;}
+        if(Array.isArray(a[key])||Array.isArray(b[key])){
+          const oldItems=Array.isArray(a[key])?a[key]:[],newItems=Array.isArray(b[key])?b[key]:[];
+          const oldIds=new Set(oldItems.map(x=>x?.id).filter(Boolean));
+          const newIds=new Set(newItems.map(x=>x?.id).filter(Boolean));
+          const added=newItems.filter(x=>x?.id&&!oldIds.has(x.id)).length;
+          const removed=oldItems.filter(x=>x?.id&&!newIds.has(x.id)).length;
+          changes.push(`${label} updated (${added} added, ${removed} removed; ${newItems.length} total)`);
+          continue;
+        }
+        if((a[key]&&typeof a[key]==="object")||(b[key]&&typeof b[key]==="object")){changes.push(`${label} updated`);continue;}
+        const val=v=>v==null||v===""?"Not set":String(v).slice(0,180);
+        changes.push(`${label}: ${val(a[key])} → ${val(b[key])}`);
       }
     }
     if(changes.length)events.push({id,name,action:"waitlist_updated",changes});

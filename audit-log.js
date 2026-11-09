@@ -21,6 +21,27 @@ function auditPageLabel(page) {
   return labels[page] || page || "System";
 }
 
+// Keep the original evidence available, but show staff a readable description.
+function auditReadableChange(change) {
+  const text=String(change??"");
+  if(/^Applicant ID:/i.test(text))return null;
+  const match=text.match(/^([A-Za-z][A-Za-z0-9_]*):\s*([\s\S]*)$/);
+  if(!match)return text;
+  const key=match[1],value=match[2];
+  const labels={waitlistPosition:"Waitlist position",activityHistory:"Activity history",callInHistory:"Call-in history",dateApplied:"Application date",callPriority:"Call-in priority",firstName:"First name",lastName:"Last name",status:"Status",notes:"Notes"};
+  const label=labels[key]||key.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./,c=>c.toUpperCase());
+  if(/history/i.test(key)||/[\[{]/.test(value)||value.includes('[content not copied]'))return `${label} updated`;
+  return `${label}: ${value.replace(/"([^"\\]*)"/g,'$1').replace(/\bnull\b/g,'Not set')}`;
+}
+
+function auditChangeHtml(entry) {
+  const raw=Array.isArray(entry.changes)?entry.changes:[];
+  const readable=[...new Set(raw.map(auditReadableChange).filter(Boolean))];
+  const summary=String(entry.summary||"Activity recorded");
+  return `<strong>${auditEscape(summary)}</strong>${readable.filter(x=>x!==summary).map(x=>`<div>${auditEscape(x)}</div>`).join("")}
+    ${raw.length||entry.applicantId?`<details class="audit-technical"><summary>Technical details</summary>${entry.applicantId?`<div>Applicant ID: ${auditEscape(entry.applicantId)}</div>`:""}<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto">${auditEscape(raw.join("\n"))}</pre></details>`:""}`;
+}
+
 function renderAuditLog() {
   const tbody = document.getElementById("auditBody");
   const q = (document.getElementById("auditSearch")?.value || "").trim().toLowerCase();
@@ -38,7 +59,7 @@ function renderAuditLog() {
       <td>${auditEscape(auditFormatDate(entry))}</td>
       <td><strong>${auditEscape(entry.staffName || "Staff User")}</strong><br><span class="hint">${auditEscape(entry.staffEmail || "")}</span></td>
       <td>${auditEscape(auditPageLabel(entry.page))}</td>
-      <td>${(entry.changes || [entry.summary || "Updated application data"]).map(change => `<div>${auditEscape(change)}</div>`).join("")}</td>
+      <td>${auditChangeHtml(entry)}</td>
     </tr>`).join("");
 }
 

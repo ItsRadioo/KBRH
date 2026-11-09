@@ -12,6 +12,8 @@
  const KEY='kbrh-nav-collapsed-v2';
 
  function init(){
+  // Floating chat is an embedded tool, not a second copy of the site shell.
+  if(current==='chat.html' && (new URLSearchParams(location.search).get('floating')==='1' || window.self!==window.top))return;
   if(!document.body || document.getElementById('kbrh-sidebar'))return;
   if(document.body.classList.contains('login-body') || document.body.classList.contains('page-print') || document.body.classList.contains('page-meal-print'))return;
   const nav=document.createElement('aside');
