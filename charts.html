@@ -2401,9 +2401,17 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
  html body.kbrh-single-sidebar>main{padding:16px!important}
 }
 </style>
-</head>
+<style id="laundry-four-columns">
+html body .laundry-chart{width:100%!important;max-width:840px!important;min-width:650px!important;margin:0 auto!important;table-layout:fixed!important}
+html body .laundry-chart th:first-child,html body .laundry-chart td:first-child{width:auto!important}
+html body .laundry-chart th:nth-child(2),html body .laundry-chart td:nth-child(2){width:70px!important;min-width:70px!important;max-width:70px!important}
+html body .laundry-chart th:nth-child(3),html body .laundry-chart td:nth-child(3){width:170px!important}
+html body .laundry-chart th:nth-child(4),html body .laundry-chart td:nth-child(4){width:135px!important}
+.laundry-chart input[type=date],.laundry-chart input[type=time]{width:100%!important;min-width:0;box-sizing:border-box;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit}
+@media print{html body .laundry-chart{min-width:0!important;max-width:none!important}.laundry-chart input{border:0!important;padding:0!important}}
+</style></head>
 <body class="page-charts">
 <main>
 <section class="card wide page-action-card"><div class="card-heading-row"><div><h2>Chart Centre</h2><p class="hint">Select a chart below. Only active Phase 1 resident names are populated automatically from the roster.</p></div><div class="chart-toolbar"><label for="chartSelector">Chart</label><select id="chartSelector"><option value="laundry">Laundry Checklist</option><option value="electronics">Electronic Devices Markoff</option><option value="meetings">Meetings Chart</option></select><button class="secondary" id="printChartBtn" type="button">Generate PDF</button></div></div></section>
 <section class="card wide chart-panel"><div class="section-heading-row"><div><h2 id="chartTitle">Laundry Checklist</h2><p class="hint" id="chartHint">Mark laundry complete and select the completion date.</p></div><span class="save-indicator" id="chartSaveStatus">Saved</span></div><div class="table-wrap chart-table-wrap" id="chartContainer"></div></section>
-</main><script src="charts.js?v=20261016-pending"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=chat-shell-20261109"></script><script src="kbrh-sidebar.js?v=compact-nav-5.36"></script></body></html>
+</main><script src="charts.js?v=laundry-5.37"></script><script src="kbrh-ui-upgrade.js"></script><script src="kbrh-v5.js?v=5.6.9"></script><script src="chat-floating.js?v=chat-shell-20261109"></script><script src="kbrh-sidebar.js?v=compact-nav-5.36"></script></body></html>

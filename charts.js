@@ -65,9 +65,9 @@ function laundryTable(){
   const end=addDays(start,6);
   const rows=activeResidents().map(r=>{
     const d=chartState.chartData.laundry[r.id]||{};
-    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td></tr>`;
+    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td><td><input class="laundry-date-input" aria-label="Laundry date for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-date" type="date" value="${esc(d.date||'')}"></td><td><input class="laundry-time-input" aria-label="Laundry time for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-time" type="time" value="${esc(d.time||'')}"></td></tr>`;
   }).join('');
-  return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident</th><th class="small-check-column">✓</th></tr></thead><tbody>${rows||'<tr><td colspan="2" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>'}</tbody></table>`;
+  return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident Name</th><th class="small-check-column">Done</th><th>Date</th><th>Time</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>'}</tbody></table>`;
 }
 
 function dayLabel(day){return day.slice(0,3);}
@@ -103,7 +103,7 @@ function updateExportButton(){
 function renderChart(){
   if(!chartState)return;ensureChartData();
   const title=document.getElementById('chartTitle'),hint=document.getElementById('chartHint'),box=document.getElementById('chartContainer');
-  if(currentChart==='laundry'){title.textContent='Laundry Checklist';hint.textContent='Select the start date. The end date is automatically set six days later.';box.innerHTML=laundryTable();}
+  if(currentChart==='laundry'){title.textContent='Laundry Checklist';hint.textContent='Mark Done and enter the date and time for each resident. Changes save automatically.';box.innerHTML=laundryTable();}
   else if(currentChart==='electronics'){title.textContent='Electronic Devices Markoff';hint.textContent='Weekly electronic-device markoff for Phase 1 residents and pending admissions. Export to Excel to adjust column widths or row heights before printing.';box.innerHTML=weeklyTable('electronics');}
   else{title.textContent='Meetings Chart';hint.textContent='Record meeting information for active Phase 1 residents throughout the week. Export to Excel to adjust the sheet before printing.';box.innerHTML=weeklyTable('meetings');}
   updateExportButton();
@@ -121,6 +121,9 @@ function updateFromInput(el){
     renderChart();
   } else if(kind==='laundry-check'){
     const rec=chartState.chartData.laundry[id]||{checked:false};rec.checked=el.checked;chartState.chartData.laundry[id]=rec;
+  } else if(kind==='laundry-date'||kind==='laundry-time'){
+    const rec=chartState.chartData.laundry[id]||{checked:false};
+    rec[kind==='laundry-date'?'date':'time']=el.value;chartState.chartData.laundry[id]=rec;
   } else {
     const day=el.dataset.day;chartState.chartData[kind][id]=chartState.chartData[kind][id]||{};chartState.chartData[kind][id][day]=el.value;
   }
@@ -157,16 +160,16 @@ function generateChartPdf(){
     const range=start?`${shortPdfDate(start)} - ${shortPdfDate(end)}`:'DATE: __________________';
     doc.text(range,pageW/2,122,{align:'center'});
     doc.line(pageW/2-78,127,pageW/2+78,127);
-    const body=residents.map(r=>[residentName(r),chartState.chartData.laundry[r.id]?.checked?'X':'']);
-    const tableWidth=238, left=(pageW-tableWidth)/2;
+    const body=residents.map(r=>{const d=chartState.chartData.laundry[r.id]||{};return [residentName(r),d.checked?'X':'',formatDate(d.date||''),d.time||''];});
+    const tableWidth=500, left=(pageW-tableWidth)/2;
     doc.autoTable({
       startY:164,
-      head:[], body,
+      head:[['Resident Name','Done','Date','Time']], body,
       theme:'grid',
       margin:{left,right:left},
       tableWidth,
       styles:{font:'helvetica',fontSize:12,cellPadding:{top:4,right:5,bottom:4,left:5},textColor:[0,0,0],lineColor:[0,0,0],lineWidth:.65,minCellHeight:23,valign:'middle'},
-      columnStyles:{0:{cellWidth:190,halign:'left'},1:{cellWidth:48,halign:'center',fontSize:15}},
+      columnStyles:{0:{cellWidth:230,halign:'left'},1:{cellWidth:50,halign:'center'},2:{cellWidth:135,halign:'center'},3:{cellWidth:85,halign:'center'}},
       pageBreak:'avoid',rowPageBreak:'avoid'
     });
   } else {
