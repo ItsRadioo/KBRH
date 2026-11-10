@@ -5,10 +5,9 @@ const date=new Date();$('testDate').value=[date.getFullYear(),String(date.getMon
 const ref=()=>db.collection('kbrh').doc('houseUrineTests');
 function status(text,error=false){$('testStatus').textContent=text;$('testStatus').classList.toggle('error',error);}
 function residentsForDate(){
- const saved=days[$('testDate').value]||{},people=new Map();
- for(const r of roster)if(r&&r!=='temp'&&!r.archived)people.set(r.id,{id:r.id,name:[r.firstName,r.lastName].filter(Boolean).join(' '),phase:r.phase||'phase1'});
- for(const [id,r] of Object.entries(saved))if(!people.has(id))people.set(id,{id,name:r.name||'Former resident',phase:r.phase||'phase1'});
- const phase=$('testPhase').value;return [...people.values()].filter(r=>phase==='all'||r.phase===phase).sort((a,b)=>a.name.localeCompare(b.name));
+ return roster.filter(r=>r&&r!=='temp'&&!r.archived&&(r.phase||'phase1')==='phase1')
+  .map(r=>({id:r.id,name:[r.firstName,r.lastName].filter(Boolean).join(' '),phase:'phase1'}))
+  .sort((a,b)=>a.name.localeCompare(b.name));
 }
 function render(){
  if(!ready||pending)return;
@@ -20,10 +19,13 @@ function render(){
 async function saveField(day,resident,field,value){
  let changed=false;
  await db.runTransaction(async tx=>{
-  const doc=ref(),snap=await tx.get(doc),data=snap.exists?snap.data():{};
+  const doc=ref(),stateSnap=await tx.get(db.collection('kbrh').doc('choreTracker'));
+  const current=(stateSnap.exists?stateSnap.data().roster||[]:[]).find(r=>r&&r.id===resident.id&&!r.archived&&(r.phase||'phase1')==='phase1');
+  if(!current)throw new Error('Only current Phase 1 residents can be recorded.');
+  const snap=await tx.get(doc),data=snap.exists?snap.data():{};
   const allDays=data.days||{},rows=allDays[day]||{},previous=rows[resident.id]||{};
   changed=previous[field]!==value;
-  tx.set(doc,{days:{...allDays,[day]:{...rows,[resident.id]:{...previous,name:resident.name,phase:resident.phase,[field]:value,updatedAt:new Date().toISOString(),updatedByUid:auth.currentUser.uid}}}},{merge:true});
+  tx.set(doc,{days:{...allDays,[day]:{...rows,[resident.id]:{...previous,name:[current.firstName,current.lastName].filter(Boolean).join(' '),phase:'phase1',[field]:value,updatedAt:new Date().toISOString(),updatedByUid:auth.currentUser.uid}}}},{merge:true});
  });
  if(changed)try{
   const identity=typeof getCurrentStaffIdentity==='function'?await getCurrentStaffIdentity():{uid:auth.currentUser.uid,email:auth.currentUser.email};
@@ -39,6 +41,6 @@ $('testRows').addEventListener('change',event=>{
  pending++;status('Saving…');$('testDate').disabled=true;
  chain=chain.then(()=>saveField(day,person,field,value)).then(()=>status('Saved')).catch(error=>{console.error(error);status('Save failed. Change the field again to retry: '+(error.message||error),true);}).finally(()=>{pending--;$('testDate').disabled=!!pending;if(!pending)render();});
 });
-$('testDate').addEventListener('change',()=>{if(!$('testDate').value)return;render();});$('testPhase').addEventListener('change',render);$('printTests').onclick=()=>window.print();
+$('testDate').addEventListener('change',()=>{if(!$('testDate').value)return;render();});$('printTests').onclick=()=>window.print();
 auth.onAuthStateChanged(user=>{if(!user)return;listenToAppState(state=>{roster=state.roster||[];render();});ref().onSnapshot(snap=>{days=snap.exists?(snap.data().days||{}):{};ready=true;status(pending?'Saving…':'Changes save automatically');render();},error=>{console.error(error);status('Could not load saved tests: '+error.message,true);});});
 })();
