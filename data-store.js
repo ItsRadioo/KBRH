@@ -350,6 +350,7 @@ function normalizeAppState(state) {
         roomNumber: item.roomNumber || "",
         assignedResident: item.assignedResident || "",
         checkedBy: item.checkedBy || "",
+        checklistRecorded: item.checklistRecorded !== false && Array.isArray(item.completedItems),
         completedItems: Array.isArray(item.completedItems) ? item.completedItems : [],
         issuesFound: Boolean(item.issuesFound),
         notes: item.notes || "",

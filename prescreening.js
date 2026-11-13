@@ -568,7 +568,7 @@ async function movePrescreenApplicantToRoster(){
   if(applicant.status==="Pending Application"){alert("Pending Application hold: admission is blocked.");return;}
   pendingPrescreenMoveApplicantId=applicant.id;
   $("prescreenMoveRosterName").textContent=applicantName(applicant);
-  $("prescreenMoveEntryDate").value=new Date().toISOString().slice(0,10);
+  $("prescreenMoveEntryDate").value=KBRHDates.today();
   $("prescreenMoveRosterModal").classList.remove("hidden");document.body.classList.add("kbrh-modal-open");
 }
 function closePrescreenMoveRoster(){pendingPrescreenMoveApplicantId=null;$("prescreenMoveRosterModal").classList.add("hidden");}

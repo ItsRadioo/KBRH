@@ -10,7 +10,8 @@ const dayDate=(week,idx)=>{const x=new Date(`${week}T12:00:00`);x.setDate(x.getD
 const week=()=>el('mealWeek').value;
 const displayName=p=>p.name||`${p.firstName||''} ${p.lastName||''}`.trim()||'Unnamed resident';
 const emptyRows=()=>Object.fromEntries(DAYS.map(d=>[d,{lunch:'',supper1:'',supper2:''}]));
-const schedule=()=>state.mealSchedule||defaultMealSchedule();
+const storedSchedule=()=>state.mealSchedule||defaultMealSchedule();
+const schedule=()=>{const s=storedSchedule();return s.weekStart===week()?s:{...s,weekStart:week(),weekSchedule:emptyRows(),published:false,locked:false};};
 const restrictions=()=>state.mealAvailability||{};
 const people=()=>{
  const active=(state.roster||[]).filter(p=>p&&!p.archived&&(p.phase||'phase1')==='phase1').map(p=>({...p,name:displayName(p),start:p.entryDate||'',end:p.expectedDischargeDate||p.exitDate||'',pending:false}));
@@ -83,7 +84,7 @@ function generate(){if(schedule().locked){alert('Unlock the published schedule b
 function updateSlot(day,slot,id){if(schedule().locked){alert('Unlock before editing.');render();return;}const next=structuredClone(draft||schedule().weekSchedule||emptyRows());next[day][slot]=id;const issues=validate(next).filter(x=>x.startsWith(`${day}:`)&&!x.includes('unfilled'));if(issues.length){alert(issues.join('\n'));render();return;}draft=next;dirty=true;render();}
 function render(){const rows=draft||schedule().weekSchedule||emptyRows(),roster=people();el('mealBody').innerHTML=DAYS.map((day,i)=>{const date=dayDate(week(),i),r=rows[day]||{};return `<tr><td><b>${day}</b><small style="display:block">${date}</small></td>${SLOTS.map(slot=>`<td><select ${schedule().locked?'disabled':''} onchange="updateSlot('${day}','${slot}',this.value)"><option value="">Unassigned</option>${roster.filter(p=>p.id===r[slot]||eligible(p,date,slot)).map(p=>`<option value="${esc(p.id)}" ${r[slot]===p.id?'selected':''}>${esc(p.name)}${p.pending?' (Pending)':''}</option>`).join('')}</select></td>`).join('')}</tr>`;}).join('');
  const issues=validate(rows);el('mealWarnings').innerHTML=issues.length?`<strong>${issues.length} schedule issue(s)</strong><ul>${issues.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:'<strong>All 21 positions filled with no detected conflicts.</strong>';
- el('mealStatus').textContent=`${schedule().locked?'LOCKED':'Editable'} · ${schedule().published?'Published':'Not published'}${dirty?' · Unsaved preview':''}`;
+ el('mealStatus').textContent=`${storedSchedule().weekStart && storedSchedule().weekStart!==week()?'Saved schedule: '+storedSchedule().weekStart+' · Selected week has no saved schedule · ':''}${schedule().locked?'LOCKED':'Editable'} · ${schedule().published?'Published':'Not published'}${dirty?' · Unsaved preview':''}`;
  el('mealRoster').innerHTML=roster.map(p=>`<div style="padding:6px;border-bottom:1px solid #ddd"><b>${esc(p.name)}</b> ${p.pending?'(Pending admission)':''}<div style="font-size:12px">${esc(p.start||'No intake date')} – ${esc(p.end||'No exit date')}</div><button class="secondary" onclick="editAvailability('${esc(p.id)}')">Availability</button></div>`).join('');
 }
 let editingAvailabilityId=null;
@@ -136,9 +137,9 @@ async function publish(){if(schedule().locked){alert('Unlock before publishing c
 async function unlock(){if(!confirm('Unlock the published schedule for editing? Changes will need to be published again.'))return;state.mealSchedule={...schedule(),locked:false,published:false};await saveAppState(state);render();}
 function resetDraft(){if(schedule().locked){alert('Unlock before clearing.');return;}draft=emptyRows();dirty=true;render();}
 function printWeek(){window.print();}
-el('mealWeek').value=schedule().weekStart||mondayOf(dateISO(new Date()));
-el('mealWeek').addEventListener('change',()=>{draft=null;render();});el('generateMealBtn').onclick=generate;el('randomMealBtn').onclick=generate;el('saveMealBtn').onclick=publish;el('clearMealBtn').onclick=resetDraft;el('printMealBtn').onclick=printWeek;el('unlockMealBtn').onclick=unlock;
-auth.onAuthStateChanged(u=>{if(u)listenToAppState(s=>{state=s; if(!dirty)el('mealWeek').value=schedule().weekStart||el('mealWeek').value;render();});});
+el('mealWeek').value=KBRHDates.nextMonday();
+el('mealWeek').addEventListener('change',()=>{draft=null;dirty=false;render();});el('generateMealBtn').onclick=generate;el('randomMealBtn').onclick=generate;el('saveMealBtn').onclick=publish;el('clearMealBtn').onclick=resetDraft;el('printMealBtn').onclick=printWeek;el('unlockMealBtn').onclick=unlock;
+auth.onAuthStateChanged(u=>{if(u)listenToAppState(s=>{state=s;render();});});
 
 el('availabilityType').addEventListener('change',updateAvailabilityFields);
 el('availabilityScope').addEventListener('change',updateAvailabilityFields);

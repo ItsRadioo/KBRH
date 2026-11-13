@@ -1,1 +1,53 @@
-.chat-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:16px;max-width:1400px;margin:20px auto;padding:0 16px;height:min(78vh,850px)}.chat-side,.chat-main{background:#fff;border:1px solid #dce1e8;border-radius:12px;overflow:hidden}.chat-side{overflow:auto}.chat-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid #eee}.chat-toolbar h2,.chat-main h2{margin:0;font-size:1.1rem}.chat-wide,.chat-conversation{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #eee;padding:14px;cursor:pointer;color:#1d2733}.chat-conversation.active{background:#e9f0fa}.chat-conversation small{display:block;color:#566;margin-top:4px}.chat-main{display:flex;flex-direction:column}.chat-main h2{padding:16px;border-bottom:1px solid #eee}.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}.chat-message{max-width:80%;background:#f1f3f6;padding:10px 14px;border-radius:12px;overflow-wrap:anywhere;white-space:pre-wrap}.chat-message.mine{align-self:flex-end;background:#dceafd}.chat-message .meta{font-size:.76rem;color:#52606d;margin-bottom:4px}.chat-compose{display:flex;gap:8px;padding:12px;border-top:1px solid #eee}.chat-compose textarea{flex:1;min-width:0;resize:vertical}.chat-compose button{align-self:flex-end}#chatStatus{padding:10px;color:#a32}.chat-nav-count{display:inline-block;background:#b91c1c;color:#fff;border-radius:10px;padding:1px 6px}#newDialog{border:1px solid #ccd;border-radius:12px;max-width:min(90vw,480px);width:100%}#staffChoices{max-height:250px;overflow:auto}#staffChoices label{display:block;padding:6px}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:15px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}@media(max-width:680px){.chat-layout{grid-template-columns:1fr;height:auto}.chat-side{max-height:250px}.chat-main{height:65vh}}
+/* Chat owns its panel layout; site navigation owns only the page offset. */
+html body.page-staff-chat{background:#eef3f8;color:#19344d;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+html body.page-staff-chat>main.staff-chat-page{display:flex!important;flex-direction:column!important;gap:18px!important;width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:20px 24px!important;box-sizing:border-box!important}
+.staff-chat-page *{box-sizing:border-box}
+.staff-chat-page .kbrh-page-title{flex:0 0 auto;margin:0;padding:16px 20px;background:#0b2b4d;border-radius:12px;color:white}
+.staff-chat-page .kbrh-page-title h1{margin:0;color:white;font-size:28px;line-height:1.3}
+.staff-chat-page .chat-workspace{flex:1 1 0;display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;min-height:0;min-width:0;width:100%;overflow:hidden}
+.chat-workspace .chat-side,.chat-workspace .chat-main{min-height:0;min-width:0;width:auto;max-height:none;margin:0;padding:0;border:1px solid #d7e1eb;border-radius:14px;background:white;box-shadow:0 3px 12px #17344d08;overflow:hidden}
+.chat-workspace .chat-side{display:flex;flex-direction:column}
+.chat-workspace .chat-toolbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 16px;border-bottom:1px solid #e4eaf0}
+.chat-workspace h2{margin:0;color:#19344d;font-size:17px;line-height:1.4}
+.chat-workspace #newChat{flex:none;min-width:62px;margin:0;padding:9px 14px;border:0;border-radius:8px;background:#087f78;color:white;font:inherit;font-size:14px;font-weight:650;cursor:pointer}
+.chat-workspace .chat-wide,.chat-workspace .chat-conversation{display:block;width:100%;min-width:0;max-width:none;margin:0;padding:16px;text-align:left;border:0;border-bottom:1px solid #e6edf3;border-radius:0;box-shadow:none;background:white;color:#19344d;white-space:normal;overflow-wrap:anywhere;cursor:pointer;font:inherit;line-height:1.4}
+.chat-workspace .chat-wide{flex:none;background:#f7fafc;font-weight:650;font-size:14px}
+.chat-workspace .chat-conversation:hover,.chat-workspace .chat-wide:hover{background:#f1f6fa}
+.chat-workspace .chat-conversation.active{background:#e7f4f2;box-shadow:inset 3px 0 #087f78}
+.chat-workspace .chat-conversation strong{display:block;margin-bottom:5px;font-size:14px;color:#19344d}
+.chat-workspace .chat-conversation small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.5;color:#63778a}
+.chat-workspace #conversations{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.chat-workspace #chatStatus{flex:none;max-height:100px;overflow:auto;margin:0;padding:12px 16px;color:#a32;font-size:13px;overflow-wrap:anywhere}
+.chat-workspace #chatStatus:empty{display:none}
+.chat-workspace .chat-main{display:flex;flex-direction:column}
+.chat-workspace #chatTitle{flex:none;padding:20px;border-bottom:1px solid #e4eaf0}
+.chat-workspace .chat-messages{flex:1 1 0;min-height:0;display:flex;flex-direction:column;align-items:flex-start;gap:16px;overflow:auto;padding:24px;background:#f8fafc;overscroll-behavior:contain}
+.chat-workspace .chat-messages:empty::before{content:attr(data-empty);margin:auto;max-width:300px;text-align:center;color:#718397;font-size:15px;line-height:1.6}
+.chat-workspace .chat-message{max-width:82%!important;border:1px solid #e1e8f0;border-radius:14px 14px 14px 4px;padding:12px 16px;background:white;color:#19344d;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-workspace .chat-message.mine{align-self:flex-end;border-color:#c7e2df;border-radius:14px 14px 4px 14px;background:#e8f5f2}
+.chat-workspace .chat-message .meta{display:flex;flex-direction:column;gap:2px;margin:0 0 8px!important;white-space:normal}
+.chat-workspace .chat-message .meta strong{font-size:13px;color:#24445e}
+.chat-workspace .chat-message .meta time{font-size:11px;color:#697e90}
+.chat-workspace .chat-compose{flex:none;display:flex;align-items:flex-end;gap:12px;margin:0;padding:16px;border-top:1px solid #e4eaf0;background:white}
+.chat-workspace .chat-compose textarea{flex:1 1 0;min-width:0;max-width:none;width:auto;margin:0;min-height:62px;max-height:150px;padding:12px 14px;border:1px solid #c6d5e1;border-radius:10px;resize:vertical;font:inherit;font-size:14px;line-height:1.5}
+.chat-workspace .chat-compose button{flex:none;margin:0;min-height:42px;padding:10px 20px;border-radius:9px}
+.chat-workspace :focus-visible{outline:3px solid #52b8b1;outline-offset:2px}
+.chat-nav-count{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:12px;background:#b91c1c;color:white;font-size:12px}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+#newDialog{border:1px solid #ccd7e2;border-radius:14px;box-shadow:0 20px 70px #0b2b4d40;color:#19344d}
+#newDialog::backdrop{background:#0b2b4d65}
+@media(max-width:850px){
+ html body.page-staff-chat>main.staff-chat-page{padding:16px!important;gap:12px!important}
+ .staff-chat-page .chat-workspace{grid-template-columns:240px minmax(0,1fr);gap:12px}
+}
+@media(max-width:600px){
+ html body.page-staff-chat>main.staff-chat-page{padding:10px!important;gap:10px!important}
+ .staff-chat-page .kbrh-page-title{padding:12px 16px}.staff-chat-page .kbrh-page-title h1{font-size:22px}
+ .staff-chat-page .chat-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(130px,30%) minmax(0,1fr);gap:10px}
+ .chat-workspace .chat-toolbar{padding:10px 12px}.chat-workspace .chat-wide{padding:10px 12px}.chat-workspace .chat-conversation{padding:10px 12px}
+ .chat-workspace #chatTitle{padding:12px}.chat-workspace .chat-messages{padding:14px}.chat-workspace .chat-compose{padding:10px;gap:8px}.chat-workspace .chat-compose button{padding:10px 14px}
+}
+html.kbrh-chat-embedded,html.kbrh-chat-embedded body.page-staff-chat{height:100%;margin:0!important;padding:0!important;overflow:hidden!important}
+html.kbrh-chat-embedded .kbrh-page-title{display:none}
+html.kbrh-chat-embedded body.page-staff-chat>main.staff-chat-page{height:100dvh!important;padding:8px!important;gap:0!important}
+html.kbrh-chat-embedded .staff-chat-page .chat-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(130px,30%) minmax(0,1fr);gap:8px}

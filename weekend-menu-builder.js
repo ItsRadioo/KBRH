@@ -83,7 +83,7 @@
   }
 
   function pdfFileName(){
-    const stamp = new Date().toISOString().slice(0,10);
+    const stamp = KBRHDates.today();
     return `Weekend-Menu-Chores-${stamp}.pdf`;
   }
 

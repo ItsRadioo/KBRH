@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Dish Schedule</title>
-<link href="style.css" rel="stylesheet"/><style data-original-file="kbrh-modern.css">
+<link href="style.css?v=5.40" rel="stylesheet"/><style data-original-file="kbrh-modern.css">
 /* KBRH Modern UI — presentation-only layer */
 :root{
   --kbrh-navy:#071827;
@@ -420,12 +420,12 @@ tbody tr:last-child>td{border-bottom:0;}
       }
     }
   </style>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="auth.js?v=cms-5.38"></script>
-<script src="data-store.js?v=5.6.20"></script><script src="dnr.js?v=1"></script>
+<script src="firebase-config.js?v=5.40"></script>
+<script src="auth.js?v=5.40"></script>
+<script src="data-store.js?v=5.40"></script><script src="dnr.js?v=5.40"></script>
 <script>
     requireLogin();
   </script>
@@ -496,7 +496,7 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style><link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
 <body class="page-meal-print">
 <header class="no-print"><div class="header-top"><div class="brand-and-title"><div aria-hidden="true" class="brand-mark">KB</div><div class="page-heading"><span class="app-name">Ken Brown Recovery Home</span>
 <h1>Dish Schedule</h1>
@@ -520,7 +520,7 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
 <p class="dish-instruction">
         Tables To Be Set 30 Mins Prior To Meal Times
       </p>
-<div class="dish-days" id="mealPrintBody"></div>
+<p id="mealPrintStatus" role="status"></p><div class="dish-days" id="mealPrintBody"></div>
 </section>
 <div class="dish-button-row no-print">
 <button onclick="window.print()" type="button">
@@ -531,6 +531,6 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
       </a>
 </div>
 </main>
-<script src="meal-print.js?v=5.5.37"></script>
-<script src="chat-floating.js?v=chat-shell-20261109"></script><script src="kbrh-sidebar.js?v=cms-5.38"></script></body>
+<script src="meal-print.js?v=5.40"></script>
+<script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.40"></script></body>
 </html>

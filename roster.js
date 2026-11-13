@@ -844,7 +844,7 @@ function moveToPhase(clientId, phase) {
   appendPersonActivity(client,"Phase",phase==="phase2"?"Moved to Phase 2":"Moved to Phase 1","");
 
   if (phase === "phase2") {
-    client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
+    client.phase2AdmissionDate = KBRHDates.today();
     client.phase2EntryDate = client.phase2AdmissionDate;
   }
 
@@ -1507,7 +1507,7 @@ function renderArchivedRoster() {
             <td>${escapeHtml(client.clientId)}</td>
             <td>${escapeHtml(client.phone)}</td>
             <td>${escapeHtml(formatDate(client.entryDate))}</td>
-            <td>${escapeHtml(formatDate(getDischargeDate(client)))}</td>
+            <td>${escapeHtml(formatDate(KBRHDates.dateOnly(client.dischargedAt || client.archivedAt || "")))}</td>
             <td>${escapeHtml(formatDateTime(client.archivedAt))}</td>
             <td>${escapeHtml(formatDate(kbrhRetentionUntil(client)))}</td>
             <td>${escapeHtml(client.archiveReason)}</td>

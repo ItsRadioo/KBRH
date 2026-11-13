@@ -9,6 +9,7 @@ const MEAL_PRINT_DAYS = [
 ];
 
 let mealPrintState = defaultAppState();
+document.getElementById("mealWeekStart").value=KBRHDates.nextMonday();
 
 function getMealPrintRoster() {
   const roster = Array.isArray(mealPrintState.roster)
@@ -29,10 +30,10 @@ function getMealPrintResidentName(id) {
   if (!id) return "";
 
   const resident = getMealPrintRoster().find(
-    client => client.id === id
+    client => String(client.id) === String(id)
   );
 
-  if (!resident) return "UNKNOWN RESIDENT";
+  if (!resident) return "Unresolved assignment — staff review required";
 
   const fullName = resident.name ||
     `${resident.firstName || ""} ${resident.lastName || ""}`.trim();
@@ -77,9 +78,12 @@ function renderMealPrintTemplate() {
   if (!body) return;
 
   const schedule = getMealPrintSchedule();
+  const selectedWeek=document.getElementById("mealWeekStart").value;
+  const matching=schedule.weekStart===selectedWeek;
+  document.getElementById("mealPrintStatus").textContent=matching ? (schedule.published?"Published schedule":"Draft schedule — not published") : "No saved meal schedule for the selected week. Generate and publish it in Meal Chores.";
 
   body.innerHTML = MEAL_PRINT_DAYS.map(day => {
-    const row = schedule.weekSchedule[day] || {
+    const row = (matching ? schedule.weekSchedule[day] : null) || {
       lunch: "",
       supper1: "",
       supper2: ""
@@ -146,7 +150,7 @@ function escapeMealPrintHtml(value) {
 
 document
   .getElementById("mealWeekStart")
-  ?.addEventListener("change", updateMealPrintDate);
+  ?.addEventListener("change", renderMealPrintTemplate);
 
 auth.onAuthStateChanged(user => {
   if (!user) return;

@@ -22,6 +22,12 @@
   const link=([href,label,ico])=>`<a href="${href}" ${href===current?'aria-current="page"':''}><span aria-hidden="true">${icons[ico]||'•'}</span>${label}</a>`;
   nav.innerHTML=`<div class="kbrh-sidebar-brand"><strong>KBRH</strong><small>Ken Brown Recovery Home</small></div><div class="kbrh-sidebar-links">${groups.map(([label,ico,links],i)=>`<details class="kbrh-nav-group" ${i===0||links.some(x=>x[0]===current)?'open':''}><summary><span aria-hidden="true">${icons[ico]||'•'}</span><span>${label}</span><span class="kbrh-chevron" aria-hidden="true">›</span></summary><div class="kbrh-nav-items">${links.map(link).join('')}</div></details>`).join('')}</div><button id="kbrh-sidebar-logout" type="button">Sign Out</button>`;
   document.body.prepend(nav);
+  const filterAccess=()=>{
+    if(typeof kbrhPageAllowed!=="function"||typeof kbrhStaffProfile==="undefined"||!kbrhStaffProfile)return;
+    nav.querySelectorAll('a[href]').forEach(a=>{if(!kbrhPageAllowed(a.getAttribute('href'),kbrhStaffProfile))a.remove();});
+    nav.querySelectorAll('details').forEach(group=>{if(!group.querySelector('a'))group.remove();});
+  };
+  filterAccess();document.addEventListener('kbrhStaffProfileReady',filterAccess);window.addEventListener('kbrhStaffProfileReady',filterAccess);
   document.querySelectorAll('.v5-sidebar-toggle,#kbrh-menu-toggle,header .app-nav').forEach(el=>el.remove());
   const toggle=document.createElement('button');
   toggle.id='kbrh-sidebar-edge-toggle';toggle.type='button';

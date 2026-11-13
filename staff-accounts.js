@@ -1,14 +1,16 @@
-const KBRH_MANAGED_PAGES = {"urine-tests.html": "Urine Tests","assignment-board.html": "Resident Assignment Board", "audit-log.html": "Audit Log", "bus-pass.html": "Bus Pass", "charts.html": "Charts", "chore-checks.html": "Chore Checks", "counseling-notes.html": "Counseling Notes", "digital-logbook.html": "Digital Logbook", "house-chores.html": "House Chores", "incident-report.html": "Incident Report", "index.html": "Dashboard", "meal-chores.html": "Meal Chores", "pending-admissions.html": "Pending Admissions", "prescreening.html": "Prescreening", "reports.html": "Reports", "roster.html": "Roster", "settings.html": "Settings", "staff-accounts.html": "Staff Accounts", "staff-list.html": "Staff List", "staff-profile.html": "Staff Profile", "tool-signout.html": "Tool Signout", "verbalwarning.html": "Verbalwarning", "waitlist.html": "Waitlist", "weekend-menu-builder.html": "Weekend Menu Builder", "writeups.html": "Writeups"};
-function drawPageAccess(id, selected) {
+const KBRH_MANAGED_PAGES = {"index.html": "Dashboard", "dashboard.html": "Dashboard (navigation)", "roster.html": "Phase 1 Roster", "phase2.html": "Phase 2 Roster", "roster-archive.html": "Resident Archive", "waitlist.html": "Waitlist", "prescreening.html": "Prescreening", "pending-admissions.html": "Pending Admissions", "do-not-readmit.html": "Do Not Readmit", "operations.html": "Daily Operations", "house-chores.html": "House Chores", "meal-chores.html": "Meal Chores", "meal-print.html": "Meal Print Template", "print.html": "Cleaning Print Template", "electronics-turn-in.html": "Electronics Turn In", "digital-logbook.html": "Log Book", "assignment-board.html": "Assignment Board", "chore-checks.html": "Chore Checks", "bed-readiness.html": "Bed Readiness", "bus-passes.html": "Bus Passes", "bus-pass.html": "Legacy Bus Passes", "tool-signout.html": "Tool Signout", "staff-list.html": "Staff Contacts", "staff-profile.html": "My Profile", "chat.html": "Staff Chat", "incident-report.html": "Incident Reports", "verbalwarning.html": "Warnings", "writeups.html": "Write-Ups", "charts.html": "Charts", "urine-tests.html": "Urine Tests", "reports.html": "Reports", "weekend-menu-builder.html": "Weekend Menu Builder", "audit-log.html": "Audit Log (administrator)", "settings.html": "Settings (administrator)", "staff-accounts.html": "Staff Accounts (administrator)", "system-health.html": "System Health (administrator)"};
+function drawPageAccess(id, selected, version) {
   const el=document.getElementById(id); if(!el)return;
   const set=new Set(Array.isArray(selected)?selected:Object.keys(KBRH_MANAGED_PAGES));
+  if(Array.isArray(selected)&&version!==2)for(const [child,parent] of Object.entries(KBRH_PAGE_ALIASES))if(set.has(parent))set.add(child);
   el.innerHTML=Object.entries(KBRH_MANAGED_PAGES).map(([path,label])=>
     `<label><input type="checkbox" value="${path}" ${set.has(path)?"checked":""}>${label}</label>`).join("");
 }
 function selectedPageAccess(id){return [...document.querySelectorAll(`#${id} input:checked`)].map(x=>x.value);}
-async function savePageAccess(uid, pages){
+async function savePageAccess(uid, pages, primaryPhone){
   if(!isKbrhAccountManager(auth.currentUser))throw new Error("Administrator access required.");
-  await db.collection("kbrh").doc("staffProfiles").update({[`profiles.${uid}.pageAccess`]:pages});
+  const fields={[`profiles.${uid}.pageAccess`]:pages,[`profiles.${uid}.pageAccessVersion`]:2};if(primaryPhone!==undefined)fields[`profiles.${uid}.primaryPhone`]=primaryPhone;
+  await db.collection("kbrh").doc("staffProfiles").update(fields);
 }
 const functions = firebase.app().functions("northamerica-northeast1");
 const call = name => functions.httpsCallable(name);
@@ -90,7 +92,8 @@ async function loadAccounts() {
 
   try {
     const result = await call("listStaffAccounts")({});
-    staffAccounts = result.data.accounts || [];
+    const directory=await db.collection("kbrh").doc("staffProfiles").get();const profiles=directory.data()?.profiles||{};
+    staffAccounts = (result.data.accounts || []).map(a=>({...a,pageAccess:profiles[a.uid]?.pageAccess,pageAccessVersion:profiles[a.uid]?.pageAccessVersion,primaryPhone:profiles[a.uid]?.primaryPhone||profiles[a.uid]?.phone||""}));
     setServiceState("online", "Account service online");
     renderAccounts();
   } catch (error) {
@@ -133,9 +136,10 @@ function openAccountEdit(uid) {
   document.getElementById("editAccountName").value = account.name || "";
   document.getElementById("editAccountEmail").value = account.email || "";
   document.getElementById("editAccountPosition").value = account.position || "";
+  document.getElementById("editAccountPhone").value=account.primaryPhone||"";
   document.getElementById("editAccountStatus").textContent = "";
 
-  drawPageAccess("editPageAccess", account.pageAccess);
+  drawPageAccess("editPageAccess", account.pageAccess, account.pageAccessVersion);
   const modal = document.getElementById("accountEditModal");
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -162,7 +166,7 @@ async function saveAccountEdit() {
   status.textContent = "Saving…";
   try {
     await call("updateStaffAccount")({ uid, name, email, position });
-    await savePageAccess(uid, selectedPageAccess("editPageAccess"));
+    await savePageAccess(uid, selectedPageAccess("editPageAccess"),document.getElementById("editAccountPhone").value.trim());
     status.textContent = "Account updated.";
     await loadAccounts();
     setTimeout(closeAccountEdit, 350);
@@ -190,7 +194,7 @@ document.getElementById("createAccount").onclick = async () => {
 
   status.textContent = "Creating account…";
   try {
-    const created = await call("createStaffAccount")({ name, email, position, temporaryPassword });
+    const created = await call("createStaffAccount")({ name, email, position, temporaryPassword, pageAccess:selectedPageAccess("createPageAccess") });
     const uid = created.data?.uid || created.data?.user?.uid;
     if (!uid) throw new Error("Account created, but the service did not return a user ID. Refresh and set page permissions through Edit.");
     await savePageAccess(uid, selectedPageAccess("createPageAccess"));
@@ -217,7 +221,7 @@ auth.onAuthStateChanged(user => {
   if (user) loadAccounts();
 });
 
-drawPageAccess("createPageAccess");
+drawPageAccess("createPageAccess", ["index.html","dashboard.html","staff-profile.html","staff-list.html","chat.html"]);
 
 
 // Permission bulk selection affects checkboxes only; saving remains unchanged.

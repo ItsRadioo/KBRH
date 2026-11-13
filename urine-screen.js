@@ -48,7 +48,7 @@ function historyHtml(items){
    return `<div class="us-result us-result-${status}"><strong>${t}</strong><span>${label}</span></div>`;
  }).join("")}</div>
  ${r.thcRetestDue?`<div>THC retest due: ${esc(r.thcRetestDue)}</div>`:""}
- ${r.correctedAt?`<div><strong>Last corrected:</strong> ${esc(r.correctedAt)} by ${esc(r.correctedBy||"Staff")} · ${esc(r.correctionReason||"")}</div>`:""}
+ ${r.correctedAt?`<div><strong>Last corrected:</strong> ${esc(new Date(r.correctedAt).toLocaleString("en-CA",{timeZone:"America/Toronto"}))} by ${esc(r.correctedBy||"Staff")} · ${esc(r.correctionReason||"")}</div>`:""}
  <div>${esc(r.notes)}</div>
  ${correctionHandler?`<button type="button" class="us-correct" data-correct-id="${esc(r.id)}">Correct this screening</button>`:""}
  </div>`;
@@ -67,8 +67,8 @@ function open(c,onSave,mandatory,management={}){
  <div class="us-management"><h3>Screening history</h3><p class="us-hint">Positive <span class="us-legend-red">●</span> · Negative <span class="us-legend-green">●</span></p><div id="us-history"></div><div id="us-correction-zone"></div><div id="us-clear-zone"></div></div>
  <details class="us-new-screen" ${mandatory?"open":""}><summary>Record a new urine screen</summary><form id="us-form"><label>Screening date <input type="date" id="us-date" required></label>
  <label>Screening type <select id="us-type"><option>Admission</option><option>Follow-up</option><option>Other</option></select></label>
- <p class="us-hint">Check a substance only when the result is <strong>positive</strong>. Unchecked boxes are recorded as negative. Do not save an untested substance as negative.</p>
- <div class="us-grid">${TESTS.map(t=>`<label class="us-test-check"><input type="checkbox" data-us-test="${t}" aria-label="${t} positive"><span class="us-test-name">${t}</span><small>Positive if checked</small></label>`).join("")}</div>
+ <p class="us-hint">Select each result explicitly. Positive is red; Negative is green. Use Not tested for substances that were not tested.</p>
+ <div class="us-grid">${TESTS.map(t=>`<label class="us-test-select"><strong>${t}</strong><select data-us-test="${t}" aria-label="${t} result" required><option value="">Select result…</option><option value="Positive">Positive</option><option value="Negative">Negative</option><option value="Not tested">Not tested</option></select></label>`).join("")}</div>
  <div id="us-eligibility" aria-live="polite"></div>
  <label>Notes (avoid unnecessary medical details)<textarea id="us-notes" rows="2"></textarea></label>
  <label id="us-override-wrap" hidden><input type="checkbox" id="us-override"> Authorized eligibility override</label>
@@ -80,7 +80,7 @@ function open(c,onSave,mandatory,management={}){
   const active=typeof kbrhActiveTHCScreen==="function"?!!kbrhActiveTHCScreen(c):c?.thcProtocolActive===true;
   protocolNode.textContent="THC Protocol: "+(active?"Active":"Inactive");
  }
- document.getElementById("us-date").value=new Date().toLocaleDateString("en-CA");
+ document.getElementById("us-date").value=KBRHDates.today();
  document.getElementById("us-type").value=mandatory?"Admission":"Follow-up";
  const clearZone=document.getElementById("us-clear-zone");
  if(!mandatory&&typeof management.clearFlag==="function"){
@@ -143,11 +143,12 @@ loadHistory(c).then(showHistory).catch(error=>{
   historyNode.textContent="Screening history could not be loaded. Please check permissions and try again. Do not assume the record has no history.";
  });
  function update(){
-  let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.checked?"Positive":"Negative"]));
+  let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.value]));
   let bad=BLOCKED.filter(t=>results[t]==="Positive");
+  const incomplete=Object.values(results).some(v=>!v||v==="Not tested");
   el.querySelector("#us-override-wrap").hidden=!bad.length;
   el.querySelector("#us-reason-wrap").hidden=!bad.length||!el.querySelector("#us-override").checked;
-  el.querySelector("#us-eligibility").textContent=bad.length?`RESIDENT NOT ELIGIBLE: ${bad.join(", ")} positive. Authorized override required.`:"Eligible based on recorded screening results."+(results.THC==="Positive"?` THC retest due ${due(el.querySelector("#us-date").value)}.`:"");
+  el.querySelector("#us-eligibility").textContent=incomplete?"Incomplete panel — eligibility cannot be determined from these results.":bad.length?`RESIDENT NOT ELIGIBLE: ${bad.join(", ")} positive. Authorized override required.`:"Eligible based on recorded screening results."+(results.THC==="Positive"?` THC retest due ${due(el.querySelector("#us-date").value)}.`:"");
  }
  el.querySelectorAll("select,input").forEach(i=>i.addEventListener("change",update));
  el.querySelector("#us-cancel").onclick=()=>{el.hidden=true;};
@@ -156,7 +157,9 @@ loadHistory(c).then(showHistory).catch(error=>{
  el.querySelector("#us-form").onsubmit=async e=>{
   e.preventDefault();
   if(el.dataset.saving==="1")return;
-  let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.checked?"Positive":"Negative"]));
+  let results=Object.fromEntries([...el.querySelectorAll("[data-us-test]")].map(i=>[i.dataset.usTest,i.value]));
+  if(Object.values(results).some(v=>!v)){alert("Choose a result for every substance.");return;}
+  if(mandatory&&Object.values(results).some(v=>v==="Not tested")){alert("The admission panel is incomplete. Complete the required screening before continuing.");return;}
   let bad=BLOCKED.filter(t=>results[t]==="Positive"), override=el.querySelector("#us-override").checked;
   let reason=el.querySelector("#us-reason").value.trim();
   if(bad.length&&!override){alert("Resident Not Eligible. An authorized override is required.");return;}

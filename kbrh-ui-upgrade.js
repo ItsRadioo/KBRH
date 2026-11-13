@@ -320,7 +320,7 @@
         selectField("kwaStatus", "Status", "N/A", ["N/A", "Incarcerated", "Recent Resident", "Offer Given"], true),
         recentResidentFields("kwa"),
         inputField("kwaCity", "City"),
-        inputField("kwaDate", "Date Applied", new Date().toISOString().slice(0, 10), "date"),
+        inputField("kwaDate", "Date Applied", KBRHDates.today(), "date"),
         textareaField("kwaNotes", "Initial Note"),
         offerNoteField("kwaOfferNote")
       ].join(""),
@@ -466,7 +466,7 @@
         inputField("kraCity", "City"),
         inputField("kraContact", "Emergency Contact"),
         inputField("kraContactPhone", "Emergency Contact Phone"),
-        inputField("kraEntry", "Entry Date", new Date().toISOString().slice(0, 10), "date")
+        inputField("kraEntry", "Entry Date", KBRHDates.today(), "date")
       ].join(""),
       "Add Client"
     );
@@ -622,7 +622,7 @@
       client.phase === "phase2" &&
       !client.phase2AdmissionDate
     ) {
-      client.phase2AdmissionDate = new Date().toISOString().slice(0, 10);
+      client.phase2AdmissionDate = KBRHDates.today();
     }
 
     closeModal();

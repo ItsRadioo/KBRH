@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Pre-Screening</title>
-<link href="style.css" rel="stylesheet"/>
+<link href="style.css?v=5.40" rel="stylesheet"/>
 <style data-original-file="kbrh-ui-upgrade.css">
 body.kbrh-modal-open{overflow:hidden}.kbrh-modal-backdrop{position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:46px 24px;overflow-y:auto;background:rgba(17,24,39,.66)}.kbrh-modal-backdrop.hidden{display:none!important}.kbrh-edit-modal{width:min(940px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.32);overflow:hidden}.kbrh-edit-modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:22px 26px;border-bottom:1px solid #d1d5db;background:#f8fafc}.kbrh-edit-modal-header h2{margin:0;font-size:24px}.kbrh-edit-modal-header p{margin:5px 0 0;color:#4b5563}.kbrh-modal-close{min-width:42px;padding:5px 10px;font-size:26px;line-height:1}.kbrh-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 20px;padding:24px 26px}.kbrh-modal-field{display:flex;flex-direction:column;gap:7px;min-width:0}.kbrh-modal-field-full{grid-column:1/-1}.kbrh-modal-field>span,.kbrh-search-field>span{font-weight:700}.kbrh-modal-field input,.kbrh-modal-field select{width:100%;min-height:42px;box-sizing:border-box}.kbrh-modal-check{display:flex;align-items:center;gap:10px;min-height:42px;padding-top:23px;font-weight:700}.kbrh-modal-check input{width:19px;height:19px}.kbrh-required-mark{color:#b91c1c}.kbrh-required-missing{border:2px solid #b91c1c!important;background:#fee2e2!important}.kbrh-optional-missing{border:2px solid #d97706!important;background:#fef3c7!important}.kbrh-field-disabled{opacity:.55}.kbrh-modal-message{margin:18px 26px 0;padding:12px 14px;border-radius:7px;font-weight:700}.kbrh-modal-message.hidden{display:none}.kbrh-modal-message-error{border:1px solid #b91c1c;background:#fee2e2;color:#7f1d1d}.kbrh-modal-message-warning{border:1px solid #d97706;background:#fef3c7;color:#78350f}.kbrh-edit-modal-footer{display:flex;justify-content:flex-end;gap:12px;padding:18px 26px 22px;border-top:1px solid #d1d5db;background:#f8fafc}.kbrh-search-row{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:0 0 16px}.kbrh-search-field{display:flex;flex-direction:column;gap:7px;width:440px;max-width:100%}.kbrh-search-field input{min-height:42px}.kbrh-search-count{padding-bottom:10px;color:#4b5563;font-weight:700;white-space:nowrap}.kbrh-outdoor-override{display:flex;align-items:flex-start;gap:9px;width:100%;margin-top:12px;padding:11px 13px;border:1px solid #d97706;border-radius:7px;background:#fef3c7;color:#78350f;font-weight:700}.kbrh-outdoor-override.hidden{display:none!important}.kbrh-outdoor-override input{width:18px;height:18px;margin-top:1px;flex:0 0 auto}
 
@@ -626,12 +626,12 @@ tbody tr:last-child>td{border-bottom:0;}
 }
 
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="auth.js?v=cms-5.38"></script>
-<script src="data-store.js?v=5.6.20"></script><script src="dnr.js?v=1"></script>
+<script src="firebase-config.js?v=5.40"></script>
+<script src="auth.js?v=5.40"></script>
+<script src="data-store.js?v=5.40"></script><script src="dnr.js?v=5.40"></script>
 <script>requireLogin();</script>
 <style data-original-file="kbrh-v5.css">
 /*
@@ -2491,7 +2491,7 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
  html body.kbrh-single-sidebar>main{padding:16px!important}
 }
 </style>
-</head>
+<link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
 <body class="page-prescreening">
 
 <main>
@@ -2505,6 +2505,6 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
 <div class="button-row prescreen-footer"><button class="secondary" id="cancelPrescreenBtn" type="button">Close</button><button class="secondary" id="saveDraftBtn" type="button">Save Draft</button><span class="prescreen-footer-spacer"></span><button class="secondary" id="backPrescreenBtn" type="button">Back</button><button id="nextPrescreenBtn" type="button">Continue</button><button class="secondary hidden" id="printPrescreenBtn" type="button">Print Summary</button><button class="success hidden" id="movePrescreenToRosterBtn" type="button">Move to Roster</button><button class="hidden" id="completePrescreenBtn" type="button">Complete Pre-Screening</button></div>
 </div></div>
 <div class="modal-backdrop hidden" id="prescreenMoveRosterModal"><div aria-labelledby="prescreenMoveRosterTitle" aria-modal="true" class="modal-card move-roster-modal" role="dialog"><div class="modal-title-row"><div><h2 id="prescreenMoveRosterTitle">Move to Current Roster</h2><p class="hint" id="prescreenMoveRosterName"></p></div><button aria-label="Close" class="secondary modal-close-button" id="closePrescreenMoveRosterBtn" type="button">×</button></div><div class="transfer-confirmation-box"><strong>Confirm admission details</strong><p>This transfers the applicant to the active Phase 1 roster and removes them from the waitlist. It does not archive the applicant.</p></div><label class="position-field"><span>Admission / Entry Date</span><input id="prescreenMoveEntryDate" required="" type="date"/></label><div class="button-row modal-actions"><button class="secondary" id="cancelPrescreenMoveRosterBtn" type="button">Cancel</button><button id="confirmPrescreenMoveRosterBtn" type="button">Confirm Move to Roster</button></div></div></div>
-<script src="prescreening.js?v=5.6.10"></script><script src="kbrh-ui-upgrade.js"></script>
-<script src="kbrh-v5.js?v=5.6.9"></script>
-<script src="chat-floating.js?v=chat-shell-20261109"></script><script src="kbrh-sidebar.js?v=cms-5.38"></script></body></html>
+<script src="prescreening.js?v=5.40"></script><script src="kbrh-ui-upgrade.js?v=5.40"></script>
+<script src="kbrh-v5.js?v=5.40"></script>
+<script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.40"></script></body></html>

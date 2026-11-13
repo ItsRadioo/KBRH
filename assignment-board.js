@@ -7,7 +7,7 @@ const boardWeekOffset=(week,i)=>{const d=new Date(week+'T12:00:00');d.setDate(d.
 let boardState=null,boardSelectedWeek=null;
 function boardDraw(){
  if(!boardState)return;
- const s=boardState, meal=s.mealSchedule||{}, currentWeek=boardMonday(new Date()), week=boardSelectedWeek||currentWeek;
+ const s=boardState, meal=s.mealSchedule||{}, currentWeek=KBRHDates.nextMonday(), week=boardSelectedWeek||currentWeek;
  const published=!!meal.published&&meal.weekStart===week;
  document.getElementById('week').textContent='Week beginning '+week;
  document.getElementById('boardWeek').value=week;
@@ -29,7 +29,7 @@ function boardDraw(){
 document.getElementById('boardWeek').addEventListener('change',e=>{if(e.target.value){boardSelectedWeek=boardMonday(new Date(e.target.value+'T12:00:00'));boardDraw();}});
 document.getElementById('boardCurrent').addEventListener('click',()=>{boardSelectedWeek=null;boardDraw();});
 setInterval(boardDraw,60000);
-auth.onAuthStateChanged(user=>{if(!user){document.getElementById('notice').textContent='Sign in to view assignments.';return;}listenToAppState(s=>{boardState=s;boardDraw();});});
+auth.onAuthStateChanged(user=>{if(!user){document.getElementById('notice').textContent='Sign in to view assignments.';return;}listenToAppState(s=>{boardState=s;try{boardDraw();}catch(error){console.error(error);document.getElementById("notice").textContent="Schedules could not be displayed. Please contact the administrator.";}});});
 
 
 // v5.6.27 display controls: independent full-screen panels with automatic rotation.

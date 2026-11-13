@@ -1,0 +1,20 @@
+/* Overrides for the shared page grid; individual tools own their inner layout. */
+html body.kbrh-single-sidebar.page-operations:not(.page-login):not(.page-print):not(.page-meal-print)>main.operations-shell{display:block!important}
+.operations-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+.operations-panel>main{display:block!important;width:100%!important;max-width:none!important;padding:0!important;margin:0!important}
+.operations-panel>main>section{margin:18px 0;min-width:0}
+.operations-panel[hidden]{display:none!important}
+html body.kbrh-single-sidebar>main>.board-controls,html body.kbrh-single-sidebar>main>.board-header{grid-column:1/-1;min-width:0}
+body.page-roster:not(.kbrh-editing-roster) .phase1-roster-section>.table-wrap,body.page-roster:not(.kbrh-editing-roster) .phase2-roster-section>.table-wrap{display:none!important}
+body.page-roster.kbrh-editing-roster .phase1-roster-section>.table-wrap,body.page-roster.kbrh-editing-roster .phase2-roster-section>.table-wrap{display:block!important}
+.page-roster .phase1-roster-section>.table-collapse-btn,.page-roster .phase2-roster-section>.table-collapse-btn{display:none}
+.page-waitlist .table-wrap,.page-roster .table-wrap{overflow-x:auto!important}
+.page-waitlist table{min-width:1450px;table-layout:auto!important}
+.page-waitlist table button,.page-roster #archivedRosterBody button{white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;min-width:max-content}
+.page-roster #archivedRosterBody td{word-break:normal;overflow-wrap:normal}
+.page-roster table:has(#archivedRosterBody){min-width:1350px;table-layout:auto!important}
+.us-test-select:has(select option[value="Positive"]:checked){border-color:#dc2626;background:#fef2f2}
+.us-test-select:has(select option[value="Negative"]:checked){border-color:#16a34a;background:#f0fdf4}
+@media(max-width:650px){.operations-toolbar{align-items:stretch;flex-direction:column}}
+
+.page-roster section.phase1-roster-section>.kbrh-collapse-bar,.page-roster section.phase2-roster-section>.kbrh-collapse-bar{display:none!important}

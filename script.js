@@ -7,7 +7,7 @@ const BATHROOM_CHORE = "Bathroom";
 const UPPER_FLOORS_CHORE = "Upper floors";
 
 function todayDateString() {
-  return new Date().toISOString().slice(0, 10);
+  return KBRHDates.today();
 }
 
 function ensureStandardChoresExist() {
@@ -1054,7 +1054,7 @@ function renderGeneratedTable() {
     const outsideEligibility =
       isEligibleForOutsideYardwork(resident)
         ? `<span class="status active">Outdoor eligible</span>`
-        : `<span class="status away">Outdoor locked</span>`;
+        : `<span class="status away">Not eligible for outdoor rotation</span>`;
 
     return `
       <tr>

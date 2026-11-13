@@ -36,10 +36,10 @@ function residentName(r){
 function ensureChartData(){
   chartState.chartData=chartState.chartData||{};
   chartState.chartData.laundry=chartState.chartData.laundry||{};
-  chartState.chartData.laundryStartDate=chartState.chartData.laundryStartDate || chartState.chartData.laundryDate || "";
+  chartState.chartData.laundryStartDate=chartState.chartData.laundryStartDate || chartState.chartData.laundryDate || KBRHDates.nextMonday();
   chartState.chartData.electronics=chartState.chartData.electronics||{};
   chartState.chartData.meetings=chartState.chartData.meetings||{};
-  chartState.chartData.meetingsStartDate=chartState.chartData.meetingsStartDate||"";
+  chartState.chartData.meetingsStartDate=chartState.chartData.meetingsStartDate||KBRHDates.nextMonday();
 }
 
 function setSaveStatus(t){const el=document.getElementById("chartSaveStatus"); if(el) el.textContent=t;}
@@ -50,7 +50,7 @@ function addDays(dateString, days){
   const d = new Date(`${dateString}T00:00:00`);
   if(Number.isNaN(d.getTime())) return "";
   d.setDate(d.getDate()+days);
-  return d.toISOString().slice(0,10);
+  return KBRHDates.addDays(dateString,days);
 }
 
 function formatDate(dateString){
@@ -65,7 +65,7 @@ function laundryTable(){
   const end=addDays(start,6);
   const rows=activeResidents().map(r=>{
     const d=chartState.chartData.laundry[r.id]||{};
-    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td><td><input class="laundry-date-input" aria-label="Laundry date for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-date" type="date" value="${esc(d.date||'')}"></td><td><input class="laundry-time-input" aria-label="Laundry time for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-time" type="time" value="${esc(d.time||'')}"></td></tr>`;
+    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td><td><input class="laundry-date-input" aria-label="Laundry date for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-date" type="date" value="${esc(d.date||KBRHDates.today())}"></td><td><input class="laundry-time-input" aria-label="Laundry time for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-time" type="time" value="${esc(d.time||'')}"></td></tr>`;
   }).join('');
   return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident Name</th><th class="small-check-column">Done</th><th>Date</th><th>Time</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>'}</tbody></table>`;
 }
@@ -73,7 +73,7 @@ function laundryTable(){
 function dayLabel(day){return day.slice(0,3);}
 
 function meetingDate(dayIndex){
-  const start=chartState.chartData.meetingsStartDate||"";
+  const start=chartState.chartData.meetingsStartDate||KBRHDates.nextMonday();
   return start ? addDays(start,dayIndex) : "";
 }
 
@@ -131,7 +131,7 @@ function updateFromInput(el){
 }
 
 function pdfFileName(){
-  const stamp=new Date().toISOString().slice(0,10);
+  const stamp=KBRHDates.today();
   const names={laundry:'Laundry-Checklist',electronics:'Electronic-Devices-Markoff',meetings:'Meetings-Chart'};
   return `${names[currentChart]||'Resident-Chart'}-${stamp}.pdf`;
 }
@@ -160,7 +160,7 @@ function generateChartPdf(){
     const range=start?`${shortPdfDate(start)} - ${shortPdfDate(end)}`:'DATE: __________________';
     doc.text(range,pageW/2,122,{align:'center'});
     doc.line(pageW/2-78,127,pageW/2+78,127);
-    const body=residents.map(r=>{const d=chartState.chartData.laundry[r.id]||{};return [residentName(r),d.checked?'X':'',formatDate(d.date||''),d.time||''];});
+    const body=residents.map(r=>{const d=chartState.chartData.laundry[r.id]||{};return [residentName(r),d.checked?'X':'',formatDate(d.date||KBRHDates.today()),d.time||''];});
     const tableWidth=500, left=(pageW-tableWidth)/2;
     doc.autoTable({
       startY:164,
@@ -214,7 +214,7 @@ function generateChartPdf(){
 }
 
 function excelFileName(kind){
-  const stamp=new Date().toISOString().slice(0,10);
+  const stamp=KBRHDates.today();
   const names={electronics:'Electronic-Devices-Markoff',meetings:'Meetings-Chart'};
   return `${names[kind]||'Resident-Chart'}-${stamp}.xlsx`;
 }

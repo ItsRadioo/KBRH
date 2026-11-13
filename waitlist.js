@@ -84,7 +84,7 @@ function getInputValue(id) {
 }
 
 function todayDateString() {
-  return new Date().toISOString().slice(0, 10);
+  return KBRHDates.today();
 }
 
 function formatPhoneNumber(value) {
@@ -724,7 +724,7 @@ function openMoveToRosterModal(applicantId){
   pendingMoveToRosterApplicantId=applicantId;
   document.getElementById("moveRosterApplicantName").textContent=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
   const dateInput=document.getElementById("moveRosterEntryDate");
-  if(dateInput) dateInput.value=new Date().toISOString().slice(0,10);
+  if(dateInput) dateInput.value=KBRHDates.today();
   document.getElementById("moveRosterModal")?.classList.remove("hidden");
   document.body.classList.add("kbrh-modal-open");
 }

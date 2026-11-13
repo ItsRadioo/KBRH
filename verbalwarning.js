@@ -1,3 +1,4 @@
+function warningMinutes(value){const m=String(value||"").match(/(\d+):(\d+)\s*(AM|PM)/i);return m?((Number(m[1])%12)+(m[3].toUpperCase()==="PM"?12:0))*60+Number(m[2]):0;}
 let warningState = defaultAppState();
 let editingWarningId = null;
 
@@ -54,9 +55,9 @@ function populateResidentDropdown(selectedId = '') {
   const select = $('warningResident');
   if (!select) return;
   const roster = Array.isArray(warningState.roster) ? warningState.roster.filter(c => c && c !== 'temp') : [];
-  const options = roster.filter(c => ['phase1','phase2'].includes(c.phase || 'phase1')).map(c => {
+  const options = roster.filter(c => (!c.archived || c.id===selectedId) && ['phase1','phase2'].includes(c.phase || 'phase1')).sort((a,b)=>`${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`)).map(c => {
     const name = `${c.firstName || ''} ${c.lastName || ''}`.trim();
-    return `<option value="${escapeAttribute(c.id)}">${escapeHtml(name)}</option>`;
+    return `<option value="${escapeAttribute(c.id)}">${escapeHtml(name)} — ID ${escapeHtml(c.clientId||"unassigned")} (${c.archived?"Archived":(c.phase||"phase1")==="phase2"?"Phase 2":"Phase 1"})</option>`;
   }).join('');
   select.innerHTML = `<option value="">Select resident...</option>${options}<option value="OTHER">Other / Manual Entry</option>`;
   if ([...select.options].some(o => o.value === selectedId)) select.value = selectedId;
@@ -78,9 +79,9 @@ function clearWarningForm() {
 
 function openWarningModal(warningId = null) {
   editingWarningId = warningId;
-  populateResidentDropdown();
+  populateResidentDropdown(warningId ? warningState.verbalWarnings.find(w=>w.id===warningId)?.residentId : "");
   clearWarningForm();
-  $('warningDate').value = new Date().toISOString().slice(0,10);
+  $('warningDate').value = KBRHDates.today();
   if ($('warningIssuer')) $('warningIssuer').value = typeof currentStaffName === 'function' ? currentStaffName() : (auth.currentUser?.displayName || auth.currentUser?.email || '');
 
   if (warningId) {
@@ -140,7 +141,7 @@ async function saveWarningFromModal() {
     alert('Date, resident name, warning issuer, and incident are required.');
     return;
   }
-  warningState.verbalWarnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings : [];
+  warningState.verbalWarnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")) || warningMinutes(b.time)-warningMinutes(a.time)) : [];
   if (editingWarningId) {
     const existing = warningState.verbalWarnings.find(item => item.id === editingWarningId);
     if (!existing) return;
@@ -181,7 +182,7 @@ function formatEditedDetails(warning) {
 
 function renderWarnings() {
   const body = $('warningBody'); if (!body) return;
-  const warnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings : [];
+  const warnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")) || warningMinutes(b.time)-warningMinutes(a.time)) : [];
   body.innerHTML = warnings.length ? warnings.map(w => {
     const issuer = w.issuer || w.staffUser || '';
     const enteredBy = w.enteredBy && String(w.enteredBy).trim().toLocaleLowerCase() !== String(issuer).trim().toLocaleLowerCase() ? w.enteredBy : '';
@@ -204,7 +205,7 @@ auth.onAuthStateChanged(user => {
   if (!user) return;
   listenToAppState(nextState => {
     warningState = nextState;
-    warningState.verbalWarnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings : [];
+    warningState.verbalWarnings = Array.isArray(warningState.verbalWarnings) ? warningState.verbalWarnings.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")) || warningMinutes(b.time)-warningMinutes(a.time)) : [];
     populateResidentDropdown(); renderWarnings();
   });
 });

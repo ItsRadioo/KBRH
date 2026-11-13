@@ -12,12 +12,13 @@ const PRINT_STANDARD_CHORES = [
 ];
 
 let printState = defaultAppState();
+document.getElementById("startDate").value=KBRHDates.nextMonday();
 
 function addDaysToDateString(value, days) {
   if (!value) return "";
   const date = new Date(value + "T00:00:00");
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return KBRHDates.addDays(value,days);
 }
 
 function getPrintChoreName(state, index) {

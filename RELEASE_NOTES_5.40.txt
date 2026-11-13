@@ -1,0 +1,45 @@
+KBRG CMS Ver.5.40
+Based on the latest Ver.5.39 package. Complete package; keep files at the repository root.
+
+REPAIRS
+- Dashboard success rate now counts completed and involuntary outcomes only, matching Reports for the same period.
+- Assignment Board restores the week selector, panel buttons, clock, and display controls its script requires. Missing publications show a message.
+- Includes the 5.39 desktop/floating chat layout and conversation-creation repairs, with refreshed asset versions throughout the site.
+- Chat deduplicates legacy aliases sharing an email, excludes the signed-in account, and displays email beside staff names. Different email addresses remain distinct.
+- Daily Operations overrides the shared page grid so tracker panels use the content width.
+- Urine screening requires an explicit result for all ten abbreviations. Positive remains red, Negative remains green; untested results are recorded explicitly instead of becoming negative. An incomplete admission panel cannot be submitted as a completed admission screening.
+- Screening correction timestamps display Eastern local time.
+- Roster search no longer changes the total Phase 2 occupancy.
+- Active roster cards no longer show a redundant Collapse table control. Bulk editing remains available.
+- Archived roster Discharge Date uses dischargedAt, falling back to the recorded archive timestamp for legacy entries, rather than expected discharge.
+- Warning selection lists active residents with client ID and phase. Existing warnings for archived residents remain editable. Warning history sorts by event date and time.
+- Chore history distinguishes Complete, Partial and missing legacy checklist detail; missing detail is not invented.
+- Outdoor rotation eligibility is labelled separately from the resident's locked chore.
+- Waitlist and archive tables scroll horizontally with more readable action buttons and names.
+- Staff Accounts includes all current navigation pages in its permission choices, removes the retired Counseling Notes option, and starts new accounts with basic access only.
+- Explicit new permissions can control Phase 1 and Phase 2 independently. Legacy related-page permissions remain compatible until edited. Administrator-only pages remain restricted to Administrator/Executive Director.
+- New account permissions are stored during account creation as well as the existing profile-save step.
+- Staff Accounts > Edit now includes Primary phone, used by Staff Contacts.
+
+DATES
+- New operational date inputs default to today's calendar date in America/Toronto.
+- Seven-day schedules default to the nearest Monday on or after today, ending Sunday. On Friday November 13, 2026, the default is November 16–22. On Monday, that same Monday is used.
+- Existing saved dates, derived exit dates and historical facts are preserved. Unknown birth dates, last-use dates, discharge dates and review dates are not fabricated.
+- The meal editor and print template default to the upcoming week. An older stored meal schedule is not relabelled with a new date. Select its original week to inspect it.
+- Reports initially uses today; All Time still clears the date filters.
+
+AFTER UPLOAD
+1. Upload all extracted files, including date-defaults.js, repair-5.40.css and the existing chat.css.
+2. Allow GitHub Pages to finish deploying, then hard-refresh.
+3. Confirm the Firebase backend deployment also succeeds: index.js changes how new-account page permissions are initialized. Existing accounts are not automatically rewritten.
+4. Enter real staff phone numbers under Staff Accounts > Edit. No numbers were guessed.
+5. Review or generate and publish the upcoming meal schedule. Older unresolved assignments remain historical data for staff review.
+6. Check the board, desktop/floating chat, one screening history, and new date defaults on the live site.
+
+VALIDATION
+- 51 isolated DOM/form/data regression checks passed with synthetic records.
+- 7 permission/backend checks passed.
+- All JavaScript syntax checks passed; original spreadsheet bytes preserved.
+- Local browser rendering was blocked by the execution environment. DOM tests do not verify pixel layout or production Firebase saves.
+- No live resident data, account permissions, notifications, or schedules were changed during this repair.
+- Page access governs application navigation. This release does not redesign the existing shared-document Firestore rules or storage architecture.

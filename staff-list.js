@@ -43,6 +43,7 @@ function collectStaffProfiles(root) {
     for (const [childKey, child] of Object.entries(node)) walk(child, childKey, depth + 1);
   }
 
+  walk(root.profiles || {});
   walk(root);
   return found.filter(person => person.active && person.name).sort((a,b) => a.name.localeCompare(b.name, "en", { sensitivity:"base" }));
 }

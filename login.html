@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Staff Login | Resident Chore Rotator</title>
-<link href="style.css" rel="stylesheet"/><style data-original-file="kbrh-modern.css">
+<link href="style.css?v=5.40" rel="stylesheet"/><style data-original-file="kbrh-modern.css">
 /* KBRH Modern UI — presentation-only layer */
 :root{
   --kbrh-navy:#071827;
@@ -1942,7 +1942,7 @@ body.kbrh-single-sidebar{--v5-sidebar:0px!important}
 html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;margin-right:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;padding:18px clamp(14px,1.5vw,26px) 40px!important}
 html body.kbrh-single-sidebar.kbrh-nav-collapsed:not(.page-login):not(.page-print):not(.page-meal-print)>main{margin:0!important;margin-left:0!important;width:100%!important;max-width:none!important;padding-left:clamp(14px,1.5vw,26px)!important;padding-right:clamp(14px,1.5vw,26px)!important}
 html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>main>.roster-summary,html body.kbrh-single-sidebar>main>.card,html body.kbrh-single-sidebar>main>section{grid-column:1/-1!important;min-width:0!important;max-width:100%!important}
-</style></head>
+</style><link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
 <body class="login-body page-login">
 <main class="login-wrap">
 <section class="card login-card"><div class="login-brand"><div class="login-brand-mark">KB</div><div><strong>Ken Brown Recovery Home</strong><span>Staff Administration</span></div></div>
@@ -1956,10 +1956,10 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
 <p class="error" id="errorMessage"></p>
 </section>
 </main>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebase-config.js?v=5.40"></script>
 <script>
     const SESSION_KEY = "kbrh.activeStaffSession";
     // Accept only local, explicitly allowlisted destination pages.
@@ -2017,5 +2017,5 @@ html body.kbrh-single-sidebar>main>.v5-page-hero,html body.kbrh-single-sidebar>m
       if (event.key === "Enter") handleLogin();
     });
   </script>
-<script src="chat-floating.js?v=chat-shell-20261109"></script><script src="kbrh-sidebar.js?v=cms-5.38"></script></body>
+<script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.40"></script></body>
 </html>

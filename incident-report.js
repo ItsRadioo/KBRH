@@ -6,7 +6,7 @@ const irEsc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":
 function activeRoster(){return (incidentState.roster||[]).filter(r=>r&&!r.archived&&(r.phase||"phase1")!=="archived");}
 function getResident(id){return (incidentState.roster||[]).find(r=>r.id===id);}
 function fullName(r){return `${r?.firstName||""} ${r?.lastName||""}`.trim();}
-function today(){return new Date().toISOString().slice(0,10);}
+function today(){return KBRHDates.today();}
 function choiceHtml(prefix,values,selected=[]){return values.map((v,i)=>`<label class="incident-choice"><input type="checkbox" name="${prefix}" value="${irEsc(v)}" ${selected.includes(v)?"checked":""}><span>${irEsc(v)}</span></label>`).join("");}
 function fillResidentSelect(selected=""){ir("irResident").innerHTML='<option value="">Select resident...</option>'+activeRoster().sort((a,b)=>fullName(a).localeCompare(fullName(b))).map(r=>`<option value="${r.id}" ${r.id===selected?"selected":""}>${irEsc(fullName(r))}${r.roomNumber?` — Room ${irEsc(r.roomNumber)}`:""}</option>`).join("");syncResidentFields();}
 function syncResidentFields(){const r=getResident(ir("irResident").value);ir("irDob").value=r?.dob||"";ir("irRoom").value=r?.roomNumber||"";ir("irAdmissionDate").value=r?.entryDate||"";}

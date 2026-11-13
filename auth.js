@@ -1,5 +1,8 @@
+const KBRH_PAGE_ALIASES = {"dashboard.html": "index.html", "phase2.html": "roster.html", "roster-archive.html": "roster.html", "meal-print.html": "meal-chores.html", "print.html": "house-chores.html", "bus-passes.html": "bus-pass.html"};
+const KBRH_ADMIN_PAGES = new Set(["audit-log.html","settings.html","staff-accounts.html","system-health.html"]);
+function kbrhPageAllowed(page,profile,user=auth.currentUser){return isKbrhAdmin(user)||(!KBRH_ADMIN_PAGES.has(page)&&(!Array.isArray(profile?.pageAccess)||profile.pageAccess.includes(page)||(profile.pageAccessVersion!==2&&profile.pageAccess.includes(KBRH_PAGE_ALIASES[page]))));}
 const KBRH_SESSION_KEY = "kbrh.activeStaffSession";
-const KBRH_PAGE_LIST = ["assignment-board.html", "audit-log.html", "bus-pass.html", "charts.html", "urine-tests.html", "chat.html", "chore-checks.html", "counseling-notes.html", "digital-logbook.html", "house-chores.html", "incident-report.html", "index.html", "meal-chores.html", "pending-admissions.html", "prescreening.html", "reports.html", "roster.html", "settings.html", "staff-accounts.html", "staff-list.html", "staff-profile.html", "tool-signout.html", "operations.html", "verbalwarning.html", "waitlist.html", "weekend-menu-builder.html", "writeups.html"];
+const KBRH_PAGE_LIST = ["index.html", "dashboard.html", "roster.html", "phase2.html", "roster-archive.html", "waitlist.html", "prescreening.html", "pending-admissions.html", "do-not-readmit.html", "operations.html", "house-chores.html", "meal-chores.html", "meal-print.html", "print.html", "electronics-turn-in.html", "digital-logbook.html", "assignment-board.html", "chore-checks.html", "bed-readiness.html", "bus-passes.html", "bus-pass.html", "tool-signout.html", "staff-list.html", "staff-profile.html", "chat.html", "incident-report.html", "verbalwarning.html", "writeups.html", "charts.html", "urine-tests.html", "reports.html", "weekend-menu-builder.html", "audit-log.html", "settings.html", "staff-accounts.html", "system-health.html"];
 let kbrhStaffProfile = null;
 let kbrhStaffProfilePromise = null;
 
@@ -123,7 +126,7 @@ async function loadCurrentStaffProfile(force = false) {
           position: String(data.position || data.role || "").trim(),
           active: data.active !== false,
           mustChangePassword: data.mustChangePassword === true,
-          missing: false, pageAccess: Array.isArray(data.pageAccess) ? data.pageAccess : null
+          missing: false, pageAccessVersion:data.pageAccessVersion, pageAccess: Array.isArray(data.pageAccess) ? data.pageAccess : null
         };
       }
     } catch (error) {
@@ -218,15 +221,14 @@ async function requireLogin() {
       return;
     }
     if (page !== "login.html" && page !== "change-password.html") {
-      const allowed = isKbrhAdmin(user) || (Array.isArray(profile?.pageAccess)
-        ? (page === "chat.html" || profile.pageAccess.includes(page)) : true); // Existing accounts retain legacy access until configured.
+      const allowed = kbrhPageAllowed(page,profile,user); // Existing accounts retain legacy access until configured.
       if (!allowed) {
         document.body.replaceChildren(Object.assign(document.createElement("main"), {textContent:"Access denied: your account does not have permission to view this page."}));
         return;
       }
       document.querySelectorAll('a[href]').forEach(link => {
         const target = (link.getAttribute('href') || '').split('?')[0];
-        if (KBRH_PAGE_LIST.includes(target) && !isKbrhAdmin(user) && Array.isArray(profile?.pageAccess) && !profile.pageAccess.includes(target)) link.remove();
+        if (KBRH_PAGE_LIST.includes(target) && !kbrhPageAllowed(target,profile,user)) link.remove();
       });
       try { initializeKbrhNotifications(user); } catch (e) { console.warn("Notifications unavailable", e); }
       // Noncritical notification/retest setup must not prevent core page data loading.
