@@ -21,11 +21,12 @@ test('writeups use counts, legacy count fallback, and never go below zero',async
  await c.api.changeWriteupCount('b',1);assert.equal(data.writeupCounts.counts.b,undefined);
  assert.equal(data.choreTracker.writeUps.length,1);
 });
-test('laundry has four columns and completion persists the displayed default date',()=>{
+test('laundry has four columns and never automatically fills a resident date',()=>{
  const c=context({KBRHDates:{today:()=> '2026-11-16',nextMonday:()=> '2026-11-16',addDays:()=> '2026-11-22'}});vm.runInContext(read('charts.js')+'\nglobalThis.api={laundryTable,updateFromInput,setState:v=>chartState=v};',c);
  const state={roster:[{id:'a',firstName:'Ann',phase:'phase1'}],chartData:{laundry:{}}};c.api.setState(state);
  assert.match(c.api.laundryTable(),/<th>Resident Name<\/th>.*>Done<\/th><th>Date<\/th><th>Time<\/th>/);
- c.api.updateFromInput({dataset:{id:'a',kind:'laundry-check'},checked:true});assert.equal(state.chartData.laundry.a.date,'2026-11-16');
+ c.api.updateFromInput({dataset:{id:'a',kind:'laundry-check'},checked:true});assert.equal(state.chartData.laundry.a.date,undefined);
+ c.api.updateFromInput({dataset:{id:'a',kind:'laundry-time'},value:'14:00'});assert.equal(state.chartData.laundry.a.date,undefined);
  c.api.updateFromInput({dataset:{id:'a',kind:'laundry-date'},value:''});assert.match(c.api.laundryTable(),/data-kind="laundry-date" type="date" value=""/);
 });
 test('edited log notifications adopt changed priority and recipients without resending unchanged settings',async()=>{
@@ -46,4 +47,11 @@ test('shared staff picker filters names, enforces one recipient, and resets sele
  const [search,count,list]=host.children;assert.equal(list.children.length,2);assert.equal(list.children.filter(x=>x.children[0].checked).length,1);
  search.value='bob';search.oninput();assert.equal(list.children[0].hidden,true);assert.equal(list.children[1].hidden,false);
  picker.reset();assert.equal(search.value,'');assert.ok(list.children.every(x=>!x.hidden&&!x.children[0].checked));assert.match(count.textContent,/0 selected/);
+});
+test('paper laundry PDF leaves resident dates blank even when a date was saved',()=>{
+ let table;
+ class PDF{constructor(){this.internal={pageSize:{getWidth:()=>612,getHeight:()=>792}};}setTextColor(){}setFont(){}setFontSize(){}setLineWidth(){}text(){}line(){}autoTable(value){table=value;}save(){}}
+ const c=context({window:{jspdf:{jsPDF:PDF}},KBRHDates:{today:()=> '2026-11-16',nextMonday:()=> '2026-11-16',addDays:()=> '2026-11-22'}});
+ vm.runInContext(read('charts.js')+'\nchartState={roster:[{id:"a",firstName:"Ann",phase:"phase1"}],chartData:{laundry:{a:{date:"2026-11-15"}}}};generateChartPdf();',c);
+ assert.equal(table.body[0][2],'');
 });
