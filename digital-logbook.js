@@ -31,6 +31,7 @@ function oneSelect(){return `<select name="rid" required><option value="">Select
 function notificationFields(){return `<section class="lb-notify-box" aria-label="Staff notifications"><div class="lb-field"><label for="lb-notify-priority">Notification priority</label><select id="lb-notify-priority" name="notifyPriority"><option value="">Normal — no notification</option><option value="important">Important</option><option value="urgent">Urgent</option></select></div><div class="lb-field"><strong>Notify staff</strong><div id="lb-recipient-picker" aria-label="Notification recipients">Loading staff…</div><small class="hint">Select staff by name. Important and Urgent notifications require acknowledgement.</small></div></section>`;}
 function logNotificationSettings(formData){
  const priority=String(formData.get("notifyPriority")||"");
+ if(!["","important","urgent"].includes(priority))throw Error("Choose a valid notification priority.");
  const recipients=priority?[...new Set(formData.getAll("notifyRecipients").map(String).filter(Boolean))].sort():[];
  if(priority&&!recipients.length)throw Error("Select at least one staff member to notify, or choose Normal.");
  return {priority,recipients};
@@ -130,8 +131,9 @@ function modal(title,body,save,existing=null){
   event.preventDefault();const form=event.currentTarget,button=form.querySelector('[type="submit"]');
   if(button.disabled)return;button.disabled=true;
   try{
+   // Wait before capturing fields: the directory mounts the saved selections.
+   if(form.querySelector('[name="notifyPriority"]').value)await loading;
    const fd=new FormData(form);const settings=logNotificationSettings(fd);
-   if(settings.priority)await loading;
    const saved=await save(fd);savedId=saved?.id||existing?.id||savedId;
    if(savedId)try{await saveLogNotificationSettings(savedId,settings,scope,root._notificationStaff);}
    catch(error){alert("Entry saved, but notification settings were not applied: "+(error.message||error)+". Reopen Edit to retry.");close();return;}

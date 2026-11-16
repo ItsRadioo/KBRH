@@ -12,14 +12,14 @@ window.KBRHStaffPicker={mount(host,people,options={}){
  const update=()=>{const checked=rows.filter(x=>x.input.checked);count.textContent=checked.length+' selected'+(single?' · Choose one person':' · Choose one or more people');};
  for(const person of [...unique.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name)))){
   const label=document.createElement('label');label.className='staff-picker-person';
-  const input=document.createElement('input');input.type='checkbox';input.name=options.name||'staffRecipients';input.value=person.uid;input.checked=selected.has(person.uid);
+  const input=document.createElement('input');input.type='checkbox';input.name=options.name||'staffRecipients';input.value=person.uid;input.checked=selected.has(person.uid)&&(!single||!rows.some(r=>r.input.checked));
   const name=document.createElement('span');name.textContent=person.name||'Staff member';label.append(input,name);list.append(label);
   input.onchange=()=>{if(single&&input.checked)rows.forEach(r=>{if(r.input!==input)r.input.checked=false});update();};
   rows.push({label,input,name:String(person.name||'').toLowerCase()});
  }
  search.oninput=()=>{const q=search.value.trim().toLowerCase();let shown=0;rows.forEach(r=>{r.label.hidden=!r.name.includes(q);if(!r.label.hidden)shown++;});empty.hidden=shown>0;};
  update();empty.hidden=rows.length>0;
- return {setSingle(value){single=!!value;if(single){let kept=false;rows.forEach(r=>{if(r.input.checked){if(kept)r.input.checked=false;kept=true;}});}update();}};
+ return {reset(){rows.forEach(r=>{r.input.checked=false;r.label.hidden=false;});search.value='';empty.hidden=rows.length>0;update();},setSingle(value){single=!!value;if(single){let kept=false;rows.forEach(r=>{if(r.input.checked){if(kept)r.input.checked=false;kept=true;}});}update();}};
 }};
 const style=document.createElement('style');style.textContent=`
 .staff-picker{display:grid!important;gap:10px!important;min-width:0}

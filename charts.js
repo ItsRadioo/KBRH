@@ -65,7 +65,7 @@ function laundryTable(){
   const end=addDays(start,6);
   const rows=activeResidents().map(r=>{
     const d=chartState.chartData.laundry[r.id]||{};
-    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td><td><input class="laundry-date-input" aria-label="Laundry date for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-date" type="date" value="${esc(d.date||KBRHDates.today())}"></td><td><input class="laundry-time-input" aria-label="Laundry time for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-time" type="time" value="${esc(d.time||'')}"></td></tr>`;
+    return `<tr><td class="chart-resident-name">${esc(residentName(r))}</td><td class="laundry-mark-cell"><input aria-label="Laundry completed for ${esc(residentName(r))}" class="chart-check" data-id="${esc(r.id)}" data-kind="laundry-check" type="checkbox" ${d.checked?'checked':''}></td><td><input class="laundry-date-input" aria-label="Laundry date for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-date" type="date" value="${esc(d.date??KBRHDates.today())}"></td><td><input class="laundry-time-input" aria-label="Laundry time for ${esc(residentName(r))}" data-id="${esc(r.id)}" data-kind="laundry-time" type="time" value="${esc(d.time||'')}"></td></tr>`;
   }).join('');
   return `<div class="laundry-sheet-heading"><h2>Laundry Checklist</h2><div class="laundry-date-range"><label class="laundry-date-label">Start Date <input aria-label="Laundry checklist start date" data-kind="laundry-start-date" type="date" value="${esc(start)}"></label><label class="laundry-date-label">End Date <input aria-label="Laundry checklist end date" type="date" value="${esc(end)}" readonly></label></div></div><table class="resident-chart laundry-chart"><thead><tr><th>Resident Name</th><th class="small-check-column">Done</th><th>Date</th><th>Time</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="empty-state">No Phase 1 residents or pending admissions.</td></tr>'}</tbody></table>`;
 }
@@ -120,9 +120,10 @@ function updateFromInput(el){
     chartState.chartData.meetingsStartDate=el.value;
     renderChart();
   } else if(kind==='laundry-check'){
-    const rec=chartState.chartData.laundry[id]||{checked:false};rec.checked=el.checked;chartState.chartData.laundry[id]=rec;
+    const rec=chartState.chartData.laundry[id]||{checked:false};rec.checked=el.checked;if(el.checked&&rec.date==null)rec.date=KBRHDates.today();chartState.chartData.laundry[id]=rec;
   } else if(kind==='laundry-date'||kind==='laundry-time'){
     const rec=chartState.chartData.laundry[id]||{checked:false};
+    if(kind==='laundry-time'&&rec.date==null)rec.date=KBRHDates.today();
     rec[kind==='laundry-date'?'date':'time']=el.value;chartState.chartData.laundry[id]=rec;
   } else {
     const day=el.dataset.day;chartState.chartData[kind][id]=chartState.chartData[kind][id]||{};chartState.chartData[kind][id][day]=el.value;
@@ -160,7 +161,7 @@ function generateChartPdf(){
     const range=start?`${shortPdfDate(start)} - ${shortPdfDate(end)}`:'DATE: __________________';
     doc.text(range,pageW/2,122,{align:'center'});
     doc.line(pageW/2-78,127,pageW/2+78,127);
-    const body=residents.map(r=>{const d=chartState.chartData.laundry[r.id]||{};return [residentName(r),d.checked?'X':'',formatDate(d.date||KBRHDates.today()),d.time||''];});
+    const body=residents.map(r=>{const d=chartState.chartData.laundry[r.id]||{};return [residentName(r),d.checked?'X':'',formatDate(d.date??KBRHDates.today()),d.time||''];});
     const tableWidth=500, left=(pageW-tableWidth)/2;
     doc.autoTable({
       startY:164,

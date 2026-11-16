@@ -27,6 +27,7 @@
 function dialogStatus(text){$('newChatStatus').textContent=text||'';}
 auth.onAuthStateChanged(async u=>{if(!u)return;uid=u.uid;profile=await loadCurrentStaffProfile();try{await loadStaff()}catch(e){status('Staff directory unavailable: '+e.message)}unsubRooms?.();unsubRooms=ref.where('memberUids','array-contains',uid).onSnapshot(s=>{rooms=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lastMessageAt?.toMillis?.()||0)-(a.lastMessageAt?.toMillis?.()||0));if(!rooms.some(r=>r.id==='staff-wide')){rooms.push({id:'staff-wide',type:'staffwide',memberUids:[uid]})}renderRooms();watchReads();if(active&&!rooms.some(r=>r.id===active)){active='';unsubMsgs?.()}},e=>status('Chat unavailable: '+e.message))});$('newChat').onclick=async()=>{
  if(creating)return;
+ staffPicker?.reset();$('groupName').value='';
  $('newDialog').returnValue='';dialogStatus('');$('newDialog').showModal();
  if(!directoryReady){$('createChat').disabled=true;dialogStatus('Loading staff…');try{await loadStaff();dialogStatus(staff.length?'':'No other active staff accounts are available.');}catch(error){dialogStatus('Could not load staff. Close and reopen to retry: '+error.message);}finally{$('createChat').disabled=false;}}
 };
