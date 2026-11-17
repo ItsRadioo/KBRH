@@ -1,12 +1,12 @@
 /* Shared browser/server storage codec. Containers never contain growing child-ID lists.
  * Applicant/resident records have stable paths; nested histories are separate records.
  * Every document is bounded, including unusually long text. No production data here. */
-(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.KBRHStorageCodec=factory();})(typeof window==='object'?window:globalThis,()=>{
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require("node:crypto").webcrypto);else root.KBRHStorageCodec=factory(root.crypto);})(typeof window==='object'?window:globalThis,webCrypto=>{
  'use strict';
  const enc=new TextEncoder(),MAX_BYTES=48000,PART_CHARS=6000;
  const canonical=v=>JSON.stringify(sort(v));
  function sort(v){if(Array.isArray(v))return v.map(sort);if(v&&typeof v==='object'){const out=Object.create(null);for(const k of Object.keys(v).sort())out[k]=sort(v[k]);return out;}return v;}
- async function hash(v){const bytes=await crypto.subtle.digest('SHA-256',enc.encode(typeof v==='string'?v:canonical(v)));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');}
+ async function hash(v){const bytes=await webCrypto.subtle.digest('SHA-256',enc.encode(typeof v==='string'?v:canonical(v)));return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');}
  function clean(value){return JSON.parse(JSON.stringify(value));}
  async function encode(input,previous){
   function validate(v,depth=0){if(depth>40)throw Error('Record nesting exceeds the supported depth.');if(v===null)return;if(typeof v==='number'&&!Number.isFinite(v))throw Error('Non-finite stored values need review before migration.');if(v&&typeof v==='object'){if(typeof v.toJSON==='function'||(!Array.isArray(v)&&Object.prototype.toString.call(v)!=='[object Object]'))throw Error('A typed stored value needs review before migration.');Object.values(v).forEach(x=>validate(x,depth+1));}else if(!['string','number','boolean','undefined'].includes(typeof v))throw Error('Unsupported stored value.');}

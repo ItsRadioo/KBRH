@@ -136,6 +136,14 @@ module.exports={createStorageService,CONTROL,LEGACY};
 module.exports.register=(target,deps)=>{
  const service=createStorageService(deps),options={region:deps.REGION,timeoutSeconds:120,memory:'512MiB'};
  target.saveCMSRecords=deps.onCall(options,req=>service.save(req));
- target.migrateCMSStorage=deps.onCall(options,req=>service.migrate(req));
+ target.migrateCMSStorage=deps.onCall(options,async req=>{
+  try{return await service.migrate(req);}catch(error){
+   if(error instanceof deps.HttpsError)throw error;
+   const message=String(error?.message||'');
+   const known=['A typed stored value needs review before migration.','Non-finite stored values need review before migration.','Record nesting exceeds the supported depth.','A record key or path is too large.','Duplicate record path.','Storage root is missing.','Array order is invalid.','Text parts are incomplete.','Unknown record type.','Invalid object field.','Duplicate field.','Orphaned storage records.'];
+   const diagnostic=known.includes(message)?message:'Migration stopped safely ('+String(error?.code||error?.name||'unknown').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50)+').';
+   throw new deps.HttpsError('failed-precondition',diagnostic+' The original data is retained.');
+  }
+ });
  return service;
 };

@@ -12,6 +12,7 @@ const as=(uid,email,data)=>({auth:{uid,token:{email}},data});
 const manager=data=>as('admin','admin@kbrh.local',data),staff=data=>as('staff','attendant@kbrh.local',data),intake=data=>as('intake','intake@kbrh.local',data);
 async function edit(transform,actor=staff){const old=await api.read(),state=codec.clean(old.state);transform(state);const operations=codec.diff(old.nodes,await codec.encode(state,old.nodes));return api.save(actor({revision:old.revision,operations}));}
 (async()=>{
+ await check('Server hashing works without browser-global crypto',async()=>{const vm=require('node:vm'),fs=require('node:fs'),context={module:{exports:{}},require,TextEncoder};vm.createContext(context);vm.runInContext(fs.readFileSync('storage-codec.js','utf8'),context);const nodes=await context.module.exports.encode({synthetic:'value'});assert.equal(context.module.exports.decode(nodes).synthetic,'value');});
  await check('Codec preserves nested values, duplicates, order and long Unicode text',async()=>{
   const input={roster:[{id:'a',notes:[{id:1,text:'😀é'.repeat(30000)},{id:1,text:'duplicate ID retained'}],missing:null},{id:'b',nested:{x:[false,0,'',null]}}],special:JSON.parse('{"__proto__":"safe","constructor":"field"}')};
   const nodes=await codec.encode(input);assert.deepEqual(codec.decode(nodes),input);assert.ok([...nodes.values()].every(n=>Buffer.byteLength(codec.canonical(n))<=codec.MAX_BYTES));
