@@ -281,7 +281,7 @@ function initializeKbrhNotifications(user=auth.currentUser){
   },e=>console.warn("Notification subscription failed",e));
 }
 function showRequiredKbrhAcknowledgement(rows){
-  const pending=rows.filter(n=>n.requiresAcknowledgement!==false&&(n.source==="digital-logbook"||n.source==="thc-retest")&&!n.acknowledgedAt);
+  const pending=rows.filter(n=>n.requiresAcknowledgement!==false&&(n.source==="digital-logbook"||n.source==="thc-retest"||n.source==="waitlist-archive")&&!n.acknowledgedAt);
   let overlay=document.getElementById("kbrhRequiredAckOverlay");
   if(!pending.length){
     if(overlay)overlay.remove();
@@ -388,7 +388,7 @@ async function showTHCRetestLoginReminder(user,profile){
  const key='kbrh.thcReminderShown';if(sessionStorage.getItem(key)===user.uid)return;
  sessionStorage.setItem(key,user.uid);
  try{
-  const snap=await db.collection('kbrh').doc('choreTracker').get();
+  const snap=await kbrhStateRef().get();
   if(auth.currentUser?.uid!==user.uid)return;
   const pending=thcDueResidents(snap.data()?.roster);if(!pending.length)return;
   const overlay=document.createElement('div');overlay.id='kbrhTHCRetestLoginOverlay';

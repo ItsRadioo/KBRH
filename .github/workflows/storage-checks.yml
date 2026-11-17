@@ -1,0 +1,19 @@
+name: Check KBRH storage repair
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Synthetic page and Firestore emulator checks
+        run: |
+          npm run test:pages
+          npm run test:storage

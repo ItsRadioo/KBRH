@@ -2306,7 +2306,9 @@ body.kbrh-v5.page-roster .roster-summary .v5-kpi-detail {
 }
 
 </style>
-<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js?v=5.40"></script><script src="auth.js?v=5.40"></script><script src="data-store.js?v=5.40"></script><script src="dnr.js?v=5.40"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script><script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script><script>requireLogin();</script><style data-original-file="kbrh-sidebar.css">
+<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+<script src="storage-codec.js?v=5.45"></script>
+<script src="storage-client.js?v=5.45"></script><script src="auth.js?v=5.45"></script><script src="data-store.js?v=5.45"></script><script src="dnr.js?v=5.40"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script><script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script><script>requireLogin();</script><style data-original-file="kbrh-sidebar.css">
 /* KBRH sitewide navy sidebar refresh. Existing page forms and business logic preserved. */
 :root{--kbrh-navy:#071b31;--kbrh-blue:#0b3465;--kbrh-action:#276ed5}
 body.kbrh-sidebar-layout{background:#f2f5fa!important;color:#14283f!important;padding-left:274px!important;min-height:100vh;box-sizing:border-box}
@@ -2409,9 +2411,9 @@ html body .laundry-chart th:nth-child(3),html body .laundry-chart td:nth-child(3
 html body .laundry-chart th:nth-child(4),html body .laundry-chart td:nth-child(4){width:135px!important}
 .laundry-chart input[type=date],.laundry-chart input[type=time]{width:100%!important;min-width:0;box-sizing:border-box;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit}
 @media print{html body .laundry-chart{min-width:0!important;max-width:none!important}.laundry-chart input{border:0!important;padding:0!important}}
-</style><link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
+</style><link rel="stylesheet" href="repair-5.40.css?v=5.45"></head>
 <body class="page-charts">
 <main>
 <section class="card wide page-action-card"><div class="card-heading-row"><div><h2>Chart Centre</h2><p class="hint">Select a chart below. Only active Phase 1 resident names are populated automatically from the roster.</p></div><div class="chart-toolbar"><label for="chartSelector">Chart</label><select id="chartSelector"><option value="laundry">Laundry Checklist</option><option value="electronics">Electronic Devices Markoff</option><option value="meetings">Meetings Chart</option></select><button class="secondary" id="printChartBtn" type="button">Generate PDF</button></div></div></section>
 <section class="card wide chart-panel"><div class="section-heading-row"><div><h2 id="chartTitle">Laundry Checklist</h2><p class="hint" id="chartHint">Mark laundry complete and select the completion date.</p></div><span class="save-indicator" id="chartSaveStatus">Saved</span></div><div class="table-wrap chart-table-wrap" id="chartContainer"></div></section>
-</main><script src="charts.js?v=5.44"></script><script src="kbrh-ui-upgrade.js?v=5.40"></script><script src="kbrh-v5.js?v=5.40"></script><script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.43"></script></body></html>
+</main><script src="charts.js?v=5.45"></script><script src="kbrh-ui-upgrade.js?v=5.40"></script><script src="kbrh-v5.js?v=5.40"></script><script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.43"></script></body></html>

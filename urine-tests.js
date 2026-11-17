@@ -18,9 +18,10 @@ function render(){
 }
 async function saveField(day,resident,field,value){
  let changed=false;
+ const guard=await kbrhCMSReadGuard();
  await db.runTransaction(async tx=>{
-  const doc=ref(),stateSnap=await tx.get(db.collection('kbrh').doc('choreTracker'));
-  const current=(stateSnap.exists?stateSnap.data().roster||[]:[]).find(r=>r&&r.id===resident.id&&!r.archived&&(r.phase||'phase1')==='phase1');
+  const doc=ref();await guard.check(tx);
+  const current=(guard.data.roster||[]).find(r=>r&&r.id===resident.id&&!r.archived&&(r.phase||'phase1')==='phase1');
   if(!current)throw new Error('Only current Phase 1 residents can be recorded.');
   const snap=await tx.get(doc),data=snap.exists?snap.data():{};
   const allDays=data.days||{},rows=allDays[day]||{},previous=rows[resident.id]||{};

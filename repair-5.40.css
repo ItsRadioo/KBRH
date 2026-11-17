@@ -18,3 +18,5 @@ body.page-roster.kbrh-editing-roster .phase1-roster-section>.table-wrap,body.pag
 @media(max-width:650px){.operations-toolbar{align-items:stretch;flex-direction:column}}
 
 .page-roster section.phase1-roster-section>.kbrh-collapse-bar,.page-roster section.phase2-roster-section>.kbrh-collapse-bar{display:none!important}
+
+[data-applicant-action="delete"][hidden]{display:none!important}

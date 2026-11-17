@@ -1,6 +1,13 @@
 {
   "functions": {
-    "source": "."
+    "source": ".",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "*.log",
+      "test-*",
+      "storage-emulator.json"
+    ]
   },
   "firestore": {
     "rules": "firestore.rules"
