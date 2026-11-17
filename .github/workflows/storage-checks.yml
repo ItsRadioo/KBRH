@@ -1,5 +1,7 @@
 name: Check KBRH storage repair
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 permissions:

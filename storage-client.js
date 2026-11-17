@@ -3,7 +3,7 @@
  const control=db.doc('kbrhStorage/control'),legacy=db.doc('kbrh/choreTracker'),codec=window.KBRHStorageCodec;
  let baseline=null,baselineNodes=null,baselineUid=null,meta={},revision=0,loadQueue=Promise.resolve(),saveQueue=Promise.resolve();
  const snapshot=state=>{const capturedRevision=revision;return {exists:true,data:()=>({...codec.clean(state),_storageRevision:capturedRevision})};};
- async function call(name,data){if(!firebase.app().functions)throw Error('Firebase Functions SDK is missing.');return (await firebase.app().functions('northamerica-northeast1').httpsCallable(name)(data)).data;}
+ async function call(name,data){if(!firebase.app().functions)throw Error('Firebase Functions SDK is missing.');return (await firebase.app().functions('northamerica-northeast1').httpsCallable(name)(codec.clean(data))).data;}
  function clearCache(){try{for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key.startsWith('kbrh.recordCache.'))sessionStorage.removeItem(key);}}catch(_){}baseline=null;baselineNodes=null;baselineUid=null;}
  function cached(uid){
   if(!uid)return null;if(baselineUid===uid&&baselineNodes&&meta.phase==='active')return {nodes:new Map(baselineNodes),generation:meta.generation,revision};
