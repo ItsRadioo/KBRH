@@ -23,6 +23,7 @@ function paintStorage(m){
  $('storage-copy').hidden=['active','ready'].includes(m.phase);$('storage-copy').disabled=storageBusy;
  $('storage-activate').hidden=m.phase!=='ready';$('storage-activate').disabled=storageBusy;
  $('storage-cancel').hidden=!['copying','verifying','ready'].includes(m.phase);$('storage-cancel').disabled=storageBusy;
+ $('storage-probe').hidden=m.phase!=='active';$('storage-probe').disabled=storageBusy;
 }
 async function storageStatus(){try{paintStorage(await kbrhStorageMigration('status'));}catch(e){$('storage-progress').textContent='Storage status unavailable: '+e.message;}}
 async function copyStorage(){if(storageBusy)return;let migrationError='';storageBusy=true;$('storage-copy').disabled=true;
@@ -30,7 +31,12 @@ async function copyStorage(){if(storageBusy)return;let migrationError='';storage
  catch(e){migrationError='Migration paused: '+e.message+' The original is retained. Retry to resume.';}
  finally{storageBusy=false;await storageStatus();if(migrationError)$('storage-progress').textContent=migrationError;}
 }
+async function probeStorage(){if(storageBusy)return;storageBusy=true;$('storage-probe').disabled=true;
+ try{const ref=kbrhStateRef(),before=(await ref.get()).data();await ref.update({_storageRevision:before._storageRevision,updatedAt:new Date().toISOString()});const after=(await ref.get()).data();if(after._storageRevision<=before._storageRevision)throw Error('The saved revision was not confirmed.');$('storage-probe-result').textContent='Storage save and reload verified. This check updates only save metadata.';}
+ catch(e){$('storage-probe-result').textContent='Storage verification failed: '+e.message;}
+ finally{storageBusy=false;await storageStatus();}
+}
 async function activateStorage(){if(storageBusy)return;storageBusy=true;try{await kbrhStorageMigration('activate');}catch(e){alert('Activation failed: '+e.message);}finally{storageBusy=false;await storageStatus();}}
 async function cancelStorage(){if(storageBusy)return;storageBusy=true;try{await kbrhStorageMigration('cancel');}catch(e){alert('Could not resume original storage: '+e.message);}finally{storageBusy=false;await storageStatus();}}
-window.addEventListener('DOMContentLoaded' ,()=>{ $('run-health').addEventListener('click',check);$('app-version').textContent='KBRH CMS · Record storage repair';$('storage-copy').onclick=copyStorage;$('storage-activate').onclick=activateStorage;$('storage-cancel').onclick=cancelStorage;check();});
+window.addEventListener('DOMContentLoaded' ,()=>{ $('run-health').addEventListener('click',check);$('app-version').textContent='KBRH CMS · Record storage repair';$('storage-copy').onclick=copyStorage;$('storage-probe').onclick=probeStorage;$('storage-activate').onclick=activateStorage;$('storage-cancel').onclick=cancelStorage;check();});
 })();
