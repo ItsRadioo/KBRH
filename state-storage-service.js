@@ -65,7 +65,7 @@ function createStorageService({db,admin,HttpsError}){
     const l=await tx.get(legacy);if(codec.canonical(l.exists?l.data():{})!==codec.canonical(current.state))fail('aborted','Records changed before saving. Reload and retry.');
    }
    for(const ref of tombstones)if((await tx.get(ref)).exists)fail('failed-precondition','A permanently deleted applicant cannot be restored from an old browser session.');
-   if(current.meta.phase==='active'){for(const op of operations){const ref=records(meta.generation).doc(op.id);if(op.node===null)tx.delete(ref);else tx.set(ref,op.node);}}
+   if(current.meta.phase==='active'){tx.set(db.collection('kbrhStateGenerations').doc(meta.generation).collection('changes').doc(String(revision).padStart(16,'0')),{revision,upsert:operations.filter(o=>o.node!==null).map(o=>o.id),remove:operations.filter(o=>o.node===null).map(o=>o.id)});for(const op of operations){const ref=records(meta.generation).doc(op.id);if(op.node===null)tx.delete(ref);else tx.set(ref,op.node);}}
    else{
     if(Buffer.byteLength(JSON.stringify(next))>950000)fail('resource-exhausted','The old shared document is nearly full. Complete the storage migration before saving more data.');
     tx.set(legacy,next);

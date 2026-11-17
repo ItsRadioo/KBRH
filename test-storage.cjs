@@ -46,12 +46,18 @@ async function edit(transform,actor=staff){const old=await api.read(),state=code
  await check('Prepending to a long history does not rewrite all older notes',async()=>{
   const a={roster:[{id:'r',notes:Array.from({length:1000},(_,i)=>({id:'n'+i,text:'Synthetic'}))}]},before=await codec.encode(a);a.roster[0].notes.unshift({id:'new',text:'New synthetic note'});const after=await codec.encode(a,before);assert.ok(codec.diff(before,after).length<=2);assert.deepEqual(codec.decode(after),a);
  });
- await check('Browser adapter saves and preserves the revision of each snapshot',async()=>{
-  const vm=require('node:vm'),fs=require('node:fs');
-  const context={console,TextEncoder,crypto,structuredClone,db,firebase:{firestore:{FieldPath:admin.firestore.FieldPath},app:()=>({functions:()=>({httpsCallable:name=>async data=>({data:await api.save(staff(data))})})})}};context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync('storage-codec.js','utf8'),context);vm.runInContext(fs.readFileSync('storage-client.js','utf8'),context);
-  const ref=context.kbrhStateRef(),snap=await ref.get(),oldRevision=snap.data()._storageRevision;
-  const patch={nested:{a:88},_storageRevision:oldRevision};await ref.update(patch);assert.equal((await api.read()).state.nested.a,88);assert.ok(patch._storageRevision>oldRevision);assert.equal(snap.data()._storageRevision,oldRevision);
+ await check('Browser adapter caches pages, reads deltas and preserves snapshot revisions',async()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),cache=new Map();let fullQueries=0,logout;
+  const sessionStorage={get length(){return cache.size},key:i=>[...cache.keys()][i],getItem:k=>cache.get(k)||null,setItem:(k,v)=>cache.set(k,v),removeItem:k=>cache.delete(k)};
+  function wrap(ref,path,filtered=false){return new Proxy(ref,{get(target,key){if(key==='get')return(...args)=>{if(path.endsWith('/records')&&!filtered)fullQueries++;return target.get(...args)};if(['where','orderBy','limit','startAfter'].includes(key))return(...args)=>wrap(target[key](...args),path,filtered||key==='where');if(key==='doc')return(...args)=>wrap(target.doc(...args),path+'/'+args[0],filtered);if(key==='collection')return(...args)=>wrap(target.collection(...args),path+'/'+args[0]);const value=target[key];return typeof value==='function'?value.bind(target):value;}});}
+  const clientDb={doc:p=>db.doc(p),collection:p=>wrap(db.collection(p),p)};
+  function page(){const context={console,TextEncoder,crypto,structuredClone,sessionStorage,auth:{currentUser:{uid:'staff'},onAuthStateChanged:cb=>{logout=cb;}},db:clientDb,firebase:{firestore:{FieldPath:admin.firestore.FieldPath},app:()=>({functions:()=>({httpsCallable:name=>async data=>({data:await api.save(staff(data))})})})}};context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync('storage-codec.js','utf8'),context);vm.runInContext(fs.readFileSync('storage-client.js','utf8'),context);return context;}
+  const context=page(),ref=context.kbrhStateRef(),snap=await ref.get(),oldRevision=snap.data()._storageRevision,initialReads=fullQueries;assert.ok(initialReads>=2);assert.equal(cache.size,1);
+  await ref.get();assert.equal(fullQueries,initialReads);
+  const patch={nested:{a:88},_storageRevision:oldRevision};await ref.update(patch);assert.equal((await api.read()).state.nested.a,88);assert.equal(fullQueries,initialReads);assert.ok(patch._storageRevision>oldRevision);assert.equal(snap.data()._storageRevision,oldRevision);
   await assert.rejects(ref.update({nested:{a:99},_storageRevision:oldRevision}),e=>e.code==='aborted');assert.equal((await api.read()).state.nested.a,88);
+  const second=page();await second.kbrhStateRef().get();assert.equal(fullQueries,initialReads);
+  await edit(s=>s.nested.a=89);assert.equal((await second.kbrhStateRef().get()).data().nested.a,89);assert.equal(fullQueries,initialReads);logout(null);assert.equal(cache.size,0);
  });
  await check('Retention backs up an expired resident in the same atomic removal',async()=>{
   await edit(s=>s.roster.push({id:'expired',firstName:'Synthetic',archived:true,archivedAt:'2020-01-01',dischargedAt:'2020-01-01'}));await api.enforceRetention();assert.ok(!(await api.read()).state.roster.some(r=>r.id==='expired'));const backup=await db.doc('kbrhRetentionBackups/'+await codec.hash('expired')).get();assert.equal(backup.data().record.id,'expired');

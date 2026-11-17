@@ -29,7 +29,9 @@
    }else if(value&&typeof value==='object'){
     const scalar=Object.create(null),children=[];
     for(const [key,item] of Object.entries(value).sort(([a],[b])=>a<b?-1:a>b?1:0)){
-     if(item!==null&&typeof item==='object'){children.push([key,item]);continue;}
+     const container=item!==null&&typeof item==='object';
+     const small=container&&Object.values(item).every(v=>v===null||typeof v!=='object')&&enc.encode(canonical(item)).length<=8000;
+     if(container&&!small){children.push([key,item]);continue;}
      const candidate={...scalar,[key]:item};
      if(enc.encode(canonical({...base,kind:'object',value:candidate})).length>MAX_BYTES)children.push([key,item]);else scalar[key]=item;
     }
