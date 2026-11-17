@@ -11,6 +11,8 @@ The failing document is `kbrh/choreTracker`. The new storage separates its appli
 5. Select **Activate verified storage** only after verification reports ready. This atomically changes the storage pointer. Reload roster, waitlist, admission and reports to verify operational access. Do not create disposable people in production for testing.
 6. Confirm a real authorized save and fresh reload during normal work. Confirm Intake receives an archive notification during the next legitimate archive operation.
 
+Normalizers preserve unknown fields on existing records and notes so a routine edit does not discard metadata from another build.
+
 The original document remains intact. No live data is included in this repository. Cancellation before activation resumes the original; staged copies remain retained. After activation, the original is a historical recovery copy, not current state. **Reverting JavaScript alone is not a database rollback.** A post-activation restore must include subsequent edits and its own verified recovery procedure. Set an organizational retention period for the preserved original and staged generations; this release never purges them automatically.
 
 ## Save and access behavior

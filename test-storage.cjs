@@ -16,7 +16,7 @@ async function edit(transform,actor=staff){const old=await api.read(),state=code
   const input={roster:[{id:'a',notes:[{id:1,text:'😀é'.repeat(30000)},{id:1,text:'duplicate ID retained'}],missing:null},{id:'b',nested:{x:[false,0,'',null]}}],special:JSON.parse('{"__proto__":"safe","constructor":"field"}')};
   const nodes=await codec.encode(input);assert.deepEqual(codec.decode(nodes),input);assert.ok([...nodes.values()].every(n=>Buffer.byteLength(codec.canonical(n))<=codec.MAX_BYTES));
  });
- const original={roster:[{id:'r',firstName:'Synthetic',phase:'phase1',notes:[{id:'n',text:'Original note'}]}],waitlist:[{id:'w',firstName:'Synthetic applicant',archived:false,notes:[]}],preScreenings:[],transferHistory:[],counselingNotes:Array.from({length:320},(_,i)=>({id:'synthetic-'+i,text:'Synthetic migration fixture'})),updatedAt:'2026-11-17',nested:{a:1}};
+ const original={roster:[{id:'r',firstName:'Synthetic',phase:'phase1',notes:[{id:'n',text:'Original note'}]}],waitlist:[{id:'w',firstName:'Synthetic applicant',archived:false,notes:[]}],preScreenings:[],transferHistory:[],counselingNotes:Array.from({length:320},(_,i)=>({id:'synthetic-'+i,text:'Synthetic migration fixture'})),updatedAt:'2026-11-17',_migrations:{retroactiveAutoCaseV5534:'synthetic'},nested:{a:1}};
  await db.doc('kbrh/choreTracker').set(original);
  await check('Only a manager can start migration',async()=>assert.rejects(api.migrate(staff({action:'prepare'})),e=>e.code==='permission-denied'));
  let start;
@@ -58,6 +58,10 @@ async function edit(transform,actor=staff){const old=await api.read(),state=code
   await assert.rejects(ref.update({nested:{a:99},_storageRevision:oldRevision}),e=>e.code==='aborted');assert.equal((await api.read()).state.nested.a,88);
   const second=page();await second.kbrhStateRef().get();assert.equal(fullQueries,initialReads);
   await edit(s=>s.nested.a=89);assert.equal((await second.kbrhStateRef().get()).data().nested.a,89);assert.equal(fullQueries,initialReads);logout(null);assert.equal(cache.size,0);
+  const third=page();third.document={title:'Synthetic storage test',getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[]};third.location={pathname:'/synthetic.html'};third.firebase.firestore.FieldValue=admin.firestore.FieldValue;
+  vm.runInContext(fs.readFileSync('data-store.js','utf8'),third);
+  const loaded=await third.loadAppState(),untouched=codec.clean((await api.read()).state.counselingNotes);loaded.roster[0].phone='555-0199';await third.saveAppState(loaded);const saved=await api.read();assert.equal(saved.state.roster[0].phone,'555-0199');assert.deepEqual(saved.state.counselingNotes,untouched);
+
  });
  await check('Retention backs up an expired resident in the same atomic removal',async()=>{
   await edit(s=>s.roster.push({id:'expired',firstName:'Synthetic',archived:true,archivedAt:'2020-01-01',dischargedAt:'2020-01-01'}));await api.enforceRetention();assert.ok(!(await api.read()).state.roster.some(r=>r.id==='expired'));const backup=await db.doc('kbrhRetentionBackups/'+await codec.hash('expired')).get();assert.equal(backup.data().record.id,'expired');
