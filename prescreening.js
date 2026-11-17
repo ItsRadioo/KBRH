@@ -333,10 +333,8 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
 
   try{
     let savedState=null;
-    await db.runTransaction(async transaction=>{
-      const ref=APP_DOC_REF();
-      const snap=await transaction.get(ref);
-      const latest=normalizeAppState(snap.exists?snap.data():defaultAppState());
+    await kbrhEditAppState(async raw=>{
+      const latest=normalizeAppState(raw);
       latest.preScreenings=Array.isArray(latest.preScreenings)?latest.preScreenings:[];
       latest.waitlist=Array.isArray(latest.waitlist)?latest.waitlist:[];
 
@@ -393,8 +391,8 @@ async function persistCurrentPrescreen({complete=false,showAlert=true}={}){
       }
       latest.updatedAt=now;
       const normalized=normalizeAppState(latest);
-      transaction.set(ref,{preScreenings:normalized.preScreenings,waitlist:normalized.waitlist,pendingAdmissions:normalized.pendingAdmissions,updatedAt:now},{merge:true});
       savedState=normalized;
+      return {preScreenings:normalized.preScreenings,waitlist:normalized.waitlist,pendingAdmissions:normalized.pendingAdmissions,updatedAt:now};
     });
 
     const verify=await APP_DOC_REF().get({source:"server"});
@@ -588,7 +586,7 @@ async function confirmPrescreenMoveRoster(){
   const note={id:crypto.randomUUID(),author:identity.name||staffDisplayName(),authorUid:identity.uid||"",authorEmail:identity.email||"",text:`Transferred from pre-screening/waitlist to Phase 1 roster. Admission date: ${entryDate}.`,createdAt:new Date().toISOString()};
   const sourcePrescreen=getRecord(applicant.id); const resident={id:crypto.randomUUID(),roomNumber:"",clientId:"",firstName:applicant.firstName||"",lastName:applicant.lastName||"",dob:applicant.dob||"",phone:applicant.contact||applicant.phone||"",address:applicant.address||"",city:applicant.city||"",contact:applicant.emergencyContact||"",contactPhone:applicant.emergencyContactPhone||"",entryDate,expectedDischargeDate:"",originalApplicationDate:applicant.originalApplicationDate||applicant.dateApplied||"",waitlistSourceId:applicant.id,preScreeningRecordId:sourcePrescreen?.id||applicant.preScreeningRecordId||"",preScreening:sourcePrescreen?structuredClone(sourcePrescreen):null,currentIncomeSource:sourcePrescreen?.answers?.incomeSource||"",currentIncomeSourceName:sourcePrescreen?.answers?.incomeSourceName||"",monthlyIncome:sourcePrescreen?.answers?.monthlyIncome||"",incomeNotes:sourcePrescreen?.answers?.incomeNotes||"",phase:"phase1",phase2AdmissionDate:"",archived:false,archivedAt:"",archiveReason:"",notes:[note,...(Array.isArray(applicant.notes)?applicant.notes:[])],activityHistory:normalizeActivityHistory(applicant.activityHistory)};
   prescreenState.waitlist.splice(applicantIndex,1);prescreenState.roster.push(resident);prescreenState.transferHistory.unshift({id:crypto.randomUUID(),applicantId:applicant.id,residentId:resident.id,applicantName:name,transferredAt:new Date().toISOString(),transferredBy:identity.name||identity.email||"Staff User",undone:false,undoneAt:"",applicantSnapshot:structuredClone(applicant)});
-  try{const n=normalizeAppState({waitlist:prescreenState.waitlist,roster:prescreenState.roster,transferHistory:prescreenState.transferHistory});await APP_DOC_REF().update({waitlist:n.waitlist,roster:n.roster,transferHistory:n.transferHistory,updatedAt:new Date().toISOString()});prescreenState.waitlist=n.waitlist;prescreenState.roster=n.roster;prescreenState.transferHistory=n.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved pre-screened applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);closePrescreenMoveRoster();closePrescreen();renderList();alert(`${name} was moved to the active Phase 1 roster.`);}catch(error){console.error(error);prescreenState.waitlist=prevW;prescreenState.roster=prevR;prescreenState.transferHistory=prevT;alert(`Could not move ${name} to the roster. No changes were saved.`);}
+  try{const n=normalizeAppState({waitlist:prescreenState.waitlist,roster:prescreenState.roster,transferHistory:prescreenState.transferHistory});await APP_DOC_REF().update({_storageRevision:prescreenState._storageRevision,waitlist:n.waitlist,roster:n.roster,transferHistory:n.transferHistory,updatedAt:new Date().toISOString()});prescreenState.waitlist=n.waitlist;prescreenState.roster=n.roster;prescreenState.transferHistory=n.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved pre-screened applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);closePrescreenMoveRoster();closePrescreen();renderList();alert(`${name} was moved to the active Phase 1 roster.`);}catch(error){console.error(error);prescreenState.waitlist=prevW;prescreenState.roster=prevR;prescreenState.transferHistory=prevT;alert(`Could not move ${name} to the roster. No changes were saved.`);}
 }
 
 function printPrescreenSummary(record=currentRecord){

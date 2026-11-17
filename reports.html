@@ -2306,7 +2306,9 @@ body.kbrh-v5.page-roster .roster-summary .v5-kpi-detail {
 }
 
 </style>
-<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js?v=5.40"></script><script src="auth.js?v=5.40"></script><script src="data-store.js?v=5.40"></script><script src="dnr.js?v=5.40"></script><script>requireLogin();</script>
+<script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="firebase-config.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+<script src="storage-codec.js?v=5.45"></script>
+<script src="storage-client.js?v=5.45"></script><script src="auth.js?v=5.45"></script><script src="data-store.js?v=5.45"></script><script src="dnr.js?v=5.40"></script><script>requireLogin();</script>
 <style>.report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}.report-kpi{padding:18px;border:1px solid #d7e0e8;border-radius:14px;background:#fff}.report-kpi .label{font-size:.82rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.report-kpi .value{font-size:2rem;font-weight:800;margin-top:6px}.report-filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.report-filters label{display:flex;flex-direction:column;gap:6px;font-weight:700}@media(max-width:850px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}.report-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.report-chart-wide{grid-column:1/-1}.report-chart{overflow-x:auto;min-height:180px}.report-chart svg{display:block;width:100%;min-width:360px;height:auto}.report-chart .empty{padding:35px 12px;color:#64748b;text-align:center;border:1px dashed #cbd5e1;border-radius:12px}.report-chart .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#334155}.report-chart .legend span{display:inline-flex;align-items:center;gap:5px}.report-chart .swatch{width:10px;height:10px;border-radius:2px;display:inline-block}@media(max-width:780px){.report-chart-grid{grid-template-columns:1fr}.report-chart-wide{grid-column:auto}}</style><style data-original-file="kbrh-sidebar.css">
 /* KBRH sitewide navy sidebar refresh. Existing page forms and business logic preserved. */
 :root{--kbrh-navy:#071b31;--kbrh-blue:#0b3465;--kbrh-action:#276ed5}
@@ -2402,7 +2404,7 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
  html body.kbrh-single-sidebar>main{padding:16px!important}
 }
 </style>
-<link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
+<link rel="stylesheet" href="repair-5.40.css?v=5.45"></head>
 <body class="page-reports">
 <main>
 <section class="card wide"><div class="card-heading-row"><div><h2>Program Outcomes</h2><p class="hint">Program success rate = successful completions ÷ (successful completions + involuntary removals). Voluntary early departures are neutral, not failures. Historic/legacy, other, medical, transfer and legal outcomes are not included in this rate or the outcome charts. Records remain preserved in resident history.</p></div></div><div class="report-filters"><label>From<input id="reportStart" type="date"/></label><label>To<input id="reportEnd" type="date"/></label><button id="applyReport" type="button">Apply</button><button class="secondary" id="resetReport" type="button">All Time</button><button class="secondary" id="exportReport" type="button">Export CSV</button></div></section>

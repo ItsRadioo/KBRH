@@ -1,4 +1,4 @@
-const APP_DOC_REF = () => db.collection("kbrh").doc("choreTracker");
+const APP_DOC_REF = () => kbrhStateRef();
 const SETTINGS_DOC_REF = () => db.collection("kbrh").doc("settings");
 
 // v5.5.33: person-name normalization helpers used during entry/edit saves.
@@ -36,6 +36,7 @@ async function loadKbrhSettings(){
 
 function normalizeActivityHistory(history){
   return Array.isArray(history)?history.filter(Boolean).map(item=>({
+      ...(item && typeof item === "object" ? item : {}),
     id:item.id||crypto.randomUUID(),
     type:item.type||"Activity",
     summary:item.summary||item.text||"Activity recorded",
@@ -116,6 +117,7 @@ function defaultMealSchedule() {
 function normalizeNotes(notes) {
   if (Array.isArray(notes)) {
     return notes.map(note => ({
+      ...(note && typeof note === "object" ? note : {}),
       id: note.id || crypto.randomUUID(),
       author: note.author || "Unknown",
       authorUid: note.authorUid || "",
@@ -142,6 +144,7 @@ function normalizeCounselingNotes(notes) {
     ? notes
         .filter(note => note && note !== "temp")
         .map(note => ({
+      ...(note && typeof note === "object" ? note : {}),
           id: note.id || crypto.randomUUID(),
           residentId: note.residentId || "",
           residentName: kbrhUpperFullName(note.residentName || "Unknown Resident"),
@@ -187,6 +190,7 @@ function kbrhDisplayAddress(value) {
   return typeof value === "string" ? kbrhStoredTitleCase(value.trim()) : (value || "");
 }
 
+// Retain fields unknown to this build so routine edits never erase stored metadata.
 function normalizeAppState(state) {
   const base = defaultAppState();
   const merged = { ...base, ...(state || {}) };
@@ -197,6 +201,7 @@ function normalizeAppState(state) {
 
   merged.residents = Array.isArray(merged.residents)
     ? merged.residents.map((resident, index) => ({
+      ...(resident && typeof resident === "object" ? resident : {}),
         id: resident.id || crypto.randomUUID(),
         rosterClientId: resident.rosterClientId || "",
         preAdmissionApplicantId: resident.preAdmissionApplicantId || "",
@@ -220,6 +225,7 @@ function normalizeAppState(state) {
   merged.doNotReadmit = Array.isArray(merged.doNotReadmit) ? merged.doNotReadmit : [];
   merged.waitlist = Array.isArray(merged.waitlist)
     ? merged.waitlist.filter(item => item && item !== "temp").map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         lastName: kbrhUpperName(item.lastName || ""),
         firstName: kbrhUpperName(item.firstName || ""),
@@ -250,6 +256,7 @@ function normalizeAppState(state) {
 
   merged.roster = Array.isArray(merged.roster)
     ? merged.roster.filter(client => client && client !== "temp").map(client => ({
+      ...(client && typeof client === "object" ? client : {}),
         id: client.id || crypto.randomUUID(),
         roomNumber: client.roomNumber || "",
         clientId: client.clientId || "",
@@ -298,6 +305,7 @@ function normalizeAppState(state) {
     : [];
 
   merged.transferHistory = Array.isArray(merged.transferHistory) ? merged.transferHistory.filter(Boolean).map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
     id:item.id||crypto.randomUUID(), applicantId:item.applicantId||"", residentId:item.residentId||"", applicantName:kbrhUpperFullName(item.applicantName||""), transferredAt:item.transferredAt||new Date().toISOString(), transferredBy:item.transferredBy||"", undone:Boolean(item.undone), undoneAt:item.undoneAt||"", applicantSnapshot:item.applicantSnapshot&&typeof item.applicantSnapshot==="object"?item.applicantSnapshot:null
   })) : [];
 
@@ -305,6 +313,7 @@ function normalizeAppState(state) {
 
   merged.verbalWarnings = Array.isArray(merged.verbalWarnings)
     ? merged.verbalWarnings.filter(warning => warning && warning !== "temp").map(warning => ({
+      ...(warning && typeof warning === "object" ? warning : {}),
         id: warning.id || crypto.randomUUID(),
         date: warning.date || "",
         time: warning.time || "",
@@ -329,6 +338,7 @@ function normalizeAppState(state) {
 
   merged.writeUps = Array.isArray(merged.writeUps)
     ? merged.writeUps.filter(item => item && item !== "temp").map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         residentId: item.residentId || "",
         residentName: kbrhUpperFullName(item.residentName || "Unknown Resident"),
@@ -343,6 +353,7 @@ function normalizeAppState(state) {
 
   merged.choreChecks = Array.isArray(merged.choreChecks)
     ? merged.choreChecks.filter(item => item && item !== "temp").map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         date: item.date || "",
         areaId: item.areaId || "",
@@ -376,6 +387,7 @@ function normalizeAppState(state) {
 
   const normalizedPreScreenings = Array.isArray(merged.preScreenings)
     ? merged.preScreenings.filter(item => item && item !== "temp").map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         applicantId: item.applicantId || "",
         applicantName: kbrhUpperFullName(item.applicantName || ""),
@@ -408,6 +420,7 @@ function normalizeAppState(state) {
 
   merged.pendingAdmissions = Array.isArray(merged.pendingAdmissions)
     ? merged.pendingAdmissions.filter(Boolean).map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         applicantId: item.applicantId || "",
         applicantName: kbrhUpperFullName(item.applicantName || ""),
@@ -426,6 +439,7 @@ function normalizeAppState(state) {
 
   merged.busPassRecords = Array.isArray(merged.busPassRecords)
     ? merged.busPassRecords.filter(Boolean).map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         residentId: item.residentId || "",
         residentName: item.residentName || "",
@@ -442,6 +456,7 @@ function normalizeAppState(state) {
 
   merged.toolSignOutRecords = Array.isArray(merged.toolSignOutRecords)
     ? merged.toolSignOutRecords.filter(Boolean).map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         residentId: item.residentId || "",
         residentName: item.residentName || "",
@@ -462,6 +477,7 @@ function normalizeAppState(state) {
 
   merged.incidentReports = Array.isArray(merged.incidentReports)
     ? merged.incidentReports.filter(item => item && item !== "temp").map(item => ({
+      ...(item && typeof item === "object" ? item : {}),
         id: item.id || crypto.randomUUID(),
         residentId: item.residentId || "",
         residentName: item.residentName || "",
@@ -500,6 +516,7 @@ function normalizeAppState(state) {
 
   const rawChartData = merged.chartData && typeof merged.chartData === "object" ? merged.chartData : {};
   merged.chartData = {
+    ...rawChartData,
     laundry: rawChartData.laundry && typeof rawChartData.laundry === "object" ? rawChartData.laundry : {},
     laundryDate: typeof rawChartData.laundryDate === "string" ? rawChartData.laundryDate : "",
     electronics: rawChartData.electronics && typeof rawChartData.electronics === "object" ? rawChartData.electronics : {},
@@ -511,10 +528,11 @@ function normalizeAppState(state) {
 
 function normalizeMealSchedule(mealSchedule) {
   const base = defaultMealSchedule();
-  const merged = { ...base, ...(mealSchedule || {}) };
+  const merged = { ...base, ...(mealSchedule || {}), weekSchedule:{...base.weekSchedule,...(mealSchedule?.weekSchedule||{})} };
 
   Object.keys(base.weekSchedule).forEach(day => {
     merged.weekSchedule[day] = {
+      ...(merged.weekSchedule[day]||{}),
       lunch: merged.weekSchedule?.[day]?.lunch || "",
       supper1: merged.weekSchedule?.[day]?.supper1 || "",
       supper2: merged.weekSchedule?.[day]?.supper2 || ""
@@ -661,6 +679,7 @@ async function migrateExistingAutoCaseV5534(rawState) {
   try {
     await APP_DOC_REF().set(patch, { merge: true });
     migrated._migrations = marker;
+    migrated._storageRevision=patch._storageRevision;
     console.info("KBRH v5.5.34: existing applicable fields were normalized using the automatic capitalization rules.");
   } catch (error) {
     console.warn("KBRH v5.5.34 capitalization migration could not be persisted; normalized values will still be used for this session.", error);
@@ -684,45 +703,8 @@ function expiredArchivedRosterRecords(state, now = new Date()) {
 }
 
 async function enforceArchivedRosterRetention(rawState) {
-  if (KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING) return rawState;
-  const expired = expiredArchivedRosterRecords(rawState);
-  if (!expired.length) return rawState;
-
-  KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING = true;
-  try {
-    const expiredIds = new Set(expired.map(record => String(record.id || "")));
-    const retainedRoster = (Array.isArray(rawState.roster) ? rawState.roster : [])
-      .filter(record => !expiredIds.has(String(record?.id || "")));
-
-    const backupBatch=db.batch();
-    const recoveryUntil=new Date(); recoveryUntil.setDate(recoveryUntil.getDate()+30);
-    expired.forEach(record=>{
-      const ref=db.collection("kbrhRetentionBackups").doc(`${record.id || crypto.randomUUID()}-${Date.now()}`);
-      backupBatch.set(ref,{record,deletedFromRosterAt:new Date().toISOString(),recoveryUntil:recoveryUntil.toISOString(),reason:"Automatic 2-year roster retention cleanup"},{merge:true});
-    });
-    await backupBatch.commit();
-    await APP_DOC_REF().update({ roster: retainedRoster });
-
-    const user = auth.currentUser;
-    if (user) {
-      let identity = {uid:user.uid||"",email:user.email||"",name:user.displayName||user.email||"Staff User",position:""};
-      if (typeof getCurrentStaffIdentity === "function") {
-        try { identity = await getCurrentStaffIdentity(); } catch (_) {}
-      }
-      const changes = expired.map(record => {
-        const name = `${record.firstName || ""} ${record.lastName || ""}`.trim() || "Archived resident";
-        return `Automatically deleted ${name}'s archived roster record after the 2-year retention period elapsed.`;
-      });
-      await writeAuditEntry(changes, identity);
-    }
-
-    return { ...rawState, roster: retainedRoster };
-  } catch (error) {
-    console.warn("Archived roster retention cleanup failed", error);
-    return rawState;
-  } finally {
-    KBRH_ARCHIVE_RETENTION_CLEANUP_RUNNING = false;
-  }
+  // The scheduled backend owns retention and commits its recovery copy atomically.
+  return rawState;
 }
 
 async function loadAppState() {
@@ -731,12 +713,12 @@ async function loadAppState() {
     const initial = defaultAppState();
     await APP_DOC_REF().set(initial, { merge: true });
     KBRH_LAST_STATE = normalizeAppState(initial);
-    return KBRH_LAST_STATE;
+    return structuredClone(KBRH_LAST_STATE);
   }
   let rawState = await migrateExistingAutoCaseV5534(snap.data());
   rawState = await enforceArchivedRosterRetention(rawState);
   KBRH_LAST_STATE = normalizeAppState(rawState);
-  return KBRH_LAST_STATE;
+  return structuredClone(KBRH_LAST_STATE);
 }
 
 async function saveAppState(state) {
@@ -754,8 +736,14 @@ async function saveAppState(state) {
   const cleaned = normalizeAppState(normalizeStoredAutoCaseV5534(state));
   cleaned.updatedAt = new Date().toISOString();
   const changes = describeAppStateChanges(before, cleaned);
-  await APP_DOC_REF().set(cleaned, { merge: true });
-  KBRH_LAST_STATE = normalizeAppState(cleaned);
+  const patch={updatedAt:cleaned.updatedAt,_storageRevision:state._storageRevision??before?._storageRevision};
+  for(const key of Object.keys(cleaned)){
+    if(key==='updatedAt'||key==='_storageRevision')continue;
+    if(JSON.stringify(before?.[key])!==JSON.stringify(cleaned[key]))patch[key]=cleaned[key];
+  }
+  await APP_DOC_REF().update(patch);
+  KBRH_LAST_STATE=normalizeAppState((await APP_DOC_REF().get()).data());
+  Object.assign(state,structuredClone(KBRH_LAST_STATE));
   try { await writeAuditEntry(changes, identity); }
   catch(error) { console.error('Application state saved, but audit write failed',error); }
 }
@@ -774,7 +762,7 @@ function listenToAppState(callback) {
         await APP_DOC_REF().set(initial,{merge:true});
         if(ticket!==sequence)return;
         KBRH_LAST_STATE=normalizeAppState(initial);
-        callback(KBRH_LAST_STATE);
+        callback(structuredClone(KBRH_LAST_STATE));
         return;
       }
       let rawState=await migrateExistingAutoCaseV5534(snap.data());
@@ -782,7 +770,7 @@ function listenToAppState(callback) {
       rawState=await enforceArchivedRosterRetention(rawState);
       if(ticket!==sequence)return;
       KBRH_LAST_STATE=normalizeAppState(rawState);
-      callback(KBRH_LAST_STATE);
+      callback(structuredClone(KBRH_LAST_STATE));
     }).catch(error=>console.error('Roster listener failed',error));
   },error=>console.error('Firestore roster listener error',error));
 }

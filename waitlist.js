@@ -183,10 +183,11 @@ async function saveWaitlist() {
     // Read the actual stored version, not a stale UI snapshot.
     const prior=await APP_DOC_REF().get();
     const previous=prior.exists?(prior.data()?.waitlist||[]):[];
-    await APP_DOC_REF().update({waitlist:cleanedWaitlist,updatedAt:new Date().toISOString()});
+    await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:cleanedWaitlist,updatedAt:new Date().toISOString()});
     if(typeof KBRH_LAST_STATE!=="undefined"&&KBRH_LAST_STATE){
       KBRH_LAST_STATE=normalizeAppState({...KBRH_LAST_STATE,waitlist:cleanedWaitlist});
     }
+    waitlistState=normalizeAppState((await APP_DOC_REF().get()).data());
     // Do not await audit work: it is independent of successful waitlist storage.
     void recordWaitlistAuditChanges(previous,cleanedWaitlist).catch(error=>
       console.error("Waitlist audit background task failed:",error));
@@ -775,7 +776,7 @@ async function confirmMoveToRoster(screenRecord){
     const active=resequenceActiveWaitlist(getActiveWaitlist());
     const cleanedWaitlist=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()]}).waitlist;
     const normalized=normalizeAppState({roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});
-    await APP_DOC_REF().update({waitlist:cleanedWaitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});
+    await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:cleanedWaitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});
     waitlistState.waitlist=cleanedWaitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;
     if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);
     closeMoveToRosterModal();renderWaitlist();
@@ -795,8 +796,8 @@ async function undoTransfer(transferId){
   const applicant=structuredClone(transfer.applicantSnapshot);applicant.archived=false;applicant.archivedAt="";applicant.archiveReason="";
   appendPersonActivity(applicant,"Transfer Undo","Transfer to roster undone","Applicant restored to active waitlist.");
   waitlistState.roster=waitlistState.roster.filter(item=>item.id!==transfer.residentId);
-  waitlistState.waitlist.push(applicant);transfer.undone=true;transfer.undoneAt=new Date().toISOString();
-  try{const active=resequenceActiveWaitlist(getActiveWaitlist());const normalized=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()],roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});await APP_DOC_REF().update({waitlist:normalized.waitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});waitlistState.waitlist=normalized.waitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Undid waitlist-to-roster transfer: ${transfer.applicantName}`]).catch(console.warn);renderWaitlist();}catch(error){console.error(error);waitlistState.waitlist=beforeWaitlist;waitlistState.roster=beforeRoster;waitlistState.transferHistory=beforeTransfers;renderWaitlist();alert("Could not undo the transfer. No changes were saved.");}
+  waitlistState.waitlist=waitlistState.waitlist.filter(item=>String(item.id)!==String(applicant.id));waitlistState.waitlist.push(applicant);transfer.undone=true;transfer.undoneAt=new Date().toISOString();
+  try{const active=resequenceActiveWaitlist(getActiveWaitlist());const normalized=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()],roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:normalized.waitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});waitlistState.waitlist=normalized.waitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Undid waitlist-to-roster transfer: ${transfer.applicantName}`]).catch(console.warn);renderWaitlist();}catch(error){console.error(error);waitlistState.waitlist=beforeWaitlist;waitlistState.roster=beforeRoster;waitlistState.transferHistory=beforeTransfers;renderWaitlist();alert("Could not undo the transfer. No changes were saved.");}
 }
 
 function openApplicantActionsModal(applicantId) {
@@ -807,6 +808,8 @@ function openApplicantActionsModal(applicantId) {
   document.getElementById("applicantActionsName").textContent =
     `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim();
 
+  const deleteButton=document.querySelector('#applicantActionsModal [data-applicant-action="delete"]');
+  if(deleteButton)deleteButton.hidden=!canPermanentlyDeleteWaitlist();
   const giveOfferButton = document.querySelector('#applicantActionsModal [data-applicant-action="giveOffer"]');
   if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated" || isRecentResidentHold(applicant) || isPendingApplication(applicant);
 
@@ -1259,7 +1262,7 @@ function undoLastCallIn(applicantId) {
   saveWaitlist();
 }
 
-function archiveApplicant(applicantId) {
+async function archiveApplicant(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
 
@@ -1268,13 +1271,14 @@ function archiveApplicant(applicantId) {
 
   if (!confirm(`Archive ${applicant.firstName} ${applicant.lastName}?`)) return;
 
+  const beforeArchive=structuredClone(applicant);
   applicant.archived = true;
   appendPersonActivity(applicant,"Archive","Applicant archived",reason.trim()||"No reason recorded");
   applicant.archivedAt = new Date().toISOString();
   applicant.archiveReason = reason.trim();
 
+  if(!(await saveWaitlist()))Object.assign(applicant,beforeArchive);
   renderWaitlist();
-  saveWaitlist();
 }
 
 function reinstateApplicant(applicantId) {
@@ -1299,16 +1303,13 @@ function reinstateApplicant(applicantId) {
   saveWaitlist();
 }
 
-function deleteApplicant(applicantId) {
-  const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
-  if (!applicant) return;
-
-  if (!confirm(`Permanently delete ${applicant.firstName} ${applicant.lastName}? This cannot be undone.`)) return;
-
-  waitlistState.waitlist = waitlistState.waitlist.filter(item => item.id !== applicantId);
-
-  renderWaitlist();
-  saveWaitlist();
+function canPermanentlyDeleteWaitlist(){return String(auth.currentUser?.email||'').trim().toLowerCase()==='intake@kbrh.local';}
+async function deleteApplicant(applicantId) {
+  if(!canPermanentlyDeleteWaitlist()){alert('Only intake@kbrh.local can permanently delete applicants. Use Archive & Notify Intake.');return;}
+  const applicant=waitlistState.waitlist.find(item=>item.id===applicantId);if(!applicant)return;
+  if(!confirm(`Permanently delete ${applicant.firstName} ${applicant.lastName}? This cannot be undone.`))return;
+  try{await kbrhPermanentlyDeleteApplicant(applicantId);waitlistState=normalizeAppState((await APP_DOC_REF().get()).data());renderWaitlist();}
+  catch(error){console.error(error);alert('Deletion failed. No deletion was confirmed: '+error.message);}
 }
 
 function getLastCallText(item) {
@@ -1481,7 +1482,7 @@ function archivedCompactCell(item, index, key) {
     reason: `<td>${escapeHtml(item.archiveReason || "—")}</td>`,
     status: `<td>${escapeHtml(applicantDisplayStatus(item))}</td>`,
     info: `<td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>`,
-    actions: `<td><select aria-label="Archived applicant actions" onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';"><option value="">Actions</option><option value="reinstate">Reinstate</option><option value="delete">Delete</option></select></td>`
+    actions: `<td><select aria-label="Archived applicant actions" onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';"><option value="">Actions</option><option value="reinstate">Reinstate</option>${canPermanentlyDeleteWaitlist()?'<option value="delete">Permanently delete</option>':''}</select></td>`
   };
   return cells[key] || "";
 }
@@ -1654,7 +1655,7 @@ function renderArchivedWaitlist() {
               <select onchange="handleArchivedApplicantAction('${item.id}', this.value); this.value='';">
                 <option value="">Actions</option>
                 <option value="reinstate">Reinstate</option>
-                <option value="delete">Delete</option>
+                ${canPermanentlyDeleteWaitlist()?'<option value="delete">Permanently delete</option>':''}
               </select>
             </td>
           </tr>

@@ -12,9 +12,10 @@ async function changeWriteupCount(id,delta){
  let name='',before=0,after=0;
  try{
   const st=typeof getCurrentStaffIdentity==='function'?await getCurrentStaffIdentity():{uid:auth.currentUser.uid,email:auth.currentUser.email};
+  const guard=await kbrhCMSReadGuard();
   await db.runTransaction(async tx=>{
-   const appRef=db.collection('kbrh').doc('choreTracker'),countRef=db.collection('kbrh').doc('writeupCounts');
-   const [appSnap,countSnap]=await Promise.all([tx.get(appRef),tx.get(countRef)]);const state=appSnap.exists?appSnap.data():{};
+   const countRef=db.collection('kbrh').doc('writeupCounts');
+   await guard.check(tx);const countSnap=await tx.get(countRef);const state=guard.data;
    const resident=(state.roster||[]).find(r=>r&&r.id===id&&!r.archived&&(r.phase||'phase1')==='phase1');
    if(!resident)throw Error('This resident is no longer in Phase 1.');
    const counts=countSnap.exists?(countSnap.data().counts||{}):{},stored=counts[id]?.count;

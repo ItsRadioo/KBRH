@@ -629,9 +629,11 @@ tbody tr:last-child>td{border-bottom:0;}
 <script src="date-defaults.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=5.40"></script>
-<script src="auth.js?v=5.40"></script>
-<script src="data-store.js?v=5.40"></script><script src="dnr.js?v=5.40"></script>
+<script src="firebase-config.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+<script src="storage-codec.js?v=5.45"></script>
+<script src="storage-client.js?v=5.45"></script>
+<script src="auth.js?v=5.45"></script>
+<script src="data-store.js?v=5.45"></script><script src="dnr.js?v=5.40"></script>
 <script>requireLogin();</script>
 <style data-original-file="kbrh-v5.css">
 /*
@@ -2491,7 +2493,7 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
  html body.kbrh-single-sidebar>main{padding:16px!important}
 }
 </style>
-<link rel="stylesheet" href="repair-5.40.css?v=5.40"></head>
+<link rel="stylesheet" href="repair-5.40.css?v=5.45"></head>
 <body class="page-prescreening">
 
 <main>
@@ -2505,6 +2507,6 @@ html body.kbrh-single-sidebar:not(.page-login):not(.page-print):not(.page-meal-p
 <div class="button-row prescreen-footer"><button class="secondary" id="cancelPrescreenBtn" type="button">Close</button><button class="secondary" id="saveDraftBtn" type="button">Save Draft</button><span class="prescreen-footer-spacer"></span><button class="secondary" id="backPrescreenBtn" type="button">Back</button><button id="nextPrescreenBtn" type="button">Continue</button><button class="secondary hidden" id="printPrescreenBtn" type="button">Print Summary</button><button class="success hidden" id="movePrescreenToRosterBtn" type="button">Move to Roster</button><button class="hidden" id="completePrescreenBtn" type="button">Complete Pre-Screening</button></div>
 </div></div>
 <div class="modal-backdrop hidden" id="prescreenMoveRosterModal"><div aria-labelledby="prescreenMoveRosterTitle" aria-modal="true" class="modal-card move-roster-modal" role="dialog"><div class="modal-title-row"><div><h2 id="prescreenMoveRosterTitle">Move to Current Roster</h2><p class="hint" id="prescreenMoveRosterName"></p></div><button aria-label="Close" class="secondary modal-close-button" id="closePrescreenMoveRosterBtn" type="button">×</button></div><div class="transfer-confirmation-box"><strong>Confirm admission details</strong><p>This transfers the applicant to the active Phase 1 roster and removes them from the waitlist. It does not archive the applicant.</p></div><label class="position-field"><span>Admission / Entry Date</span><input id="prescreenMoveEntryDate" required="" type="date"/></label><div class="button-row modal-actions"><button class="secondary" id="cancelPrescreenMoveRosterBtn" type="button">Cancel</button><button id="confirmPrescreenMoveRosterBtn" type="button">Confirm Move to Roster</button></div></div></div>
-<script src="prescreening.js?v=5.40"></script><script src="kbrh-ui-upgrade.js?v=5.40"></script>
+<script src="prescreening.js?v=5.45"></script><script src="kbrh-ui-upgrade.js?v=5.40"></script>
 <script src="kbrh-v5.js?v=5.40"></script>
 <script src="chat-floating.js?v=5.40"></script><script src="kbrh-sidebar.js?v=5.43"></script></body></html>

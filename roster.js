@@ -561,13 +561,11 @@ async function kbrhSetResidentTHCStatus(clientId,active,reason,screen=null){
  const user=auth?.currentUser;
  if(!user?.uid)throw Error("Staff sign-in required.");
  if(!active && String(reason||"").trim().length<8)throw Error("A removal reason of at least 8 characters is required.");
- const doc=db.collection("kbrh").doc("choreTracker"),when=new Date().toISOString();
+ const doc=kbrhStateRef(),when=new Date().toISOString();
  kbrhPendingTHCStatuses.set(String(clientId),{active:!!active,when,confirmed:false});
  let updated=null;
- try { await db.runTransaction(async tx=>{
-  const snap=await tx.get(doc);
-  if(!snap.exists)throw Error("KBRH roster document is missing.");
-  const roster=Array.isArray(snap.data().roster)?snap.data().roster.slice():[];
+ try { await kbrhEditAppState(async raw=>{
+  const roster=Array.isArray(raw.roster)?raw.roster.slice():[];
   const i=roster.findIndex(r=>String(r?.id)===String(clientId));
   if(i<0)throw Error("Resident is no longer on the active roster.");
   const previous=roster[i];
@@ -577,7 +575,7 @@ async function kbrhSetResidentTHCStatus(clientId,active,reason,screen=null){
     ...(active?{thcProtocolSetAt:when,thcProtocolClearedAt:null,thcProtocolClearReason:null}:
        {thcProtocolClearedAt:when,thcProtocolClearedBy:user.uid,thcProtocolClearReason:reason.trim()})};
   roster[i]=updated;
-  tx.update(doc,{roster,updatedAt:when});
+  return {roster,updatedAt:when};
  });
  } catch(error) { kbrhPendingTHCStatuses.delete(String(clientId)); throw error; }
  const pending=kbrhPendingTHCStatuses.get(String(clientId));
@@ -930,7 +928,7 @@ async function confirmDischarge() {
     roster[index] = resident;
 
     const cleanRoster = normalizeAppState({ roster }).roster;
-    await appRef.update({ roster: cleanRoster, updatedAt: archivedAt });
+    await appRef.update({_storageRevision:latest._storageRevision, roster: cleanRoster, updatedAt: archivedAt });
 
     const verifySnap = await appRef.get({ source:"server" });
     if (!verifySnap.exists) throw new Error("Archive save could not be verified.");
