@@ -23,3 +23,11 @@ exports.notifyTHCRetests=onSchedule({schedule:"every day 08:00",timeZone:"Americ
 });
 
 const cmsStorage=require("./state-storage-service").register(exports,{db,admin,HttpsError,onCall,REGION});
+
+exports.recordWeeklyWaitlistNoCalls=onSchedule({
+ schedule:"0 0 * * 2",timeZone:"America/Toronto",region:REGION,
+ retryCount:3,minBackoffSeconds:30,timeoutSeconds:300,memory:"512MiB"
+},async event=>{
+ const count=await cmsStorage.recordWeeklyNoCalls(event.scheduleTime);
+ console.log("Weekly waitlist No Calls recorded",count);
+});

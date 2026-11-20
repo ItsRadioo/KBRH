@@ -2,6 +2,38 @@
 const codec=require('./storage-codec');
 const INTAKE='intake@kbrh.local',CONTROL='kbrhStorage/control',LEGACY='kbrh/choreTracker';
 const MAX_OPS=350;
+const torontoDay = new Intl.DateTimeFormat('sv-SE', {timeZone:'America/Toronto'});
+const dateKey = value => {
+ if(!value)return '';
+ if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
+ const date=new Date(value);
+ return Number.isFinite(date.getTime())?torontoDay.format(date):'';
+};
+function weeklyNoCallChanges(waitlist, scheduledAt){
+ const cutoffDay=dateKey(scheduledAt);
+ const tuesday=new Date(cutoffDay+'T00:00:00Z');
+ if(tuesday.getUTCDay()!==2)return [];
+ const weekStart=new Date(tuesday);
+ weekStart.setUTCDate(weekStart.getUTCDate()-7);
+ const firstDay=weekStart.toISOString().slice(0,10);
+ const monday=new Date(tuesday);
+ monday.setUTCDate(monday.getUTCDate()-1);
+ const deadline=monday.toISOString().slice(0,10);
+
+ const eligible=waitlist.filter(applicant=>{
+  if(!applicant?.id||applicant.archived||applicant.admissionStage==='Pending Admission'||applicant.callInException===true)return false;
+  const status=String(applicant.status||'').trim().toLowerCase();
+  if(status==='incarcerated'||status==='pending application'||applicant.lastAutomaticNoCallWeek===deadline)return false;
+  if([applicant.createdAt,applicant.dateApplied].some(value=>dateKey(value)>=cutoffDay))return false;
+  return !(Array.isArray(applicant.callInHistory)?applicant.callInHistory:[]).some(entry=>{
+   if(entry?.callInWeekEnding)return entry.callInWeekEnding===deadline;
+   const day=dateKey(entry?.createdAt||entry?.timestamp);
+   return day>=firstDay&&day<=deadline;
+  });
+ }).sort((a,b)=>(Number(a.waitlistPosition)||Infinity)-(Number(b.waitlistPosition)||Infinity));
+ return eligible.slice(0,20).map(applicant=>({applicant,deadline}));
+}
+
 function createStorageService({db,admin,HttpsError}){
  const fail=(code,message)=>{throw new HttpsError(code,message);};
  const control=db.doc(CONTROL),legacy=db.doc(LEGACY);
@@ -78,7 +110,7 @@ function createStorageService({db,admin,HttpsError}){
    for(const backup of internal.backups||[])tx.set(db.doc('kbrhRetentionBackups/'+backup.id),backup.data);
    if(deleteRef)tx.set(deleteRef,{applicantId:String(input.deleteId),deletedAt:next.updatedAt,deletedByUid:req.auth.uid});
    if(policy.target)for(const a of policy.archived){const ref=db.collection('kbrhNotifications').doc();tx.set(ref,{recipientUid:policy.target.uid,recipientEmail:INTAKE,priority:'important',source:'waitlist-archive',requiresAcknowledgement:true,title:'Waitlist applicant archived',message:[a.firstName,a.lastName].filter(Boolean).join(' ').slice(0,250)+' was archived by '+(req.auth.token.email||'Staff')+'. Reason: '+String(a.archiveReason||'Not provided').slice(0,2000),link:'waitlist.html',createdByUid:req.auth.uid,createdByEmail:req.auth.token.email||'',createdAtIso:next.updatedAt,acknowledgedAt:''});}
-   tx.set(db.collection('kbrhAudit').doc(),{staffUid:req.auth.uid,staffEmail:req.auth.token.email||'',page:'State storage',summary:input.deleteId===undefined?'CMS records saved':'Waitlist applicant permanently deleted by Intake',changes:[input.deleteId===undefined?'Atomic record update':'Permanent waitlist deletion'],timestampIso:next.updatedAt,timestamp:admin.firestore.FieldValue.serverTimestamp()});
+   tx.set(db.collection('kbrhAudit').doc(),{staffUid:req.auth.uid,staffEmail:req.auth.token.email||'',page:'State storage',summary:internal.auditSummary??(input.deleteId===undefined?'CMS records saved':'Waitlist applicant permanently deleted by Intake'),changes:internal.auditChanges??[input.deleteId===undefined?'Atomic record update':'Permanent waitlist deletion'],timestampIso:next.updatedAt,timestamp:admin.firestore.FieldValue.serverTimestamp()});
   });
   return {revision,refresh:true};
  }
@@ -134,11 +166,106 @@ function createStorageService({db,admin,HttpsError}){
   const backups=await db.collection('kbrhRetentionBackups').get();let batch=db.batch(),count=0;
   for(const d of backups.docs){const until=new Date(d.data().recoveryUntil||0);if(!isNaN(until)&&until<now){batch.delete(d.ref);if(++count===400){await batch.commit();batch=db.batch();count=0;}}}if(count)await batch.commit();
  }
- return {read,save,migrate,loadRecords,enforceRetention};
+ async function recordWeeklyNoCalls(scheduledAt){
+  let count=0,conflicts=0;
+  for(;;){
+   try{
+    const current=await read();
+    if(current.meta.phase&&current.meta.phase!=='active')fail('unavailable','CMS storage migration is in progress.');
+    const list=Array.isArray(current.state.waitlist)?current.state.waitlist:[];
+    const changes=weeklyNoCallChanges(list,scheduledAt);
+    if(!changes.length)return count;
+    let position=list.reduce((max,item)=>Math.max(max,Number(item?.waitlistPosition)||0),0);
+    const scheduledIso=new Date(scheduledAt).toISOString();
+    const updates=new Map(changes.map(({applicant,deadline})=>{
+     const id='automatic-no-call-'+deadline;
+     const assignedPosition=++position;
+     const notes=Array.isArray(applicant.notes)?applicant.notes:applicant.notes?
+      [{id:'legacy-note-'+applicant.id,author:'Unknown',text:String(applicant.notes),createdAt:scheduledIso}]:[];
+     const date=dateKey(scheduledAt).split('-').reverse().join('-');
+     return [applicant.id,{
+      ...applicant,callPriority:'nocall',waitlistPosition:assignedPosition,lastAutomaticNoCallWeek:deadline,
+      notes:[{id,author:'System',text:`system indicated no-call, call-in status automatically update (${date})`,createdAt:scheduledIso},...notes],
+      callInHistory:[{
+       id,result:'No Call',reason:'Weekly call-in deadline passed',
+       source:'automatic-weekly-deadline',callInWeekEnding:deadline,createdAt:scheduledIso,
+       previousPriority:applicant.callPriority??null,previousEntryId:applicant.callInHistory?.[0]?.id??null,previousPosition:applicant.waitlistPosition??null,assignedPosition,
+       timestamp:new Date(scheduledAt).toLocaleString('en-CA',{timeZone:'America/Toronto'})
+      },...(Array.isArray(applicant.callInHistory)?applicant.callInHistory:[])]
+     }];
+    }));
+    const waitlist=list.map(item=>updates.get(item?.id)||item);
+    const data=current.meta.phase==='active'
+     ?{revision:current.revision,operations:codec.diff(current.nodes,await codec.encode({...current.state,waitlist},current.nodes))}
+     :{revision:current.revision,patch:{waitlist}};
+    await save({auth:{uid:'system',token:{email:'system'}},data},{auditSummary:'Weekly waitlist No Calls recorded',auditChanges:[changes.length+' applicants flagged automatically']});
+    count+=changes.length;
+    conflicts=0;
+   }catch(error){
+    if(error.code!=='aborted'||++conflicts>=4)throw error;
+   }
+  }
+ }
+ async function reviewWeeklyNoCalls(req){
+  staff(req);
+  const email=String(req.auth.token.email||'').toLowerCase();
+  if(!['admin@kbrh.local',INTAKE].includes(email))fail('permission-denied','Only Admin and Intake can review automatic No Calls.');
+  const {action,week,applicantIds}=req.data||{};
+  if(action==='list'){
+   const current=await read();
+   return (current.state.waitlist||[]).flatMap(applicant=>(Array.isArray(applicant?.callInHistory)?applicant.callInHistory:[])
+    .filter(entry=>entry?.source==='automatic-weekly-deadline')
+    .map(entry=>({applicantId:applicant.id,name:[applicant.firstName,applicant.lastName].filter(Boolean).join(' '),week:entry.callInWeekEnding,createdAt:entry.createdAt})));
+  }
+  if(action!=='revert'||typeof week!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(week)||
+     !Array.isArray(applicantIds)||!applicantIds.length||applicantIds.some(id=>typeof id!=='string'))fail('invalid-argument','Select automatic No Calls to revert.');
+  const remaining=new Set(applicantIds);
+  let reverted=0,conflicts=0;
+  while(remaining.size){
+   try{
+    const current=await read();
+    const list=current.state.waitlist||[];
+    const selected=list.filter(applicant=>remaining.has(String(applicant?.id))&&
+     Array.isArray(applicant.callInHistory)&&applicant.callInHistory.some(entry=>entry?.source==='automatic-weekly-deadline'&&entry.callInWeekEnding===week)).slice(0,20);
+    if(!selected.length)break;
+    const ids=new Set(selected.map(applicant=>applicant.id));
+    const waitlist=list.map(applicant=>{
+     if(!ids.has(applicant?.id))return applicant;
+     const history=applicant.callInHistory;
+     const entry=history.find(entry=>entry?.source==='automatic-weekly-deadline'&&entry.callInWeekEnding===week);
+     const nextHistory=history.filter(item=>item!==entry);
+     const update={...applicant,callInHistory:nextHistory,
+      notes:Array.isArray(applicant.notes)?applicant.notes.filter(note=>note?.id!==entry.id||note.author!=='System'):applicant.notes??[]};
+     if(history[0]===entry&&applicant.callPriority==='nocall'){
+      const result=String(nextHistory[0]?.result||'').toLowerCase();
+      update.callPriority=entry.previousEntryId===nextHistory[0]?.id&&entry.previousPriority?entry.previousPriority:
+       result==='no call'?'nocall':result==='late call'?'late':['call in','yes'].includes(result)?'normal':
+       entry.previousEntryId?'normal':entry.previousPriority||'normal';
+      if(applicant.waitlistPosition===entry.assignedPosition)update.waitlistPosition=entry.previousPosition??null;
+     }
+     return update;
+    });
+    const data=current.meta.phase==='active'
+     ?{revision:current.revision,operations:codec.diff(current.nodes,await codec.encode({...current.state,waitlist},current.nodes))}
+     :{revision:current.revision,patch:{waitlist}};
+    await save({auth:req.auth,data},{auditSummary:'Automatic waitlist No Calls reverted',auditChanges:[week,selected.length+' automatic flags reverted']});
+    for(const id of ids)remaining.delete(String(id));
+    reverted+=ids.size;
+    conflicts=0;
+   }catch(error){
+    if(error.code==='aborted'&&++conflicts<4)continue;
+    if(reverted)return {reverted,incomplete:true};
+    throw error;
+   }
+  }
+  return {reverted};
+ }
+ return {read,save,migrate,loadRecords,enforceRetention,recordWeeklyNoCalls,reviewWeeklyNoCalls};
 }
 module.exports={createStorageService,CONTROL,LEGACY};
 module.exports.register=(target,deps)=>{
  const service=createStorageService(deps),options={region:deps.REGION,timeoutSeconds:120,memory:'512MiB'};
+ target.reviewWeeklyWaitlistNoCalls=deps.onCall(options,req=>service.reviewWeeklyNoCalls(req));
  target.saveCMSRecords=deps.onCall(options,req=>service.save(req));
  target.migrateCMSStorage=deps.onCall(options,async req=>{
   try{return await service.migrate(req);}catch(error){

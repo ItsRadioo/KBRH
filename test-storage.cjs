@@ -64,6 +64,58 @@ async function edit(transform,actor=staff){const old=await api.read(),state=code
   const loaded=await third.loadAppState(),untouched=codec.clean((await api.read()).state.counselingNotes);loaded.roster[0].phone='555-0199';await third.saveAppState(loaded);const saved=await api.read();assert.equal(saved.state.roster[0].phone,'555-0199');assert.deepEqual(saved.state.counselingNotes,untouched);
 
  });
+ await check('Weekly No Calls respect Toronto midnight, exemptions and retries',async()=>{
+  const application={dateApplied:'2026-11-01'};
+  await edit(s=>{s.waitlist=[
+   {id:'missed',...application,waitlistPosition:1},
+   {id:'exception',...application,callInException:true},
+   {id:'incarcerated',...application,status:'Incarcerated',callInException:false},
+   {id:'on-time',...application,callInHistory:[{id:'call',result:'Call In',createdAt:'2026-11-17T04:59:59Z'}]},
+   {id:'new',dateApplied:'2026-11-17'},
+   {id:'pending',...application,admissionStage:'Pending Admission'},
+   {id:'frozen',...application,status:'Pending Application'}
+  ];});
+  assert.equal(await api.recordWeeklyNoCalls('2026-11-17T04:59:59Z'),0);
+  assert.equal(await api.recordWeeklyNoCalls('2026-11-17T05:00:00Z'),1);
+  assert.equal(await api.recordWeeklyNoCalls('2026-11-17T05:00:00Z'),0);
+  const list=(await api.read()).state.waitlist;
+  assert.equal(list[0].callPriority,'nocall');
+  assert.equal(list[0].callInHistory[0].callInWeekEnding,'2026-11-16');
+  assert.equal(list[0].callInHistory[0].result,'No Call');
+  assert.ok(list.slice(1).every(item=>item.callPriority!=='nocall'));
+  await api.recordWeeklyNoCalls('2026-11-24T05:00:00Z');
+  assert.equal((await api.read()).state.waitlist[0].callInHistory.length,2);
+ });
+ await check('Automatic No Call review restricts access and removes only selected system records and notes',async()=>{
+  const listAction={action:'list'};
+  await assert.rejects(api.reviewWeeklyNoCalls(staff(listAction)),e=>e.code==='permission-denied');
+  const rows=await api.reviewWeeklyNoCalls(manager(listAction));
+  assert.ok(rows.some(row=>row.applicantId==='missed'&&row.week==='2026-11-16'));
+  await edit(s=>{
+   const applicant=s.waitlist.find(item=>item.id==='missed');
+   assert.equal(applicant.notes.find(note=>note.id==='automatic-no-call-2026-11-16').text,
+    'system indicated no-call, call-in status automatically update (17-11-2026)');
+   applicant.notes.push({id:'staff-note',author:'Staff',text:'Keep this note'});
+   applicant.callInHistory.unshift({id:'manual-call',result:'Call In',createdAt:'2026-11-24T06:00:00Z'});
+   applicant.callPriority='normal';
+  });
+  const revert={action:'revert',week:'2026-11-23',applicantIds:['missed']};
+  await assert.rejects(api.reviewWeeklyNoCalls(staff(revert)),e=>e.code==='permission-denied');
+  assert.equal((await api.reviewWeeklyNoCalls(intake(revert))).reverted,1);
+  assert.equal((await api.reviewWeeklyNoCalls(manager(revert))).reverted,0);
+  const list=(await api.read()).state.waitlist;
+  const applicant=list.find(item=>item.id==='missed');
+  assert.equal(applicant.callPriority,'normal');
+  assert.deepEqual(applicant.callInHistory.map(item=>item.id),['manual-call','automatic-no-call-2026-11-16']);
+  assert.deepEqual(applicant.notes.map(item=>item.id),['automatic-no-call-2026-11-16','staff-note']);
+  assert.ok(list.find(item=>item.id==='on-time').callInHistory.some(item=>item.callInWeekEnding==='2026-11-23'));
+  assert.equal(await api.recordWeeklyNoCalls('2026-11-24T05:00:00Z'),0);
+  const restore={...revert,applicantIds:['on-time']};
+  assert.equal((await api.reviewWeeklyNoCalls(manager(restore))).reverted,1);
+  const restored=(await api.read()).state.waitlist.find(item=>item.id==='on-time');
+  assert.equal(restored.callPriority,'normal');
+  assert.deepEqual(restored.callInHistory.map(item=>item.id),['call']);
+ });
  await check('Retention backs up an expired resident in the same atomic removal',async()=>{
   await edit(s=>s.roster.push({id:'expired',firstName:'Synthetic',archived:true,archivedAt:'2020-01-01',dischargedAt:'2020-01-01'}));await api.enforceRetention();assert.ok(!(await api.read()).state.roster.some(r=>r.id==='expired'));const backup=await db.doc('kbrhRetentionBackups/'+await codec.hash('expired')).get();assert.equal(backup.data().record.id,'expired');
  });

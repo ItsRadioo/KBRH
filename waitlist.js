@@ -841,6 +841,24 @@ async function undoTransfer(transferId){
   try{const active=resequenceActiveWaitlist(getActiveWaitlist());const normalized=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()],roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:normalized.waitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});waitlistState.waitlist=normalized.waitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;if(typeof writeAuditEntry==="function") writeAuditEntry([`Undid waitlist-to-roster transfer: ${transfer.applicantName}`]).catch(console.warn);renderWaitlist();}catch(error){console.error(error);waitlistState.waitlist=beforeWaitlist;waitlistState.roster=beforeRoster;waitlistState.transferHistory=beforeTransfers;renderWaitlist();alert("Could not undo the transfer. No changes were saved.");}
 }
 
+function hasAutomaticCallInException(applicant) {
+  return String(applicant.status||"").trim().toLowerCase()==="incarcerated";
+}
+
+function callInExceptionLabel(applicant) {
+  if (hasAutomaticCallInException(applicant)) return "Call-in exception (incarcerated)";
+  return applicant.callInException===true ? "Call-in exception" : "";
+}
+
+async function toggleCallInException(applicantId) {
+  const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);
+  if (!applicant || hasAutomaticCallInException(applicant)) return;
+  const enabled=applicant.callInException!==true;
+  if (!confirm(enabled ? "Exempt this applicant from the weekly call-in rule?" : "Restore the weekly call-in requirement for this applicant?")) return;
+  applicant.callInException=enabled;
+  await saveWaitlist();
+}
+
 function openApplicantActionsModal(applicantId) {
   const applicant = waitlistState.waitlist.find(item => item.id === applicantId);
   if (!applicant) return;
@@ -854,9 +872,17 @@ function openApplicantActionsModal(applicantId) {
   const giveOfferButton = document.querySelector('#applicantActionsModal [data-applicant-action="giveOffer"]');
   if (giveOfferButton) giveOfferButton.hidden = applicant.status === "Incarcerated" || isRecentResidentHold(applicant) || isPendingApplication(applicant);
 
+  const exceptionButton=document.querySelector('#applicantActionsModal [data-applicant-action="callInException"]');
+  if (exceptionButton) {
+    const automatic=hasAutomaticCallInException(applicant);
+    exceptionButton.disabled=automatic;
+    exceptionButton.textContent=automatic ? "Call-in exception (incarcerated)" :
+      applicant.callInException===true ? "Remove Call-In Exception" : "Add Call-In Exception";
+  }
+
   const undoButton = document.getElementById("undoLastCallInActionBtn");
   if (undoButton) {
-    const canUndo = Array.isArray(applicant.callInHistory) && applicant.callInHistory.length > 0;
+    const canUndo = Array.isArray(applicant.callInHistory) && applicant.callInHistory.length > 0 && applicant.callInHistory[0]?.source!=="automatic-weekly-deadline";
     undoButton.hidden = !canUndo;
   }
 
@@ -995,6 +1021,7 @@ function handleApplicantAction(applicantId, action) {
   if (action === "giveOffer") giveOfferQuick(applicantId);
   if (action === "startPrescreen") startPrescreenQuick(applicantId);
   if (action === "recordCall") openCallInModal(applicantId);
+  if (action === "callInException") toggleCallInException(applicantId);
   if (action === "viewRecord") openApplicantInfoModal(applicantId);
   if (action === "edit") startInlineEdit(applicantId);
   if (action === "changePosition") openPositionModal(applicantId);
@@ -1288,6 +1315,7 @@ function undoLastCallIn(applicantId) {
   if (!applicant || !Array.isArray(applicant.callInHistory) || !applicant.callInHistory.length) return;
 
   const lastRecord = applicant.callInHistory[0];
+  if(lastRecord?.source==="automatic-weekly-deadline"){alert("Use Review Automatic No Calls to revert this entry.");return;}
 
   if (!confirm(`Undo the last call-in record for ${applicant.firstName} ${applicant.lastName}?`)) return;
 
@@ -1357,13 +1385,14 @@ function getLastCallText(item) {
   const last = item.callInHistory?.[0];
   if (!last) return "No call-in recorded.";
 
-  const status = normalizeCallInStatus(last) || "Call-In Updated";
+  const result = normalizeCallInStatus(last) || "Call-In Updated";
+  const status = last.source === "automatic-weekly-deadline" ? result + " (automatic)" : result;
   const dateText = last.createdAt ? formatDateTime(last.createdAt) : String(last.timestamp || "");
   return dateText ? `${status} — ${dateText}` : status;
 }
 
 function renderCallInCounters() {
-  const dayHint=document.getElementById("callInDayHint"); if(dayHint) dayHint.textContent=`Standard call-in day: ${operationalSettings?.callInDay||"Monday"}.`;
+  const dayHint=document.getElementById("callInDayHint"); if(dayHint) dayHint.textContent="Weekly call-in deadline: Monday at midnight (Toronto time).";
   const active = Array.isArray(waitlistState.waitlist)
     ? waitlistState.waitlist.filter(item => item && item !== "temp" && !item.archived && item.admissionStage !== "Pending Admission")
     : [];
@@ -1505,7 +1534,7 @@ function activeCompactCell(item, index, key) {
     city: `<td>${escapeHtml(item.city || "—")}</td>`,
     dateApplied: `<td>${escapeHtml(item.dateApplied || "—")}</td>`,
     lastCallIn: `<td>${escapeHtml(getLastCallText(item))}</td>`,
-    status: `<td>${escapeHtml(applicantDisplayStatus(item))}</td>`,
+    status: `<td>${escapeHtml(applicantDisplayStatus(item))}${callInExceptionLabel(item) ? `<div class="hint">${escapeHtml(callInExceptionLabel(item))}</div>` : ""}</td>`,
     info: `<td><button type="button" class="secondary compact-info-button" onclick="openApplicantInfoModal('${item.id}')">Display Info</button></td>`,
     actions: `<td><div class="workflow-actions">${nextActionHtml(item)}<button type="button" class="actions-button secondary" onclick="openApplicantActionsModal('${item.id}')">⋯ More</button></div></td>`
   };
@@ -1577,6 +1606,7 @@ function openApplicantInfoModal(applicantId) {
   html += applicantInfoItem("Original Application Date", item.originalApplicationDate || item.dateApplied);
   html += applicantInfoItem("Last Call-In", getLastCallText(item), true);
   html += applicantInfoItem("Consecutive No Calls", noCallCount);
+  html += applicantInfoItem("Call-In Requirement", callInExceptionLabel(item) || "Weekly call-in required");
   html += applicantInfoItem("Call-In Priority", item.callPriority || getCallPriority(item));
   html += applicantInfoItem("Notes", `${noteCount} note${noteCount === 1 ? "" : "s"}`);
   if (item.archived) {
@@ -1840,7 +1870,79 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+function canReviewAutomaticNoCalls(user) {
+  return ["admin@kbrh.local","intake@kbrh.local"].includes(String(user?.email||"").toLowerCase());
+}
+
+function setupAutomaticNoCallReview() {
+  const openButton=document.getElementById("reviewAutomaticNoCalls");
+  const dialog=document.getElementById("automaticNoCallReview");
+  const week=document.getElementById("automaticNoCallWeek");
+  const rows=document.getElementById("automaticNoCallReviewRows");
+  const status=document.getElementById("automaticNoCallReviewStatus");
+  const selected=document.getElementById("revertSelectedNoCalls");
+  const all=document.getElementById("revertAllNoCalls");
+  let entries=[];
+
+  function render() {
+    const current=entries.filter(entry=>entry.week===week.value);
+    rows.replaceChildren(...current.map(entry=>{
+      const row=document.createElement("p");
+      const label=document.createElement("label");
+      const checkbox=document.createElement("input");
+      checkbox.type="checkbox";
+      checkbox.value=String(entry.applicantId);
+      label.append(checkbox," "+(entry.name||"Unnamed Applicant"));
+      row.append(label);
+      return row;
+    }));
+    selected.disabled=!rows.querySelector("input:checked");
+    all.disabled=!current.length;
+  }
+
+  async function load() {
+    selected.disabled=all.disabled=true;
+    const previous=week.value;
+    entries=await kbrhReviewWeeklyNoCalls({action:"list"});
+    const weeks=[...new Set(entries.map(entry=>entry.week))].sort().reverse();
+    week.replaceChildren(...weeks.map(value=>new Option(value.split("-").reverse().join("-"),value)));
+    if(weeks.includes(previous))week.value=previous;
+    render();
+  }
+
+  async function revert(everyone) {
+    const applicantIds=Array.from(rows.querySelectorAll(everyone?"input":"input:checked"),input=>input.value);
+    if(!applicantIds.length||!confirm(`Revert ${applicantIds.length} automatic No Call(s) for this week?`))return;
+    selected.disabled=all.disabled=week.disabled=true;
+    status.textContent="Reverting…";
+    try {
+      const result=await kbrhReviewWeeklyNoCalls({action:"revert",week:week.value,applicantIds});
+      status.textContent=result.incomplete?`${result.reverted} reverted. Reload the list and retry any remaining flags.`:`${result.reverted} automatic No Call(s) reverted.`;
+      await load();
+    } catch(error) {
+      status.textContent=error.message||"The result could not be confirmed. Reopen this review to refresh the list.";
+    } finally {
+      week.disabled=false;
+    }
+  }
+
+  openButton.onclick=async()=>{
+    dialog.showModal();
+    rows.replaceChildren();
+    status.textContent="Loading…";
+    try { await load();status.textContent=entries.length?"":"There are no automatic No Calls to review."; }
+    catch(error) { status.textContent=error.message||"Could not load automatic No Calls."; }
+  };
+  week.onchange=render;
+  rows.onchange=()=>{selected.disabled=!rows.querySelector("input:checked");};
+  selected.onclick=()=>revert(false);
+  all.onclick=()=>revert(true);
+}
+
+document.addEventListener("DOMContentLoaded",setupAutomaticNoCallReview);
+
 auth.onAuthStateChanged(async user => {
+  document.getElementById("reviewAutomaticNoCalls").hidden=!canReviewAutomaticNoCalls(user);
   if (!user) return;
   operationalSettings = await loadKbrhSettings();
 

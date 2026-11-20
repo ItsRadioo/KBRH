@@ -93,6 +93,7 @@
  window.kbrhPermanentlyDeleteApplicant=async id=>{const s=await get();await call('saveCMSRecords',{revision:s.data()._storageRevision,deleteId:id});await get();};
  // Real Firestore transactions may read CMS data and atomically guard its revision.
  window.kbrhCMSReadGuard=async()=>{const s=await get(),expected=s.data()._storageRevision;return {data:s.data(),check:async tx=>{const c=await tx.get(control);if((c.exists?c.data().revision||0:0)!==expected)throw Error('Resident details changed. Reload and retry.');}};};
+ window.kbrhReviewWeeklyNoCalls=data=>call('reviewWeeklyWaitlistNoCalls',data);
  window.kbrhStorageMigration=async action=>call('migrateCMSStorage',{action});
  auth.onAuthStateChanged(user=>{if(!user)clearCache();});
 })();
