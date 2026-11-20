@@ -10,11 +10,15 @@ function createStorageService({db,admin,HttpsError}){
  function manager(req){staff(req);if(!['admin@kbrh.local','executivedirector@kbrh.local'].includes(String(req.auth.token.email||'').toLowerCase()))fail('permission-denied','Administrator or Executive Director access required.');}
  async function loadRecords(g){const map=new Map();let last=null;for(;;){let q=records(g).orderBy(admin.firestore.FieldPath.documentId()).limit(300);if(last)q=q.startAfter(last);const page=await q.get();page.docs.forEach(d=>map.set(d.id,d.data()));if(page.size<300)break;last=page.docs.at(-1);}return map;}
  async function read(){
-  const c=await control.get(),meta=c.exists?c.data():{};
-  if(meta.phase!=='active'){const s=await legacy.get();return {state:s.exists?s.data():{},meta,revision:meta.revision||0};}
-  const nodes=await loadRecords(meta.generation),after=await control.get();
-  if(after.data().revision!==meta.revision)fail('aborted','Records changed while loading. Retry the read.');
-  return {state:codec.decode(nodes),nodes,meta,revision:meta.revision};
+  for(let attempt=0;attempt<4;attempt++){
+   const c=await control.get(),meta=c.exists?c.data():{};
+   const nodes=meta.phase==='active'?await loadRecords(meta.generation):null;
+   const legacySnapshot=nodes?null:await legacy.get();
+   const after=await control.get(),latest=after.exists?after.data():{};
+   if(latest.revision!==meta.revision||latest.phase!==meta.phase||latest.generation!==meta.generation)continue;
+   return {state:nodes?codec.decode(nodes):legacySnapshot.data()||{},nodes,meta,revision:meta.revision||0};
+  }
+  fail('aborted','Records changed while loading. Retry the read.');
  }
  async function intakeUser(){try{const u=await admin.auth().getUserByEmail(INTAKE);if(u.disabled)fail('failed-precondition','The Intake account is disabled.');return u;}catch(e){if(e instanceof HttpsError)throw e;fail('failed-precondition','The Intake account must exist before applicants can be archived.');}}
  async function protectWaitlist(req,before,next,deleteId){

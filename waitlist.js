@@ -174,28 +174,71 @@ async function recordWaitlistAuditChanges(before,after){
     }
   }
 }
-async function saveWaitlist() {
-  try {
-    const active=resequenceActiveWaitlist(getActiveWaitlist());
-    const archived=getArchivedWaitlist();
-    waitlistState.waitlist=[...active,...archived];
-    const cleanedWaitlist=normalizeAppState({waitlist:waitlistState.waitlist}).waitlist;
-    // Read the actual stored version, not a stale UI snapshot.
-    const prior=await APP_DOC_REF().get();
-    const previous=prior.exists?(prior.data()?.waitlist||[]):[];
-    await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:cleanedWaitlist,updatedAt:new Date().toISOString()});
-    if(typeof KBRH_LAST_STATE!=="undefined"&&KBRH_LAST_STATE){
-      KBRH_LAST_STATE=normalizeAppState({...KBRH_LAST_STATE,waitlist:cleanedWaitlist});
+let waitlistSavedView = [];
+function applyWaitlistEdits(before, edited, stored) {
+  const canonical = window.KBRHStorageCodec.canonical;
+  const original = new Map(before.map(item => [String(item.id), item]));
+  const current = normalizeAppState({waitlist:stored}).waitlist;
+  const currentById = new Map(current.map(item => [String(item.id), item]));
+  const updates = new Map();
+  const additions = [];
+  for (const item of edited) {
+    const id = String(item.id);
+    const old = original.get(id);
+    const latest = currentById.get(id);
+    if (!old) {
+      if (latest) throw Error("This applicant was already added. Check the waitlist before retrying.");
+      additions.push(item);
+      continue;
     }
-    waitlistState=normalizeAppState((await APP_DOC_REF().get()).data());
-    // Do not await audit work: it is independent of successful waitlist storage.
-    void recordWaitlistAuditChanges(previous,cleanedWaitlist).catch(error=>
-      console.error("Waitlist audit background task failed:",error));
-    return true;
-  }catch(error){
+    const fields = Object.keys(item).filter(key => canonical(old[key]) !== canonical(item[key]));
+    if (!fields.length) continue;
+    if (!latest || fields.some(key => canonical(latest[key]) !== canonical(old[key]) && canonical(latest[key]) !== canonical(item[key]))) {
+      throw Error("Another staff member changed this applicant. Review the latest waitlist and reapply your edit.");
+    }
+    updates.set(id, Object.fromEntries(fields.map(key => [key, item[key]])));
+  }
+  if (!updates.size && !additions.length) return null;
+  return [...stored.map(item => {
+    const update = updates.get(String(item?.id));
+    return update ? {...item,...update} : item;
+  }), ...additions];
+}
+
+function adoptWaitlistState(state) {
+  waitlistState = normalizeAppState(state);
+  waitlistSavedView = structuredClone(waitlistState.waitlist);
+}
+
+async function saveWaitlist() {
+  const before = structuredClone(waitlistSavedView);
+  resequenceActiveWaitlist();
+  const edited = normalizeAppState({waitlist:waitlistState.waitlist}).waitlist;
+  let auditBefore, auditAfter;
+  try {
+    await kbrhEditAppState(raw => {
+      auditBefore = raw.waitlist || [];
+      auditAfter = applyWaitlistEdits(before, edited, auditBefore);
+      return auditAfter && {waitlist:auditAfter};
+    });
+    if (auditAfter) void recordWaitlistAuditChanges(auditBefore,auditAfter).catch(console.error);
+  } catch (error) {
     console.error("Waitlist save failed:",error);
-    alert(`Could not save waitlist${error?.code?` (${error.code})`:""}. Check Console for details.`);
+    alert(`Could not save waitlist${error?.code ? ` (${error.code})` : ""}. ${error?.message || "Check Console for details."}`);
+    await refreshWaitlistView();
     return false;
+  }
+  await refreshWaitlistView();
+  return true;
+}
+
+async function refreshWaitlistView() {
+  try {
+    const state = (await APP_DOC_REF().get()).data();
+    if ((state._storageRevision ?? 0) >= (waitlistState._storageRevision ?? 0)) adoptWaitlistState(state);
+    renderWaitlist();
+  } catch (error) {
+    console.warn("Could not refresh the waitlist view.",error);
   }
 }
 
@@ -619,13 +662,10 @@ async function addWaitlistApplicant() {
   applicant.createdByUid = actor.uid;
   applicant.createdByEmail = actor.email;
   applicant.createdByName = actor.name;
-  const previousWaitlist = [...waitlistState.waitlist];
   waitlistState.waitlist.push(applicant);
   renderWaitlist();
   const saved = await saveWaitlist();
   if (!saved) {
-    waitlistState.waitlist = previousWaitlist;
-    renderWaitlist();
     return;
   }
   clearWaitlistForm();
@@ -740,25 +780,21 @@ async function confirmMoveToRoster(screenRecord){
   if(!screenRecord){
     const applicant=waitlistState.waitlist.find(x=>x.id===pendingMoveToRosterApplicantId);
     if(!applicant)return;
-    KBRHUrine.open(applicant,async record=>{await confirmMoveToRoster(record);},true);
+    KBRHUrine.open(applicant,record=>confirmMoveToRoster(record),true);
     return;
   }
   const applicantIndex=waitlistState.waitlist.findIndex(item=>item.id===pendingMoveToRosterApplicantId&&!item.archived);
-  if(applicantIndex===-1){alert("Applicant is no longer on the active waitlist.");closeMoveToRosterModal();return;}
-  if(pendingApplicationGuard(waitlistState.waitlist[applicantIndex],"admit"))return;
-  if(KBRHDNR.guard(waitlistState,waitlistState.waitlist[applicantIndex],"admit"))return;
+  if(applicantIndex===-1)throw Error("Applicant is no longer on the active waitlist.");
+  if(pendingApplicationGuard(waitlistState.waitlist[applicantIndex],"admit"))return false;
+  if(KBRHDNR.guard(waitlistState,waitlistState.waitlist[applicantIndex],"admit"))return false;
   const entryDate=document.getElementById("moveRosterEntryDate")?.value||"";
-  if(!confirmRecentAdmission(waitlistState.waitlist[applicantIndex]))return;
-  if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return;}
-  const applicant=waitlistState.waitlist[applicantIndex];
+  if(!confirmRecentAdmission(waitlistState.waitlist[applicantIndex]))return false;
+  if(!entryDate){alert("Select the admission / entry date before moving this applicant to the roster.");return false;}
+  const applicant=structuredClone(waitlistState.waitlist[applicantIndex]);
+  const originalView=normalizeAppState({waitlist:[applicant]}).waitlist[0];
   const name=`${applicant.firstName||""} ${applicant.lastName||""}`.trim();
-  if(!confirm(`Confirm admission of ${name} on ${entryDate}? This will remove them from the waitlist and add them to the active Phase 1 roster.`))return;
+  if(!confirm(`Confirm admission of ${name} on ${entryDate}? This will remove them from the waitlist and add them to the active Phase 1 roster.`))return false;
 
-  waitlistState.roster=Array.isArray(waitlistState.roster)?waitlistState.roster.filter(client=>client&&client!=="temp"):[];
-  waitlistState.transferHistory=Array.isArray(waitlistState.transferHistory)?waitlistState.transferHistory:[];
-  const previousWaitlist=structuredClone(waitlistState.waitlist);
-  const previousRoster=structuredClone(waitlistState.roster);
-  const previousTransfers=structuredClone(waitlistState.transferHistory);
   const identity=typeof getCurrentStaffIdentity==="function"?await getCurrentStaffIdentity():{name:currentStaffName(),uid:auth.currentUser?.uid||"",email:auth.currentUser?.email||""};
   appendPersonActivity(applicant,"Transfer","Moved to active Phase 1 roster",`Admission date: ${entryDate}`,identity);
   const transferNote={id:crypto.randomUUID(),author:identity.name||"Staff User",authorUid:identity.uid||"",authorEmail:identity.email||"",text:`Transferred from waitlist to Phase 1 roster. Admission date: ${entryDate}.`,createdAt:new Date().toISOString()};
@@ -769,21 +805,26 @@ async function confirmMoveToRoster(screenRecord){
     urineScreens:[screenRecord],archived:false,archivedAt:"",archiveReason:"",notes:[transferNote,...normalizeWaitlistNotes(applicant.notes)],activityHistory:normalizeActivityHistory(applicant.activityHistory)
   };
   const transfer={id:crypto.randomUUID(),applicantId:applicant.id,residentId:newResident.id,applicantName:name,transferredAt:new Date().toISOString(),transferredBy:identity.name||identity.email||"Staff User",undone:false,undoneAt:"",applicantSnapshot:structuredClone(applicant)};
-  waitlistState.waitlist.splice(applicantIndex,1);
-  waitlistState.roster.push(newResident);
-  waitlistState.transferHistory.unshift(transfer);
-  try{
-    const active=resequenceActiveWaitlist(getActiveWaitlist());
-    const cleanedWaitlist=normalizeAppState({waitlist:[...active,...getArchivedWaitlist()]}).waitlist;
-    const normalized=normalizeAppState({roster:waitlistState.roster,transferHistory:waitlistState.transferHistory});
-    await APP_DOC_REF().update({_storageRevision:waitlistState._storageRevision,waitlist:cleanedWaitlist,roster:normalized.roster,transferHistory:normalized.transferHistory,updatedAt:new Date().toISOString()});
-    waitlistState.waitlist=cleanedWaitlist;waitlistState.roster=normalized.roster;waitlistState.transferHistory=normalized.transferHistory;
-    if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);
-    closeMoveToRosterModal();renderWaitlist();
-  }catch(error){
-    console.error("Move to roster failed:",error);waitlistState.waitlist=previousWaitlist;waitlistState.roster=previousRoster;waitlistState.transferHistory=previousTransfers;renderWaitlist();
-    alert(`Could not move applicant to roster${error?.code?` (${error.code})`:""}. No changes were saved.`);
-  }
+  await kbrhEditAppState(raw=>{
+    const latest = (raw.waitlist || []).find(item=>item?.id===applicant.id);
+    if ((raw.roster || []).some(item=>item?.waitlistSourceId===applicant.id &&
+      item.urineScreens?.some(screen=>screen.id===screenRecord.id))) return;
+    if (!latest || latest.archived || latest.admissionStage==="Pending Admission") {
+      throw Error("Applicant is no longer available for direct admission. Review their current status.");
+    }
+    const currentView = normalizeAppState({waitlist:[latest]}).waitlist[0];
+    if (window.KBRHStorageCodec.canonical(currentView)!==window.KBRHStorageCodec.canonical(originalView)) {
+      throw Error("Applicant details changed. Review the waitlist before completing admission.");
+    }
+    return {
+      waitlist:raw.waitlist.filter(item=>item?.id!==applicant.id),
+      roster:[...(raw.roster || []),newResident],
+      transferHistory:[transfer,...(raw.transferHistory || [])]
+    };
+  });
+  if(typeof writeAuditEntry==="function") writeAuditEntry([`Moved applicant to roster: ${name} (admission ${entryDate})`],identity).catch(console.warn);
+  closeMoveToRosterModal();
+  await refreshWaitlistView();
 }
 
 async function undoTransfer(transferId){
@@ -938,7 +979,7 @@ async function giveOfferQuick(applicantId){
   appendPersonActivity(applicant,"Offer","Offer Given","Offer status set from waitlist quick action.",identity);
   await saveWaitlist(); renderWaitlist();
 }
-async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(pendingApplicationGuard(applicant,"start pre-screening"))return;if(KBRHDNR.guard(waitlistState,applicant,"start pre-screening"))return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;await saveWaitlist();location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
+async function startPrescreenQuick(applicantId){ const applicant=waitlistState.waitlist.find(item=>item.id===applicantId&&!item.archived);if(!applicant)return;if(pendingApplicationGuard(applicant,"start pre-screening"))return;if(KBRHDNR.guard(waitlistState,applicant,"start pre-screening"))return;if(!confirmRecentAdmission(applicant))return;if(!(await authorizeRepeatAdmissionOverride(applicant,"start pre-screening")))return;if(!await saveWaitlist())return;location.href=`prescreening.html?applicant=${encodeURIComponent(applicantId)}`; }
 function nextActionHtml(item){
   if(isPendingApplication(item))return `<button type="button" disabled class="secondary">Pending Application — On Hold</button>`;
   if(item?.status === "Recent Resident" && !recentEligibilityDate(item)) return `<button type="button" class="secondary" disabled title="Verify discharge date">Verify discharge date</button>`;
@@ -1308,7 +1349,7 @@ async function deleteApplicant(applicantId) {
   if(!canPermanentlyDeleteWaitlist()){alert('Only intake@kbrh.local can permanently delete applicants. Use Archive & Notify Intake.');return;}
   const applicant=waitlistState.waitlist.find(item=>item.id===applicantId);if(!applicant)return;
   if(!confirm(`Permanently delete ${applicant.firstName} ${applicant.lastName}? This cannot be undone.`))return;
-  try{await kbrhPermanentlyDeleteApplicant(applicantId);waitlistState=normalizeAppState((await APP_DOC_REF().get()).data());renderWaitlist();}
+  try{await kbrhPermanentlyDeleteApplicant(applicantId);await refreshWaitlistView();}
   catch(error){console.error(error);alert('Deletion failed. No deletion was confirmed: '+error.message);}
 }
 
@@ -1804,7 +1845,7 @@ auth.onAuthStateChanged(async user => {
   operationalSettings = await loadKbrhSettings();
 
   listenToAppState(nextState => {
-    waitlistState = nextState;
+    adoptWaitlistState(nextState);
 
     waitlistState.waitlist = Array.isArray(waitlistState.waitlist)
       ? waitlistState.waitlist.filter(item => item && item !== "temp").map(item => ({
@@ -1825,6 +1866,8 @@ auth.onAuthStateChanged(async user => {
     waitlistState.roster = Array.isArray(waitlistState.roster)
       ? waitlistState.roster.filter(client => client && client !== "temp")
       : [];
+
+    waitlistSavedView = structuredClone(normalizeAppState(waitlistState).waitlist);
 
     // Lift expired 90-day holds without inventing call-ins or bonus priority.
     // Save once; subsequent snapshots see N/A and cannot repeat the transition.

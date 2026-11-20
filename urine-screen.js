@@ -154,6 +154,7 @@ loadHistory(c).then(showHistory).catch(error=>{
  el.querySelector("#us-cancel").onclick=()=>{el.hidden=true;};
  el.querySelector("#us-close-top").onclick=()=>{el.hidden=true;};
  el.onkeydown=event=>{if(event.key==="Escape"&&el.dataset.saving!=="1"){event.preventDefault();el.hidden=true;}};
+ const recordId=crypto.randomUUID(),createdAt=new Date().toISOString();
  el.querySelector("#us-form").onsubmit=async e=>{
   e.preventDefault();
   if(el.dataset.saving==="1")return;
@@ -165,9 +166,9 @@ loadHistory(c).then(showHistory).catch(error=>{
   if(bad.length&&!override){alert("Resident Not Eligible. An authorized override is required.");return;}
   if(bad.length&&(!reason||reason.length<5)){alert("Enter an override reason.");return;}
   let author=typeof currentStaffName==="function"?currentStaffName():(window.auth?.currentUser?.email||"Staff");
-  let record={id:crypto.randomUUID(),date:el.querySelector("#us-date").value,type:el.querySelector("#us-type").value,results,notes:el.querySelector("#us-notes").value.trim(),override:!!bad.length&&override,overrideReason:bad.length?reason:"",author,createdAt:new Date().toISOString(),thcRetestDue:results.THC==="Positive"?due(el.querySelector("#us-date").value):null};
+  let record={id:recordId,date:el.querySelector("#us-date").value,type:el.querySelector("#us-type").value,results,notes:el.querySelector("#us-notes").value.trim(),override:!!bad.length&&override,overrideReason:bad.length?reason:"",author,createdAt,thcRetestDue:results.THC==="Positive"?due(el.querySelector("#us-date").value):null};
   const button=el.querySelector('[type="submit"]');button.disabled=true;el.dataset.saving='1';
-  try{await callback(record);el.hidden=true;}catch(err){const incidentId="US-"+Date.now().toString(36).toUpperCase();console.error("KBRH urine screening save failed",incidentId,err);const code=String(err?.code||"unknown");const detail=String(err?.message||"No further details available").slice(0,350);alert("Screening was not confirmed saved. Do not close this form.\nReference: "+incidentId+"\nError: "+code+"\nDetails: "+detail+"\nPlease report this message to the administrator.");}finally{button.disabled=false;el.dataset.saving="0";}
+  try{if(await callback(record)!==false)el.hidden=true;}catch(err){const incidentId="US-"+Date.now().toString(36).toUpperCase();console.error("KBRH urine screening save failed",incidentId,err);const code=String(err?.code||"unknown");const detail=String(err?.message||"No further details available").slice(0,350);alert("Screening was not confirmed saved. Do not close this form.\nReference: "+incidentId+"\nError: "+code+"\nDetails: "+detail+"\nPlease report this message to the administrator.");}finally{button.disabled=false;el.dataset.saving="0";}
  };
  update();el.hidden=false;el.querySelector("#us-close-top").focus();
 }

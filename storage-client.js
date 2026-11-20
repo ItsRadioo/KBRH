@@ -38,32 +38,58 @@
    if((a.revision||0)!==(m.revision||0)||a.phase!==m.phase||a.generation!==m.generation)continue;
    if(uid&&auth.currentUser?.uid!==uid)throw Error('The signed-in account changed during loading.');
    baseline=codec.clean(state);baselineNodes=nodes;baselineUid=uid;meta=m;revision=m.revision||0;remember(uid,m,nodes);return snapshot(state);
-  }throw Error('Records changed while loading. Please retry.');
+  }throw Object.assign(Error('Records changed while loading. Please retry.'),{code:'aborted'});
  }
  function get(){const result=loadQueue.catch(()=>{}).then(load);loadQueue=result;return result;}
- function save(patch){
-  // Capture this page's baseline NOW, before an unrelated live snapshot can advance it.
-  const expected=patch._storageRevision??revision,captured=baseline&&codec.clean(baseline),capturedMeta={...meta},capturedNodes=baselineNodes&&new Map(baselineNodes);
-  const run=async()=>{
-   if(!captured)throw Error('Load the current CMS records before saving.');
-   if(capturedMeta.phase&&capturedMeta.phase!=='active')throw Error('Storage migration is in progress. Changes are temporarily paused.');
-   const cleanPatch=codec.clean(patch);delete cleanPatch._storageRevision;
-   let data={revision:expected};
-   if(capturedMeta.phase==='active')data.operations=codec.diff(capturedNodes,await codec.encode({...captured,...cleanPatch},capturedNodes));else data.patch=cleanPatch;
-   const result=await call('saveCMSRecords',data);
-   const fresh=await get();const state=fresh.data();patch._storageRevision=state._storageRevision;
-   // Keep callers with array references aligned with server-retained admission/archive records.
-   for(const key of Object.keys(patch))if(Array.isArray(patch[key])&&Array.isArray(state[key]))patch[key].splice(0,patch[key].length,...state[key]);
-   return result;
-  };
+ function queueSave(run){
   const result=saveQueue.catch(()=>{}).then(run);saveQueue=result;return result;
+ }
+ function capture(){
+  return {state:baseline&&codec.clean(baseline),nodes:baselineNodes&&new Map(baselineNodes),meta:{...meta},revision,uid:baselineUid};
+ }
+ async function commit(patch,captured){
+  if(!captured.state)throw Error('Load the current CMS records before saving.');
+  if(captured.uid&&auth.currentUser?.uid!==captured.uid)throw Error('The signed-in account changed before saving.');
+  if(captured.meta.phase&&captured.meta.phase!=='active')throw Error('Storage migration is in progress. Changes are temporarily paused.');
+  const cleanPatch=codec.clean(patch);delete cleanPatch._storageRevision;
+  const data={revision:patch._storageRevision??captured.revision};
+  if(captured.meta.phase==='active')data.operations=codec.diff(captured.nodes,await codec.encode({...captured.state,...cleanPatch},captured.nodes));
+  else data.patch=cleanPatch;
+  const result=await call('saveCMSRecords',data);
+  // A committed write stays successful even if the follow-up read is interrupted.
+  try{
+   const state=(await get()).data();patch._storageRevision=state._storageRevision;
+   for(const key of Object.keys(patch))if(Array.isArray(patch[key])&&Array.isArray(state[key]))patch[key].splice(0,patch[key].length,...state[key]);
+  }catch(error){console.warn('CMS records saved, but refreshing the page data failed.',error);}
+  return result;
+ }
+ function save(patch){
+  const captured=capture();
+  return queueSave(()=>commit(patch,captured));
  }
  function onSnapshot(next,error=console.error){let stopped=false,scheduled=false,again=false;
   async function refresh(){if(stopped)return;if(scheduled){again=true;return;}scheduled=true;do{again=false;try{const s=await get();if(!stopped)next(s);}catch(e){if(!stopped)error(e);}}while(again&&!stopped);scheduled=false;}
   const off=control.onSnapshot(refresh,error);return()=>{stopped=true;off();};
  }
  const ref={get,set:save,update:save,onSnapshot};window.kbrhStateRef=()=>ref;
- window.kbrhEditAppState=async transform=>{for(let n=0;n<3;n++){const s=await get(),state=s.data(),patch=await transform(codec.clean(state));try{await save({...patch,_storageRevision:state._storageRevision});return;}catch(e){if(!['functions/aborted','aborted'].includes(e.code)||n===2)throw e;}}};
+ window.kbrhEditAppState=transform=>queueSave(async()=>{
+  const uid=auth.currentUser?.uid;
+  for(let attempt=0;attempt<4;attempt++){
+   try{
+    const state=(await get()).data();
+    const captured=capture();
+    if(uid!==auth.currentUser?.uid)throw Error('The signed-in account changed before saving.');
+    if(state._storageRevision!==captured.revision)continue;
+    const patch=await transform(state);
+    if(!patch)return;
+    return await commit({...patch,_storageRevision:state._storageRevision},captured);
+   }catch(error){
+    if(!['functions/aborted','aborted'].includes(error.code)||attempt===3)throw error;
+    await new Promise(resolve=>setTimeout(resolve,100*(attempt+1)));
+   }
+  }
+  throw Error('Records are changing frequently. Please try saving again.');
+ });
  window.kbrhPermanentlyDeleteApplicant=async id=>{const s=await get();await call('saveCMSRecords',{revision:s.data()._storageRevision,deleteId:id});await get();};
  // Real Firestore transactions may read CMS data and atomically guard its revision.
  window.kbrhCMSReadGuard=async()=>{const s=await get(),expected=s.data()._storageRevision;return {data:s.data(),check:async tx=>{const c=await tx.get(control);if((c.exists?c.data().revision||0:0)!==expected)throw Error('Resident details changed. Reload and retry.');}};};
