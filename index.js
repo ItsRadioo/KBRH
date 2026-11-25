@@ -31,3 +31,11 @@ exports.recordWeeklyWaitlistNoCalls=onSchedule({
  const count=await cmsStorage.recordWeeklyNoCalls(event.scheduleTime);
  console.log("Weekly waitlist No Calls recorded",count);
 });
+
+exports.expireRecentResidentHolds=onSchedule({
+ schedule:"0 0 * * *",timeZone:"America/Toronto",region:REGION,
+ retryCount:3,minBackoffSeconds:30,timeoutSeconds:300,memory:"512MiB"
+},async event=>{
+ const count=await cmsStorage.expireRecentResidentHolds(event.scheduleTime);
+ console.log("Expired 90-day readmission holds",count);
+});
