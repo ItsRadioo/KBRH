@@ -1981,3 +1981,18 @@ auth.onAuthStateChanged(async user => {
     }
   });
 });
+
+function setupManualEligibilityCheck(){
+ const button=document.getElementById('runRecentResidentEligibilityCheck');
+ if(!button)return;
+ auth.onAuthStateChanged(user=>{button.hidden=!canReviewAutomaticNoCalls(user);});
+ button.addEventListener('click',async()=>{
+  if(!canReviewAutomaticNoCalls(auth.currentUser)||!confirm('Check all applicants and release expired 90-day restrictions?'))return;
+  button.disabled=true;
+  const label=button.textContent;button.textContent='Checking eligibility…';
+  try{const result=await window.kbrhRunRecentResidentEligibilityCheck();alert(result.expired+' expired 90-day restriction(s) released. The waitlist will update automatically.');}
+  catch(error){alert(error.message||'Eligibility check could not be completed.');}
+  finally{button.disabled=false;button.textContent=label;}
+ });
+}
+document.addEventListener('DOMContentLoaded',setupManualEligibilityCheck);
