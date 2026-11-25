@@ -34,6 +34,22 @@ function weeklyNoCallChanges(waitlist, scheduledAt){
  return eligible.slice(0,20).map(applicant=>({applicant,deadline}));
 }
 
+function recentEligibilityDay(applicant){
+ const values=[applicant.recentDischargeDate,applicant.previousDischargeDate,applicant.lastDischargeDate];
+ for(const value of values){
+  if(!value)continue;
+  const raw=String(value).trim();
+  let m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  if(!m){const d=raw.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);if(d)m=[raw,d[3],d[2],d[1]];}
+  if(!m)continue;
+  const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]),date=new Date(Date.UTC(y,mo-1,d));
+  if(date.getUTCFullYear()!==y||date.getUTCMonth()!==mo-1||date.getUTCDate()!==d)continue;
+  date.setUTCDate(date.getUTCDate()+90);
+  return date.toISOString().slice(0,10);
+ }
+ return '';
+}
+
 function createStorageService({db,admin,HttpsError}){
  const fail=(code,message)=>{throw new HttpsError(code,message);};
  const control=db.doc(CONTROL),legacy=db.doc(LEGACY);
@@ -166,6 +182,30 @@ function createStorageService({db,admin,HttpsError}){
   const backups=await db.collection('kbrhRetentionBackups').get();let batch=db.batch(),count=0;
   for(const d of backups.docs){const until=new Date(d.data().recoveryUntil||0);if(!isNaN(until)&&until<now){batch.delete(d.ref);if(++count===400){await batch.commit();batch=db.batch();count=0;}}}if(count)await batch.commit();
  }
+ async function expireRecentResidentHolds(scheduledAt){
+  const today=dateKey(scheduledAt||new Date());
+  let count=0,conflicts=0;
+  for(;;){
+   try{
+    const current=await read();
+    if(current.meta.phase&&current.meta.phase!=='active')fail('unavailable','CMS storage migration is in progress.');
+    const list=Array.isArray(current.state.waitlist)?current.state.waitlist:[];
+    const expired=list.filter(a=>{
+     if(!a?.id||a.archived||!(a.status==='Recent Resident'||a.recentResident===true))return false;
+     const eligible=recentEligibilityDay(a);
+     return eligible&&eligible<=today;
+    }).slice(0,20);
+    if(!expired.length)return count;
+    const ids=new Set(expired.map(a=>a.id));
+    const waitlist=list.map(a=>ids.has(a?.id)?{...a,status:a.status==='Recent Resident'?'N/A':a.status,recentResident:false}:a);
+    const data=current.meta.phase==='active'
+     ?{revision:current.revision,operations:codec.diff(current.nodes,await codec.encode({...current.state,waitlist},current.nodes))}
+     :{revision:current.revision,patch:{waitlist}};
+    await save({auth:{uid:'system',token:{email:'system'}},data},{auditSummary:'90-day readmission restrictions expired',auditChanges:[today,expired.length+' applicants automatically eligible for readmission review']});
+    count+=expired.length;conflicts=0;
+   }catch(error){if(error.code!=='aborted'||++conflicts>=4)throw error;}
+  }
+ }
  async function recordWeeklyNoCalls(scheduledAt){
   let count=0,conflicts=0;
   for(;;){
@@ -260,7 +300,7 @@ function createStorageService({db,admin,HttpsError}){
   }
   return {reverted};
  }
- return {read,save,migrate,loadRecords,enforceRetention,recordWeeklyNoCalls,reviewWeeklyNoCalls};
+ return {read,save,migrate,loadRecords,enforceRetention,recordWeeklyNoCalls,reviewWeeklyNoCalls,expireRecentResidentHolds};
 }
 module.exports={createStorageService,CONTROL,LEGACY};
 module.exports.register=(target,deps)=>{
