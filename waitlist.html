@@ -631,7 +631,7 @@ tbody tr:last-child>td{border-bottom:0;}
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js?v=5.40"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 <script src="storage-codec.js?v=5.45"></script>
-<script src="storage-client.js?v=5.50"></script>
+<script src="storage-client.js?v=5.52"></script>
 <script src="auth.js?v=5.45"></script>
 <script src="data-store.js?v=5.49"></script><script src="dnr.js?v=5.40"></script>
 <script>requireLogin();</script>
@@ -2448,6 +2448,7 @@ body.page-waitlist .archived-waitlist-table-full-wrap{overflow-x:auto!important;
 <section class="card wide">
 <div class="waitlist-table-heading"><h2>Current Waitlist</h2><button class="primary-action-btn" id="openAddWaitlistModalBtn" type="button">+ Add Applicant</button></div><div id="dnrWaitlistWarning" hidden style="background:#fee2e2;color:#991b1b;padding:12px;font-weight:700;border:2px solid #b91c1c;border-radius:8px"></div><p class="hint">DNR matches require Executive Director approval. Use the Do Not Readmit page to review restrictions and approve individual applications.</p>
 <button type="button" class="secondary" id="reviewAutomaticNoCalls" hidden>Review Automatic No Calls</button>
+<button type="button" class="secondary" id="runRecentResidentEligibilityCheck" hidden>Run 90-Day Eligibility Check</button>
 <p class="hint">Use Update Call-In to record Call In, Late Call, or No Call. <span id="callInDayHint"></span> Consecutive No Calls are flagged using the admin-defined threshold.</p>
 <div aria-label="Call-in summary" class="waitlist-callin-summary">
 <article class="waitlist-callin-card waitlist-callin-card-success">
@@ -2693,7 +2694,7 @@ body.page-waitlist .archived-waitlist-table-full-wrap{overflow-x:auto!important;
     <form method="dialog"><button class="secondary">Close</button></form>
   </div>
 </dialog>
-<script src="waitlist.js?v=5.51"></script>
+<script src="waitlist.js?v=5.52"></script>
 <script src="kbrh-ui-upgrade.js?v=5.40"></script>
 <script src="kbrh-v5.js?v=5.40"></script>
 <script src="urine-screen.js?v=5.48"></script>
