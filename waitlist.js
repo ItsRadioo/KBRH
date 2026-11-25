@@ -1871,7 +1871,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function canReviewAutomaticNoCalls(user) {
-  return ["admin@kbrh.local","intake@kbrh.local"].includes(String(user?.email||"").toLowerCase());
+  return ["admin@kbrh.local","intake@kbrh.local","attendantv@kbrh.local"].includes(String(user?.email||"").toLowerCase());
 }
 
 function setupAutomaticNoCallReview() {
