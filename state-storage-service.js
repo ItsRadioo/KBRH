@@ -182,7 +182,7 @@ function createStorageService({db,admin,HttpsError}){
   const backups=await db.collection('kbrhRetentionBackups').get();let batch=db.batch(),count=0;
   for(const d of backups.docs){const until=new Date(d.data().recoveryUntil||0);if(!isNaN(until)&&until<now){batch.delete(d.ref);if(++count===400){await batch.commit();batch=db.batch();count=0;}}}if(count)await batch.commit();
  }
- async function expireRecentResidentHolds(scheduledAt){
+ async function expireRecentResidentHolds(scheduledAt,actor={uid:'system',token:{email:'system'}}){
   const today=dateKey(scheduledAt||new Date());
   let count=0,conflicts=0;
   for(;;){
@@ -201,7 +201,7 @@ function createStorageService({db,admin,HttpsError}){
     const data=current.meta.phase==='active'
      ?{revision:current.revision,operations:codec.diff(current.nodes,await codec.encode({...current.state,waitlist},current.nodes))}
      :{revision:current.revision,patch:{waitlist}};
-    await save({auth:{uid:'system',token:{email:'system'}},data},{auditSummary:'90-day readmission restrictions expired',auditChanges:[today,expired.length+' applicants automatically eligible for readmission review']});
+    await save({auth:actor,data},{auditSummary:'90-day readmission restrictions expired',auditChanges:[today,expired.length+' applicants automatically eligible for readmission review']});
     count+=expired.length;conflicts=0;
    }catch(error){if(error.code!=='aborted'||++conflicts>=4)throw error;}
   }
@@ -305,6 +305,11 @@ function createStorageService({db,admin,HttpsError}){
 module.exports={createStorageService,CONTROL,LEGACY};
 module.exports.register=(target,deps)=>{
  const service=createStorageService(deps),options={region:deps.REGION,timeoutSeconds:120,memory:'512MiB'};
+ target.runRecentResidentEligibilityCheck=deps.onCall(options,async req=>{
+  if(!req.auth)throw new deps.HttpsError('unauthenticated','Staff sign-in required.');
+  if(!['admin@kbrh.local',INTAKE,'attendantv@kbrh.local'].includes(String(req.auth.token.email||'').trim().toLowerCase()))throw new deps.HttpsError('permission-denied','Authorized reviewer access required.');
+  return {expired:await service.expireRecentResidentHolds(new Date(),req.auth)};
+ });
  target.reviewWeeklyWaitlistNoCalls=deps.onCall(options,req=>service.reviewWeeklyNoCalls(req));
  target.saveCMSRecords=deps.onCall(options,req=>service.save(req));
  target.migrateCMSStorage=deps.onCall(options,async req=>{
