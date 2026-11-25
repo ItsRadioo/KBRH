@@ -209,7 +209,7 @@ function createStorageService({db,admin,HttpsError}){
  async function reviewWeeklyNoCalls(req){
   staff(req);
   const email=String(req.auth.token.email||'').toLowerCase();
-  if(!['admin@kbrh.local',INTAKE].includes(email))fail('permission-denied','Only Admin and Intake can review automatic No Calls.');
+  if(!['admin@kbrh.local',INTAKE,'attendantv@kbrh.local'].includes(email))fail('permission-denied','Only authorized no-call reviewers can review automatic No Calls.');
   const {action,week,applicantIds}=req.data||{};
   if(action==='list'){
    const current=await read();
