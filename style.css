@@ -2440,3 +2440,69 @@ table.roster-table,
 [data-admin-only][hidden]{display:none!important}
 
 .waitlist-pending-application-row{background:#fff2d4!important;border-left:4px solid #b7791f;}
+
+#rosterNamesPrint {
+  display: none;
+}
+
+@page roster-names {
+  size: letter portrait;
+  margin: 0.65in;
+}
+
+@media print {
+  html body:has(> #rosterNamesPrint) {
+    page: roster-names;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    color: #111 !important;
+    font: 11pt/1.35 Arial, sans-serif;
+  }
+
+  html body:has(> #rosterNamesPrint) > :not(#rosterNamesPrint) {
+    display: none !important;
+  }
+
+  #rosterNamesPrint {
+    display: block !important;
+  }
+
+  #rosterNamesPrint h1 {
+    margin: 0;
+    font-size: 19pt;
+  }
+
+  #rosterNamesPrint .roster-names-subtitle {
+    margin: 0.06in 0 0.17in;
+    font-size: 12pt;
+  }
+
+  #rosterNamesPrint h2 {
+    margin: 0.13in 0 0.04in;
+    padding-bottom: 0.02in;
+    border-bottom: 1px solid #aaa;
+    font-size: 11pt;
+    break-after: avoid;
+  }
+
+  #rosterNamesPrint ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #rosterNamesPrint li {
+    padding: 0.015in 0;
+    break-inside: avoid;
+    overflow-wrap: anywhere;
+  }
+
+  #rosterNamesPrint p {
+    margin: 0;
+  }
+}

@@ -1129,7 +1129,7 @@ function updatePhase1ResidentCount() {
   else card.classList.add("capacity-open");
 }
 
-function getPhaseClients(phase) {
+function getPhaseClients(phase, { ignoreSearch = false } = {}) {
   return Array.isArray(rosterState.roster)
     ? rosterState.roster
         .filter(client =>
@@ -1137,7 +1137,7 @@ function getPhaseClients(phase) {
           client !== "temp" &&
           !client.archived &&
           (client.phase || "phase1") === phase &&
-          matchesRosterSearch(client)
+          (ignoreSearch || matchesRosterSearch(client))
         )
         .sort((a, b) => {
           const aDate = a.entryDate || "9999-12-31";
@@ -1145,6 +1145,72 @@ function getPhaseClients(phase) {
           return aDate.localeCompare(bDate);
         })
     : [];
+}
+
+async function printRosterNames() {
+  const user = auth.currentUser;
+  const button = document.getElementById("printRosterNamesBtn");
+  if (!user || !button || button.disabled || document.getElementById("rosterNamesPrint")) return;
+
+  button.disabled = true;
+  try {
+    const profile = await loadCurrentStaffProfile();
+    if (auth.currentUser?.uid !== user.uid || profile?.active === false || profile?.mustChangePassword) return;
+    if (profile?.lookupFailed) {
+      alert("Could not verify your access to print the roster. Please try again.");
+      return;
+    }
+    const currentPage = window.location.pathname.split("/").pop();
+    if (!kbrhPageAllowed(currentPage, profile, user)) return;
+
+    const fullName = person => [person?.firstName, person?.lastName]
+      .map(part => String(part || "").trim()).filter(Boolean).join(" ");
+    const sections = [];
+    for (const [page, phase, title] of [
+      ["roster.html", "phase1", "Phase 1"],
+      ["phase2.html", "phase2", "Phase 2"]
+    ]) {
+      if (!kbrhPageAllowed(page, profile, user)) continue;
+      const names = getPhaseClients(phase, { ignoreSearch: true })
+        .map(person => fullName(person) || "Unnamed resident");
+      sections.push({ title, names, empty: "No residents." });
+    }
+    if (kbrhPageAllowed("pending-admissions.html", profile, user)) {
+      const applicants = new Map((rosterState.waitlist || []).map(person => [person.id, person]));
+      const names = (rosterState.pendingAdmissions || [])
+        .filter(item => item.status === "Pending Admission")
+        .map(item => String(item.applicantName || "").trim() ||
+          fullName(applicants.get(item.applicantId)) || "Unnamed applicant");
+      sections.push({ title: "Pending Admissions", names, empty: "No pending admissions." });
+    }
+
+    const sheet = document.createElement("section");
+    sheet.id = "rosterNamesPrint";
+    sheet.innerHTML = `<h1>Ken Brown Recovery Home</h1><p class="roster-names-subtitle">Roster Names</p>` +
+      sections.map(({ title, names, empty }) => {
+        names.sort((a, b) => a.localeCompare(b, "en-CA", { sensitivity: "base" }));
+        const list = names.length
+          ? `<ul>${names.map(name => `<li>${escapeHtml(name)}</li>`).join("")}</ul>`
+          : `<p>${empty}</p>`;
+        return `<section><h2>${title}</h2>${list}</section>`;
+      }).join("");
+
+    const clearSheet = () => sheet.remove();
+    window.addEventListener("afterprint", clearSheet, { once: true });
+    document.body.append(sheet);
+    try {
+      window.print();
+    } catch (error) {
+      window.removeEventListener("afterprint", clearSheet);
+      clearSheet();
+      throw error;
+    }
+  } catch (error) {
+    console.error("Could not print roster names:", error);
+    alert("Could not print roster names. Please try again.");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function getArchivedClients() {
@@ -1534,6 +1600,7 @@ function escapeAttribute(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("printRosterNamesBtn")?.addEventListener("click", printRosterNames);
   document.getElementById("closeResidentInfoModalBtn")?.addEventListener("click", closeResidentInfoModal);
   document.getElementById("closeResidentInfoModalFooterBtn")?.addEventListener("click", closeResidentInfoModal);
   document.getElementById("residentInfoModal")?.addEventListener("mousedown", event => {
@@ -1612,6 +1679,8 @@ auth.onAuthStateChanged(user => {
     });
 
     renderRoster();
+    const printButton = document.getElementById("printRosterNamesBtn");
+    if (printButton) printButton.disabled = false;
   });
 });
 
